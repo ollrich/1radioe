@@ -1,0 +1,141 @@
+<?php
+/**
+ * 1radiœ: shared bootstrap. Loaded by smapi.php and the admin.
+ *
+ * The configuration lives OUTSIDE the web root in a folder named "1radioe-private".
+ * It is searched upwards from the app folder, so this layout works:
+ *
+ *   /www/htdocs/w0123456/1radioe-private/config.php    <- config, not reachable via web
+ *   /www/htdocs/w0123456/eichhof.co/1radioe/            <- this app
+ */
+declare(strict_types=1);
+
+const APP_NAME    = '1radiœ';
+const APP_VERSION = '1.0.0';
+const APP_DIR     = __DIR__ . '/..';
+const MEDIA_DIR   = APP_DIR . '/media';
+const CONFIG_DIR  = '1radioe-private';
+
+// Warnings must never leak into HTML, JSON or SOAP output.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+require __DIR__ . '/db.php';
+require __DIR__ . '/stations.php';
+require __DIR__ . '/net.php';
+
+date_default_timezone_set((string) cfg('timezone', 'Europe/Berlin'));
+
+/** Absolute path of config.php, or null if none was found. */
+function config_path(): ?string
+{
+    static $path = false;
+    if ($path !== false) {
+        return $path;
+    }
+    $path = null;
+    $dir  = dirname(realpath(APP_DIR) ?: APP_DIR);
+    for ($i = 0; $i < 10; $i++) {
+        $candidate = $dir . '/' . CONFIG_DIR . '/config.php';
+        if (@is_file($candidate)) {   // @: paths outside open_basedir only warn
+            $path = $candidate;
+            break;
+        }
+        $parent = dirname($dir);
+        if ($parent === $dir) {
+            break;
+        }
+        $dir = $parent;
+    }
+    return $path;
+}
+
+/** The configuration array (empty if config.php is missing). */
+function config(): array
+{
+    static $config = null;
+    if ($config === null) {
+        $path = config_path();
+        if ($path !== null && function_exists('opcache_invalidate')) {
+            // pick up a freshly uploaded config.php immediately (only recompiles if the file changed)
+            @opcache_invalidate($path, false);
+        }
+        $loaded = $path !== null ? require $path : [];
+        $config = is_array($loaded) ? $loaded : [];
+    }
+    return $config;
+}
+
+/** Reads a config value by dotted key, e.g. cfg('db.host'). */
+function cfg(string $key, mixed $default = null): mixed
+{
+    $value = config();
+    foreach (explode('.', $key) as $part) {
+        if (!is_array($value) || !array_key_exists($part, $value)) {
+            return $default;
+        }
+        $value = $value[$part];
+    }
+    return $value;
+}
+
+/** True if config.php sits inside the web root (works, but should be moved out). */
+function config_in_webroot(): bool
+{
+    $path = config_path();
+    $root = realpath((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
+    return $path !== null && $root !== false && $root !== '' && str_starts_with(realpath($path) ?: $path, $root . '/');
+}
+
+function is_https(): bool
+{
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+}
+
+/**
+ * Public base URL of the app, e.g. https://eichhof.co/1radioe.
+ * Taken from config 'base_url', otherwise derived from the current request.
+ * $levels: how many folders the running script sits below the app folder.
+ */
+function base_url(int $levels = 0): string
+{
+    $configured = trim((string) cfg('base_url', ''));
+    if ($configured !== '') {
+        return rtrim($configured, '/');
+    }
+    $path = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/')));
+    for ($i = 0; $i < $levels; $i++) {
+        $path = dirname($path);
+    }
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    return (is_https() ? 'https' : 'http') . '://' . $host . rtrim($path, '/');
+}
+
+function h(?string $s): string
+{
+    return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function client_ip(): string
+{
+    return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+function json_out(array $data, int $status = 200): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/** Thrown for invalid user input; carries messages per form field. */
+final class InputError extends RuntimeException
+{
+    public function __construct(public readonly array $fields, string $message = 'Bitte Eingaben prüfen.')
+    {
+        parent::__construct($message);
+    }
+}

@@ -1,0 +1,2 @@
+# Safety net: this folder belongs outside the web root. If it ends up inside, block it.
+Require all denied

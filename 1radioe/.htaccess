@@ -1,0 +1,5 @@
+# 1radiœ: no directory listings, no access to hidden files
+Options -Indexes
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

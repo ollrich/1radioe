@@ -1,0 +1,6 @@
+# Never commit the real configuration
+1radioe-private/config.php
+# Uploaded logos are content, not code
+1radioe/media/*
+!1radioe/media/.gitkeep
+!1radioe/media/.htaccess
