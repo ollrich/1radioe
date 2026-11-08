@@ -11,7 +11,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const APP_DIR     = __DIR__ . '/..';
 const CONFIG_DIR  = '1radioe-private';
 

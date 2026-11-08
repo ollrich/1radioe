@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.2.1 (8. November 2026)
+
+* Alle Blautöne der Oberfläche sind jetzt das Logo-Blau `#1a80b6`: auch Beschriftungen wie „♫ 3 Tracks“ und „Playlist“ (vorher ein helleres `#4db0e6`) und der Zuschnittrahmen im Bildeditor (vorher das Standardblau von Cropper.js). Beim Überfahren behält der Hauptknopf seine Farbe und hebt sich leicht an
+
 ## 1.2.0 (8. November 2026)
 
 **Oberfläche**
