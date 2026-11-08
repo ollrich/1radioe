@@ -68,9 +68,9 @@ function station_make_smapi_id(string $title): string
  */
 function station_save(array $in, ?int $id = null): array
 {
-    $title       = trim((string) ($in['title'] ?? ''));
+    $title       = clean_text((string) ($in['title'] ?? ''));
     $url         = trim((string) ($in['stream_url'] ?? ''));
-    $description = trim((string) ($in['description'] ?? ''));
+    $description = clean_text((string) ($in['description'] ?? ''));
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
@@ -99,6 +99,10 @@ function station_save(array $in, ?int $id = null): array
         throw new InputError($errors);
     }
     $isPlaylist = (!empty($in['is_playlist']) || looks_like_playlist($url)) && $mime !== 'application/vnd.apple.mpegURL' ? 1 : 0;
+    // result of a stream test the editor ran for exactly this address (optional)
+    $check = $kind === 'stream' && is_array($in['check'] ?? null) && isset($in['check']['ok'])
+        ? [(bool) $in['check']['ok'], clean_text((string) ($in['check']['info'] ?? ''))]
+        : null;
 
     if ($id === null) {
         $sort = (int) q('SELECT COALESCE(MAX(sort), 0) + 1 FROM r1_stations')->fetchColumn();
@@ -109,11 +113,16 @@ function station_save(array $in, ?int $id = null): array
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        if ($old['stream_url'] !== $url) {
-            q('DELETE FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $old['stream_url'])]);
-        }
         q('UPDATE r1_stations SET title = ?, description = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
             [$title, $description, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        if ($old['stream_url'] !== $url) {
+            // the cached playlist entry and the last test belong to the old address
+            q('DELETE FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $old['stream_url'])]);
+            q('UPDATE r1_stations SET check_ok = NULL, check_info = NULL, checked_at = NULL WHERE id = ?', [$id]);
+        }
+    }
+    if ($check !== null) {
+        station_set_check($id, $check[0], $check[1]);
     }
     catalog_bump();
     return station_find($id);
@@ -146,15 +155,23 @@ function stations_reorder(array $ids): void
 {
     $stmt = db()->prepare('UPDATE r1_stations SET sort = ? WHERE id = ?');
     db()->beginTransaction();
-    foreach (array_values($ids) as $pos => $id) {
-        $stmt->execute([$pos + 1, (int) $id]);
+    try {
+        foreach (array_values($ids) as $pos => $id) {
+            $stmt->execute([$pos + 1, (int) $id]);
+        }
+        db()->commit();
+    } catch (Throwable $e) {
+        db()->rollBack();
+        throw $e;
     }
-    db()->commit();
     catalog_bump();
 }
 
 function station_delete(int $id): void
 {
+    if (station_find($id) === null) {
+        return;
+    }
     station_set_logo($id, null);
     q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$id]);
     q('DELETE FROM r1_stations WHERE id = ?', [$id]);

@@ -21,6 +21,8 @@ const SOAP_NS  = 'http://schemas.xmlsoap.org/soap/envelope/';
 
 function esc(string $s): string
 {
+    // characters XML 1.0 does not allow would make Sonos reject the whole answer
+    $s = (string) preg_replace('~[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]~u', '', mb_scrub($s, 'UTF-8'));
     return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
@@ -105,8 +107,9 @@ function is_track_id(string $id): bool
 function media_inner(array $s): string
 {
     $meta = '';
-    if ($s['logo']) {
-        $meta .= '<logo>' . esc((string) logo_url($s['logo'])) . '</logo>';
+    $logo = logo_url($s['logo']);   // null if there is none or the file is missing
+    if ($logo !== null) {
+        $meta .= '<logo>' . esc($logo) . '</logo>';
     }
     if ($s['description'] !== '') {
         $meta .= '<description>' . esc($s['description']) . '</description>';
@@ -124,13 +127,14 @@ function media_inner(array $s): string
  */
 function collection_xml(array $p, int $total): string
 {
+    $art = logo_url($p['logo']);
     return '<mediaCollection>'
         . '<id>' . esc($p['smapi_id']) . '</id>'
         . '<itemType>playlist</itemType>'
         . '<title>' . esc($p['title']) . '</title>'
         . '<canPlay>true</canPlay>'
         . '<canEnumerate>true</canEnumerate>'
-        . ($p['logo'] ? '<albumArtURI>' . esc((string) logo_url($p['logo'])) . '</albumArtURI>' : '')
+        . ($art !== null ? '<albumArtURI>' . esc($art) . '</albumArtURI>' : '')
         . '<total>' . $total . '</total>'
         . '</mediaCollection>';
 }
@@ -138,7 +142,7 @@ function collection_xml(array $p, int $total): string
 /** Track metadata in the order required by the SMAPI schema. */
 function track_inner(array $t, ?array $playlist = null): string
 {
-    $cover = track_cover_file($t, $playlist);
+    $cover = logo_url(track_cover_file($t, $playlist));
     return '<id>track:' . (int) $t['id'] . '</id>'
         . '<itemType>track</itemType>'
         . '<title>' . esc($t['title']) . '</title>'
@@ -147,7 +151,7 @@ function track_inner(array $t, ?array $playlist = null): string
         . ($t['artist'] !== '' ? '<artist>' . esc($t['artist']) . '</artist>' : '')
         . ($t['album'] !== '' ? '<album>' . esc($t['album']) . '</album>' : '')
         . '<duration>' . (int) $t['duration'] . '</duration>'
-        . ($cover ? '<albumArtURI>' . esc((string) logo_url($cover)) . '</albumArtURI>' : '')
+        . ($cover !== null ? '<albumArtURI>' . esc($cover) . '</albumArtURI>' : '')
         . '<canPlay>true</canPlay>'
         . '<canSkip>true</canSkip>'
         . '</trackMetadata>';
@@ -179,6 +183,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     header('Content-Type: text/plain; charset=utf-8');
     header('Cache-Control: no-store');
     try {
+        db_migrate();
         $active = (int) q('SELECT COUNT(*) FROM r1_stations WHERE active = 1')->fetchColumn();
         printf("SMAPI ok\n%s %s, %d aktive Sender und Playlists, Katalog %s\n", APP_NAME, APP_VERSION, $active, catalog_token());
     } catch (Throwable) {
@@ -223,18 +228,22 @@ $GLOBALS['log_item']   = $param('id');
 /* ---------- Answer ---------- */
 
 try {
+    db_migrate();   // after an update the database may need new columns before the admin was opened
     switch ($call->localName) {
         // Lists: "root" is the station list, a playlist id lists its tracks.
+        // Empty playlists and tracks whose MP3 file is missing are left out.
         case 'getMetadata':
             $id    = $param('id', 'root');
             $index = max(0, (int) $param('index', '0'));
             $count = min(100, max(1, (int) $param('count', '100')));
             if ($id === 'root') {
                 $stats = playlist_stats();
-                respond('getMetadata', list_result(stations_all(true), $index, $count, static fn($i) => item_xml($i, $stats)));
+                $items = array_filter(stations_all(true), static fn($s) => $s['kind'] !== 'playlist' || ($stats[(int) $s['id']]['tracks'] ?? 0) > 0);
+                respond('getMetadata', list_result(array_values($items), $index, $count, static fn($i) => item_xml($i, $stats)));
             }
             $playlist = station($id, 'playlist');
-            respond('getMetadata', list_result(playlist_tracks((int) $playlist['id']), $index, $count, static fn($t) => item_xml($t, [], $playlist)));
+            $tracks   = array_filter(playlist_tracks((int) $playlist['id']), 'track_file_exists');
+            respond('getMetadata', list_result(array_values($tracks), $index, $count, static fn($t) => item_xml($t, [], $playlist)));
 
         case 'getMediaMetadata':
             $id = $param('id');

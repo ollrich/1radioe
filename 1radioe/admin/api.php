@@ -8,6 +8,16 @@ declare(strict_types=1);
 
 require __DIR__ . '/../lib/admin.php';
 
+// A fatal error (out of memory, time limit) cannot be caught: still answer with JSON.
+register_shutdown_function(static function (): void {
+    $e = error_get_last();
+    if ($e !== null && in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR], true) && !headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Der Server hat abgebrochen (Speicher oder Zeit zu knapp). Details stehen im PHP-Fehlerlog.']);
+    }
+});
+
 if (admin_boot() !== null || setup_needed()) {
     json_out(['error' => 'Nicht eingerichtet.'], 503);
 }
@@ -22,8 +32,9 @@ session_write_close();   // no session writes below; allows parallel requests
 
 $action = (string) ($_GET['a'] ?? '');
 $in     = $isPost && str_starts_with((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')
-    ? (json_decode((string) file_get_contents('php://input'), true) ?: [])
+    ? json_decode((string) file_get_contents('php://input'), true)
     : $_POST;
+$in     = is_array($in) ? $in : [];
 $id     = isset($in['id']) && $in['id'] !== '' && $in['id'] !== null ? (int) $in['id'] : null;
 
 /** Station list for the admin. */
@@ -31,6 +42,16 @@ function state_stations(): array
 {
     $stats = playlist_stats();
     return array_map(static fn($s) => station_public($s, $stats), stations_all());
+}
+
+/** Playlist id from the request (optional), checked before any work is done. */
+function target_playlist(array $in): ?int
+{
+    $id = (int) ($in['playlist'] ?? 0);
+    if ($id === 0) {
+        return null;
+    }
+    return playlist_find($id) !== null ? $id : throw new InputError([], 'Playlist nicht gefunden.');
 }
 
 function playlist_payload(int $id): array
@@ -61,12 +82,12 @@ try {
                     'Version'        => APP_NAME . ' ' . APP_VERSION,
                     'PHP'            => PHP_VERSION,
                     'Datenbank'      => db()->getAttribute(PDO::ATTR_SERVER_VERSION),
-                    'Erweiterungen'  => implode(', ', array_map(fn($e) => $e . (extension_loaded($e) ? ' ✓' : ' fehlt'), ['curl', 'gd', 'pdo_mysql', 'dom'])),
+                    'Erweiterungen'  => implode(', ', array_map(fn($e) => $e . (extension_loaded($e) ? ' ✓' : ' fehlt'), ['curl', 'gd', 'pdo_mysql', 'dom', 'mbstring'])),
                     'Konfiguration'  => $configPath . (config_in_webroot() ? '  ⚠ liegt im Web-Verzeichnis, bitte nach außerhalb verschieben' : ''),
                     'Sender'         => count(stations_all(true)) . ' aktiv von ' . count(stations_all()),
                     'Katalog-Stand'  => catalog_token(),
                     'Tracks'         => count(tracks_all()) . ', im FTP-Eingang: ' . count(inbox_files()),
-                    'Upload'         => 'in 2-MB-Teilen, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Teil',
+                    'Upload'         => 'in Teilen zu ' . round(upload_chunk_size() / 1048576, 2) . ' MB, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Anfrage',
                     'Medien'         => storage_state(media_dir()) . ', erreichbar unter ' . media_url(1),
                     'Track-Ordner'   => storage_state(track_dir()),
                     'FTP-Eingang'    => storage_state(inbox_dir()),
@@ -100,6 +121,7 @@ try {
 
         case 'POST track.cover':
             $file = $_FILES['logo'] ?? null;
+            track_find((int) $id) ?? throw new InputError([], 'Track nicht gefunden.');
             if (!$file || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
                 throw new InputError([], 'Upload fehlgeschlagen.');
             }
@@ -112,7 +134,7 @@ try {
 
         // Upload in chunks: start, chunk (repeated), finish
         case 'POST upload.start':
-            json_out(['upload' => upload_start((int) ($in['size'] ?? 0))]);
+            json_out(['upload' => upload_start((int) ($in['size'] ?? 0)), 'chunk' => upload_chunk_size()]);
 
         case 'POST upload.chunk':
             $chunk = $_FILES['chunk'] ?? null;
@@ -122,18 +144,23 @@ try {
             json_out(['received' => upload_chunk((string) ($in['upload'] ?? ''), (int) ($in['offset'] ?? -1), $chunk['tmp_name'])]);
 
         case 'POST upload.finish':
-            $track = upload_finish((string) ($in['upload'] ?? ''), (string) ($in['name'] ?? 'upload.mp3'));
-            if (!empty($in['playlist'])) {
-                playlist_add_tracks((int) $in['playlist'], [(int) $track['id']]);
+            @set_time_limit(300);   // checking and hashing a large file takes a moment
+            $playlistId = target_playlist($in);
+            $track      = upload_finish((string) ($in['upload'] ?? ''), (string) ($in['name'] ?? ''));
+            if ($playlistId !== null) {
+                playlist_add_tracks($playlistId, [(int) $track['id']]);
             }
-            json_out(['track' => track_public($track)]);
+            json_out(['track' => track_public($track), 'duplicate' => $track['duplicate']]);
 
         case 'POST inbox.import':
+            @set_time_limit(900);
+            $playlistId = target_playlist($in);
             [$tracks, $errors] = inbox_import();
-            if ($tracks && !empty($in['playlist'])) {
-                playlist_add_tracks((int) $in['playlist'], array_column($tracks, 'id'));
+            if ($tracks && $playlistId !== null) {
+                playlist_add_tracks($playlistId, array_column($tracks, 'id'));
             }
-            json_out(['imported' => count($tracks), 'errors' => $errors]);
+            $duplicates = count(array_filter($tracks, static fn($t) => $t['duplicate']));
+            json_out(['imported' => count($tracks) - $duplicates, 'duplicates' => $duplicates, 'errors' => $errors]);
 
         /* ----- Playlists ----- */
 
@@ -165,8 +192,10 @@ try {
             if (!preg_match('~^https?://~i', $url)) {
                 throw new InputError(['stream_url' => 'Bitte eine gültige http(s)-Adresse eingeben.']);
             }
-            $result = probe_stream($url);
-            if ($id !== null && station_find($id) !== null) {
+            $result  = probe_stream($url);
+            $station = $id !== null ? station_find($id) : null;
+            if ($station !== null && $station['stream_url'] === $url) {
+                // only a test of the saved address says something about the station
                 station_set_check($id, $result['ok'], $result['info']);
             }
             json_out(['probe' => $result]);
@@ -183,6 +212,7 @@ try {
             json_out(['station' => station_public(station_find($id))]);
 
         case 'POST logo.remove':
+            station_find((int) $id) ?? throw new InputError([], 'Sender nicht gefunden.');
             station_set_logo((int) $id, null);
             json_out(['station' => station_public(station_find((int) $id))]);
 

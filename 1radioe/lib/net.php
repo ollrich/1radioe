@@ -27,7 +27,9 @@ function net_resolve(string $host): string
     }
     if (!cfg('allow_private_urls', false)) {
         foreach ($ips as $ip) {
-            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            // an IPv4 address inside IPv6 (::ffff:10.0.0.1) is checked as IPv4
+            $plain = preg_match('~^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$~i', $ip, $m) ? $m[1] : $ip;
+            if (!filter_var($plain, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                 return '!Interne Adressen sind nicht erlaubt.';
             }
         }
@@ -84,7 +86,9 @@ function http_get(string $url, int $maxBytes, int $timeout, int $redirects = 3):
             CURLOPT_TIMEOUT        => $timeout,
             CURLOPT_USERAGENT      => '1radioe/' . APP_VERSION,
             CURLOPT_HTTPHEADER     => ['Accept: */*', 'Icy-MetaData: 0'],
-            CURLOPT_RESOLVE        => str_contains($ip, ':') ? [] : [$p['host'] . ':' . $port . ':' . $ip],
+            // connect to the checked address only (no second DNS lookup that could differ)
+            CURLOPT_RESOLVE        => filter_var(trim($p['host'], '[]'), FILTER_VALIDATE_IP) ? []
+                : [$p['host'] . ':' . $port . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)],
             CURLOPT_HEADERFUNCTION => static function ($ch, string $line) use (&$status, &$headers): int {
                 $len  = strlen($line);
                 $line = trim($line);

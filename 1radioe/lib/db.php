@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 2;   // 1: stations (1.0)  2: playlists and tracks (1.1)
+const SCHEMA_VERSION = 3;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)
 
 function db(): PDO
 {
@@ -34,17 +34,39 @@ function q(string $sql, array $params = []): PDOStatement
     return $stmt;
 }
 
-/** Creates or upgrades the tables. Safe to call on every admin request. */
+/** Schema version stored in the database, 0 if there are no tables yet. */
+function db_schema(): int
+{
+    try {
+        return (int) (q("SELECT v FROM r1_settings WHERE k = 'schema'")->fetchColumn() ?: 0);
+    } catch (PDOException) {
+        return 0;   // settings table does not exist yet
+    }
+}
+
+/**
+ * Creates or upgrades the tables. Cheap when nothing is to do (one query), so it runs
+ * on every admin and SMAPI request; a lock keeps parallel requests from migrating twice.
+ */
 function db_migrate(): void
 {
-    $current = 0;
-    try {
-        $current = (int) (q("SELECT v FROM r1_settings WHERE k = 'schema'")->fetchColumn() ?: 0);
-    } catch (PDOException) {
-        // settings table does not exist yet
-    }
-    if ($current >= SCHEMA_VERSION) {
+    if (db_schema() >= SCHEMA_VERSION) {
         return;
+    }
+    $lock = 'r1_migrate_' . substr(md5((string) cfg('db.name', '')), 0, 16);   // lock names: max. 64 characters
+    q('SELECT GET_LOCK(?, 20)', [$lock]);
+    try {
+        db_migrate_locked();
+    } finally {
+        q('SELECT RELEASE_LOCK(?)', [$lock]);
+    }
+}
+
+function db_migrate_locked(): void
+{
+    $current = db_schema();
+    if ($current >= SCHEMA_VERSION) {
+        return;   // another request was faster
     }
     $opts = 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
     db()->exec("CREATE TABLE IF NOT EXISTS r1_settings (
@@ -121,6 +143,13 @@ function db_migrate(): void
             KEY k_pos (playlist_id, pos),
             KEY k_track (track_id)
         ) $opts");
+    }
+    if ($current < 3) {
+        // 1.2: content hash to recognise a file that is already in the library.
+        // Filled when a track is imported; older tracks get it when a file of the same size arrives.
+        if (!q("SHOW COLUMNS FROM r1_tracks LIKE 'sha1'")->fetch()) {
+            db()->exec('ALTER TABLE r1_tracks ADD COLUMN sha1 CHAR(40) NULL AFTER size, ADD KEY k_size (size)');
+        }
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {

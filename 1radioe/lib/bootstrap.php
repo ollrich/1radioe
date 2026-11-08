@@ -11,7 +11,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.2.0';
 const APP_DIR     = __DIR__ . '/..';
 const CONFIG_DIR  = '1radioe-private';
 
@@ -172,6 +172,32 @@ function h(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/**
+ * Makes text from outside (MP3 tags, file names, form input) safe to store and show:
+ * valid UTF-8 only, no control characters, trimmed.
+ */
+function clean_text(string $s): string
+{
+    $s = mb_scrub($s, 'UTF-8');
+    return trim((string) preg_replace('~[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FEFF}]~u', '', $s));
+}
+
+/** An ini size value like "128M" in bytes; -1 or empty means unlimited (PHP_INT_MAX). */
+function ini_bytes(string $key): int
+{
+    $value = trim((string) ini_get($key));
+    if ($value === '' || $value === '-1') {
+        return PHP_INT_MAX;
+    }
+    $number = (int) $value;
+    return match (strtolower(substr($value, -1))) {
+        'g'     => $number * 1024 ** 3,
+        'm'     => $number * 1024 ** 2,
+        'k'     => $number * 1024,
+        default => $number,
+    };
+}
+
 function client_ip(): string
 {
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
@@ -182,7 +208,8 @@ function json_out(array $data, int $status = 200): never
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
-    echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    // invalid UTF-8 (e.g. from old MP3 tags) must never turn the answer into an empty page
+    echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
     exit;
 }
 

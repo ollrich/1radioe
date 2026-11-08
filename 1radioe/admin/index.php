@@ -132,7 +132,7 @@ function image_editor(string $empty): string
     <button type="button" class="btn small ghost" data-crop="fill" title="Fläche füllen">Füllen</button>
     <label class="bg-pick">Hintergrund
       <select data-ie="bg"><option value="">transparent</option><option value="#ffffff">weiß</option><option value="#000000">schwarz</option><option value="custom">Farbe …</option></select>
-      <input type="color" data-ie="bgcolor" value="#0a1328" hidden>
+      <input type="color" data-ie="bgcolor" value="#0b1328" hidden>
     </label>
   </div>
   <div class="logo-actions">
@@ -149,12 +149,13 @@ function image_editor(string $empty): string
 HTML;
 }
 
+$logo         = 'assets/logo.png?v=' . APP_VERSION;
 $logout       = '<form method="post" class="inline"><input type="hidden" name="csrf" value="' . h(csrf_token()) . '"><input type="hidden" name="action" value="logout"><button class="btn ghost small">Abmelden</button></form>';
 $stationImage = image_editor('Kein Logo');
 $trackImage   = image_editor('Kein Cover');
 render_page('Sender', <<<HTML
 <header class="topbar">
-  <img class="brand" src="assets/logo.png" alt="1radiœ" width="116" height="40">
+  <img class="brand" src="{$logo}" alt="1radiœ" width="116" height="40">
   <nav class="tabs" aria-label="Bereiche">
     <a href="#stations" data-view="stations" class="tab">Sender</a>
     <a href="#tracks" data-view="tracks" class="tab">Tracks</a>
@@ -175,7 +176,7 @@ render_page('Sender', <<<HTML
         <button class="btn primary" id="add-station">Sender hinzufügen</button>
       </div>
     </div>
-    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender oder die Playlist. Ausgegraute Einträge sind inaktiv und in Sonos nicht sichtbar.</p>
+    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender oder die Playlist. Ausgegraute Einträge sind inaktiv oder leere Playlists und in Sonos nicht sichtbar.</p>
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" hidden>
       <p>Noch keine Sender angelegt.</p>

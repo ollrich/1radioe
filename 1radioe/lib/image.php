@@ -22,8 +22,8 @@ function logo_store(string $data): string
     if (!$info || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_WEBP, IMAGETYPE_GIF], true)) {
         throw new InputError([], 'Bitte PNG, JPG, WebP oder GIF verwenden.');
     }
-    if ($info[0] * $info[1] > 40_000_000) {
-        throw new InputError([], 'Bild hat zu viele Pixel.');
+    if ($info[0] * $info[1] > 40_000_000 || !image_memory_ok($info[0], $info[1])) {
+        throw new InputError([], 'Bild hat zu viele Pixel für den Server, bitte verkleinern.');
     }
     $src = @imagecreatefromstring($data);
     if ($src === false) {
@@ -55,6 +55,20 @@ function logo_store(string $data): string
         throw new InputError([], 'Bild konnte nicht gespeichert werden. Schreibrechte für 1radioe-media prüfen.');
     }
     return $file;
+}
+
+/**
+ * GD needs about 5 bytes per pixel. A fatal "memory exhausted" cannot be caught, so check
+ * first and raise the limit if the host allows it.
+ */
+function image_memory_ok(int $w, int $h): bool
+{
+    $need = $w * $h * 5 + LOGO_SIZE * LOGO_SIZE * 5 + 8 * 1024 * 1024 + memory_get_usage();
+    if ($need <= ini_bytes('memory_limit')) {
+        return true;
+    }
+    @ini_set('memory_limit', (string) (int) ceil($need / 1048576 + 16) . 'M');
+    return $need <= ini_bytes('memory_limit');
 }
 
 /** True if any sampled pixel is (partly) transparent. */

@@ -98,6 +98,15 @@ function mp3_info(string $path): ?array
     return null;
 }
 
+/**
+ * 8-bit text of unknown encoding: kept if it is valid UTF-8 (many taggers write UTF-8
+ * where the standard says Latin-1), otherwise read as Windows-1252, the superset of Latin-1.
+ */
+function text_from_8bit(string $s): string
+{
+    return preg_match('//u', $s) === 1 ? $s : mb_convert_encoding($s, 'UTF-8', 'Windows-1252');
+}
+
 /** Decodes an ID3 text payload with its encoding byte. */
 function id3_text(string $raw): string
 {
@@ -107,14 +116,13 @@ function id3_text(string $raw): string
     $enc  = ord($raw[0]);
     $text = substr($raw, 1);
     $text = match ($enc) {
-        0       => mb_convert_encoding($text, 'UTF-8', 'ISO-8859-1'),
         1       => mb_convert_encoding($text, 'UTF-8', str_starts_with($text, "\xFF\xFE") ? 'UTF-16LE' : 'UTF-16BE'),
         2       => mb_convert_encoding($text, 'UTF-8', 'UTF-16BE'),
-        default => $text,
+        default => text_from_8bit($text),   // 0 Latin-1, 3 UTF-8
     };
-    $text = (string) preg_replace('~^\x{FEFF}~u', '', $text);
-    $parts = array_filter(array_map('trim', explode("\0", $text)), static fn($p) => $p !== '');
-    return trim(implode(', ', $parts));
+    // several values are separated by NUL; clean_text also drops byte order marks
+    $parts = array_filter(array_map('clean_text', explode("\0", $text)), static fn($p) => $p !== '');
+    return implode(', ', $parts);
 }
 
 /** Splits "description\0data" for the given ID3 text encoding. Returns the data part. */
@@ -235,7 +243,7 @@ function id3_read(string $path): array
         fseek($fh, $size - 128);
         $v1 = (string) fread($fh, 128);
         if (str_starts_with($v1, 'TAG')) {
-            $field = static fn(int $o) => trim(mb_convert_encoding(rtrim(substr($v1, $o, 30), "\0 "), 'UTF-8', 'ISO-8859-1'));
+            $field = static fn(int $o) => clean_text(text_from_8bit(explode("\0", substr($v1, $o, 30))[0]));
             $out['title']  = $out['title'] ?: $field(3);
             $out['artist'] = $out['artist'] ?: $field(33);
             $out['album']  = $out['album'] ?: $field(63);
@@ -259,6 +267,11 @@ function tracks_all(): array
 {
     return q('SELECT t.*, (SELECT COUNT(*) FROM r1_playlist_tracks p WHERE p.track_id = t.id) AS playlists
               FROM r1_tracks t ORDER BY t.created_at DESC, t.id DESC')->fetchAll();
+}
+
+function track_file_exists(array $t): bool
+{
+    return is_file(track_dir() . '/' . basename($t['file']));
 }
 
 function track_url(array $t): string
@@ -294,31 +307,84 @@ function track_public(array $t): array
         'orig_name' => $t['orig_name'],
         'cover_url' => logo_url($t['cover'], 1),
         'audio_url' => media_url(1) . '/tracks/' . rawurlencode($t['file']),
-        'missing'   => !is_file(track_dir() . '/' . basename($t['file'])),
+        'missing'   => !track_file_exists($t),
         'playlists' => (int) ($t['playlists'] ?? 0),
     ];
 }
 
+/** Moves a file, or copies it where moving is not possible. */
+function move_file(string $from, string $to): bool
+{
+    if (@rename($from, $to)) {
+        return true;
+    }
+    if (!@copy($from, $to)) {
+        return false;
+    }
+    @unlink($from);   // if this fails, the duplicate check catches a second import
+    return true;
+}
+
+/**
+ * A track with exactly this content, or null. Only tracks of the same size are compared;
+ * tracks from before 1.2 get their hash on the way.
+ */
+function track_find_duplicate(int $size, string $sha1): ?array
+{
+    foreach (q('SELECT * FROM r1_tracks WHERE size = ? ORDER BY id', [$size])->fetchAll() as $t) {
+        $hash = $t['sha1'];
+        if ($hash === null) {
+            $file = track_dir() . '/' . basename($t['file']);
+            if (!is_file($file)) {
+                continue;
+            }
+            $hash = (string) sha1_file($file);
+            q('UPDATE r1_tracks SET sha1 = ? WHERE id = ?', [$hash, $t['id']]);
+        }
+        if (hash_equals($hash, $sha1)) {
+            return $t;
+        }
+    }
+    return null;
+}
+
 /**
  * Imports an MP3 file into the library: checks it, reads tags and duration, moves it
- * to media/tracks/ and stores the cover. Returns the new track row.
+ * to 1radioe-media/tracks/ and stores the cover. Returns the track row with 'duplicate'
+ * set if the same file was already in the library: then nothing is stored twice (a
+ * missing audio file of that track is restored) and the source file is removed.
  */
 function track_import(string $path, string $origName): array
 {
-    $info = mp3_info($path);
+    $origName = clean_text(basename(str_replace('\\', '/', $origName))) ?: 'upload.mp3';
+    $info     = mp3_info($path);
     if ($info === null) {
         throw new InputError([], '„' . $origName . '“ ist keine MP3-Datei.');
     }
-    $tags = id3_read($path);
+    $size = (int) filesize($path);
+    $sha1 = (string) sha1_file($path);
     if (!is_dir(track_dir()) && !@mkdir(track_dir(), 0755, true)) {
         throw new InputError([], 'Ordner 1radioe-media/tracks fehlt und kann nicht angelegt werden.');
     }
-    $file = bin2hex(random_bytes(16)) . '.mp3';
-    $size = filesize($path);
-    if (!@rename($path, track_dir() . '/' . $file) && !(@copy($path, track_dir() . '/' . $file) && @unlink($path))) {
+
+    $existing = track_find_duplicate($size, $sha1);
+    if ($existing !== null) {
+        $target = track_dir() . '/' . basename($existing['file']);
+        if (!is_file($target) && move_file($path, $target)) {
+            @chmod($target, 0644);
+        } else {
+            @unlink($path);
+        }
+        return $existing + ['duplicate' => true];
+    }
+
+    $tags   = id3_read($path);
+    $file   = bin2hex(random_bytes(16)) . '.mp3';
+    $target = track_dir() . '/' . $file;
+    if (!move_file($path, $target)) {
         throw new InputError([], 'Datei konnte nicht gespeichert werden. Schreibrechte für 1radioe-media/tracks prüfen.');
     }
-    @chmod(track_dir() . '/' . $file, 0644);
+    @chmod($target, 0644);
     $cover = null;
     if ($tags['cover'] !== null) {
         try {
@@ -327,22 +393,33 @@ function track_import(string $path, string $origName): array
             // unreadable embedded image: import the track without cover
         }
     }
-    $fallback = trim((string) preg_replace('~[_\s]+~', ' ', pathinfo($origName, PATHINFO_FILENAME)));
-    q('INSERT INTO r1_tracks (file, orig_name, title, artist, album, duration, bitrate, size, cover, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-        $file, mb_substr($origName, 0, 255), mb_substr($tags['title'] ?: ($fallback ?: 'Unbenannt'), 0, 200),
-        mb_substr($tags['artist'], 0, 200), mb_substr($tags['album'], 0, 200),
-        $info['duration'], $info['bitrate'], $size, $cover, now_sql(), now_sql(),
-    ]);
-    return track_find((int) db()->lastInsertId());
+    $fallback = clean_text((string) preg_replace('~[_\s]+~', ' ', pathinfo($origName, PATHINFO_FILENAME)));
+    try {
+        q('INSERT INTO r1_tracks (file, orig_name, title, artist, album, duration, bitrate, size, sha1, cover, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            $file, mb_substr($origName, 0, 255), mb_substr($tags['title'] ?: ($fallback ?: 'Unbenannt'), 0, 200),
+            mb_substr($tags['artist'], 0, 200), mb_substr($tags['album'], 0, 200),
+            $info['duration'], $info['bitrate'], $size, $sha1, $cover, now_sql(), now_sql(),
+        ]);
+    } catch (Throwable $e) {
+        // nothing half imported stays behind; the source file goes back where it was
+        if (!@rename($target, $path)) {
+            @unlink($target);
+        }
+        if ($cover !== null) {
+            @unlink(media_dir() . '/' . $cover);
+        }
+        throw $e;
+    }
+    return track_find((int) db()->lastInsertId()) + ['duplicate' => false];
 }
 
 /** Updates title, artist and album of a track. */
 function track_save(int $id, array $in): array
 {
-    $title  = trim((string) ($in['title'] ?? ''));
-    $artist = trim((string) ($in['artist'] ?? ''));
-    $album  = trim((string) ($in['album'] ?? ''));
+    $title  = clean_text((string) ($in['title'] ?? ''));
+    $artist = clean_text((string) ($in['artist'] ?? ''));
+    $album  = clean_text((string) ($in['album'] ?? ''));
     $errors = [];
     if ($title === '' || mb_strlen($title) > 200) {
         $errors['title'] = 'Titel fehlt oder ist länger als 200 Zeichen.';
@@ -412,12 +489,17 @@ function playlist_set_tracks(int $playlistId, array $trackIds): void
     playlist_find($playlistId) ?? throw new InputError([], 'Playlist nicht gefunden.');
     $ids = array_values(array_unique(array_map('intval', $trackIds)));
     db()->beginTransaction();
-    q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$playlistId]);
-    $stmt = db()->prepare('INSERT INTO r1_playlist_tracks (playlist_id, track_id, pos) SELECT ?, id, ? FROM r1_tracks WHERE id = ?');
-    foreach ($ids as $pos => $trackId) {
-        $stmt->execute([$playlistId, $pos + 1, $trackId]);
+    try {
+        q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$playlistId]);
+        $stmt = db()->prepare('INSERT INTO r1_playlist_tracks (playlist_id, track_id, pos) SELECT ?, id, ? FROM r1_tracks WHERE id = ?');
+        foreach ($ids as $pos => $trackId) {
+            $stmt->execute([$playlistId, $pos + 1, $trackId]);
+        }
+        db()->commit();
+    } catch (Throwable $e) {
+        db()->rollBack();
+        throw $e;
     }
-    db()->commit();
     catalog_bump();
 }
 
@@ -443,6 +525,13 @@ function playlist_stats(): array
  * Uploads in chunks and FTP inbox
  * ===================================================================================== */
 
+/** Bytes per upload request: 2 MB, or less if the server accepts less per request. */
+function upload_chunk_size(): int
+{
+    $limit = min(ini_bytes('upload_max_filesize'), ini_bytes('post_max_size') - 65536);
+    return max(262144, min(2 * 1024 * 1024, $limit));
+}
+
 /** Starts a chunked upload. Returns its id. Also removes uploads older than a day. */
 function upload_start(int $size): string
 {
@@ -458,7 +547,9 @@ function upload_start(int $size): string
         }
     }
     $id = bin2hex(random_bytes(16));
-    file_put_contents(upload_dir() . '/' . $id . '.part', '');
+    if (@file_put_contents(upload_dir() . '/' . $id . '.part', '') === false) {
+        throw new InputError([], 'Ordner 1radioe-private/tmp ist nicht beschreibbar.');
+    }
     return $id;
 }
 
@@ -481,13 +572,16 @@ function upload_chunk(string $id, int $offset, string $tmpFile): int
     if ($offset + filesize($tmpFile) > TRACK_MAX_BYTES) {
         throw new InputError([], 'Dateien dürfen höchstens 300 MB groß sein.');
     }
-    $in  = fopen($tmpFile, 'rb');
-    $out = fopen($path, 'ab');
-    stream_copy_to_stream($in, $out);
-    fclose($in);
-    fclose($out);
+    $in     = fopen($tmpFile, 'rb');
+    $out    = fopen($path, 'ab');
+    $copied = ($in && $out) ? stream_copy_to_stream($in, $out) : false;
+    $in && fclose($in);
+    $out && fclose($out);
     clearstatcache(true, $path);
-    return filesize($path);
+    if ($copied === false || $copied !== filesize($tmpFile)) {
+        throw new InputError([], 'Teil konnte nicht gespeichert werden. Ist der Speicherplatz voll?');
+    }
+    return (int) filesize($path);
 }
 
 /** Completes an upload and imports it as a track. */
@@ -507,16 +601,28 @@ function inbox_files(): array
     return is_dir(inbox_dir()) ? array_values(array_filter(glob(inbox_dir() . '/*') ?: [], static fn($f) => is_file($f) && preg_match('~\.mp3$~i', $f))) : [];
 }
 
-/** Imports all MP3 files from the inbox. Returns [tracks, errors]. */
+/**
+ * Imports all MP3 files from the inbox. Returns [tracks, errors]; tracks that were in
+ * the library already come back with 'duplicate' set. Files changed during the last
+ * 15 seconds are skipped, they may still be uploading.
+ */
 function inbox_import(): array
 {
     $tracks = [];
     $errors = [];
     foreach (inbox_files() as $file) {
+        $name = clean_text(basename($file));
+        if (@filemtime($file) > time() - 15) {
+            $errors[] = '„' . $name . '“ wird gerade noch hochgeladen, bitte gleich noch einmal importieren.';
+            continue;
+        }
         try {
-            $tracks[] = track_import($file, basename($file));
+            $tracks[] = track_import($file, $name);
         } catch (InputError $e) {
             $errors[] = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log('1radioe inbox import: ' . $e);
+            $errors[] = '„' . $name . '“ konnte nicht importiert werden.';
         }
     }
     return [$tracks, $errors];

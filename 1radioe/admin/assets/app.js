@@ -46,7 +46,7 @@
     box.className = 'toast ' + kind;
     box.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { box.hidden = true; }, 3400);
+    toastTimer = setTimeout(() => { box.hidden = true; }, kind === 'error' ? 7000 : 3400);
   }
 
   function el(tag, cls, text) {
@@ -57,7 +57,7 @@
   }
 
   function initials(title) {
-    return title.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    return title.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => [...w][0]).join('').toUpperCase();
   }
 
   function art(url, title, cls = 'art') {
@@ -277,14 +277,17 @@
   /* ---------- Station grid ---------- */
 
   function tile(s) {
-    const t = el('div', 'tile' + (s.active ? '' : ' inactive') + (s.kind === 'playlist' ? ' is-playlist' : ''));
+    const emptyList = s.kind === 'playlist' && s.tracks === 0;
+    const t = el('div', 'tile' + (s.active ? '' : ' inactive') + (emptyList ? ' is-empty' : '') + (s.kind === 'playlist' ? ' is-playlist' : ''));
     t.dataset.id = s.id;
     t.tabIndex = 0;
     t.setAttribute('role', 'button');
-    t.setAttribute('aria-label', s.title + (s.kind === 'playlist' ? ', Playlist' : '') + (s.active ? '' : ', inaktiv'));
+    t.setAttribute('aria-label', s.title + (s.kind === 'playlist' ? ', Playlist' : '') + (s.active ? '' : ', inaktiv') + (emptyList ? ', leer' : ''));
     const a = art(s.logo_url, s.title);
     if (s.kind === 'playlist') {
-      a.append(el('span', 'kind', '♫ ' + trackCount(s.tracks)));
+      const kind = el('span', 'kind', emptyList ? '♫ leer' : '♫ ' + trackCount(s.tracks));
+      if (emptyList) kind.title = 'Leere Playlists zeigt Sonos nicht an';
+      a.append(kind);
     } else {
       const dot = el('span', 'dot ' + (s.check_ok === null ? 'unknown' : s.check_ok ? 'ok' : 'fail'));
       dot.title = s.check_info ? 'Letzter Test: ' + s.check_info : 'Noch nicht getestet';
@@ -384,7 +387,7 @@
   // form.title would return the form's own title attribute, so fields are read via elements
   const F = (name) => form.elements.namedItem(name);
   const stationImage = new ImageEditor($('.image-editor', dialog));
-  const ed = { station: null, kind: 'stream' };
+  const ed = { station: null, kind: 'stream', probe: null };
 
   function setProbe(ok, text) {
     const p = $('#probe-result');
@@ -400,6 +403,7 @@
   function openEditor(s, kind = 'stream') {
     ed.station = s;
     ed.kind = s ? s.kind : kind;
+    ed.probe = null;
     const isList = ed.kind === 'playlist';
     form.reset();
     clearErrors(form);
@@ -441,6 +445,7 @@
     btn.textContent = 'Teste …';
     try {
       const { probe } = await api('probe', { url, id: ed.station && ed.station.stream_url === url ? ed.station.id : null });
+      ed.probe = { url, ok: probe.ok, info: probe.info };
       setProbe(probe.ok, probe.info);
       if (probe.ok) {
         F('mime').value = probe.mime;
@@ -457,6 +462,15 @@
     }
   }
 
+  /** A changed address makes the last test and the playlist flag meaningless. */
+  function streamUrlChanged() {
+    F('is_playlist').value = '0';
+    const p = $('#probe-result');
+    p.hidden = !F('stream_url').value.trim();
+    p.className = 'probe';
+    p.textContent = 'Neue Adresse: „Stream testen“ prüft sie und stellt das passende Format ein.';
+  }
+
   async function saveStation(e) {
     e.preventDefault();
     clearErrors(form);
@@ -464,16 +478,20 @@
     btn.disabled = true;
     try {
       const isNew = !ed.station;
+      const url = F('stream_url').value.trim();
       let { station } = await api('station.save', {
         id: ed.station ? ed.station.id : null,
         kind: ed.kind,
         title: F('title').value,
-        stream_url: F('stream_url').value,
+        stream_url: url,
         mime: F('mime').value,
         description: F('description').value,
         active: F('active').checked,
         is_playlist: F('is_playlist').value === '1',
+        check: ed.probe && ed.probe.url === url ? { ok: ed.probe.ok, info: ed.probe.info } : null,
       });
+      // from now on the record exists: saving again (e.g. after a failed logo upload) updates it
+      ed.station = station;
       const img = await stationImage.commit('logo.upload', 'logo.remove', station.id);
       if (img) station = img.station;
       closeEditor();
@@ -531,21 +549,22 @@
         continue;
       }
       try {
-        const { upload } = await api('upload.start', { size: file.size });
-        for (let offset = 0; offset < file.size; offset += CHUNK) {
+        const { upload, chunk } = await api('upload.start', { size: file.size });
+        const step = chunk || CHUNK;
+        for (let offset = 0; offset < file.size; offset += step) {
           const fd = new FormData();
           fd.append('upload', upload);
           fd.append('offset', offset);
-          fd.append('chunk', file.slice(offset, offset + CHUNK), 'chunk');
+          fd.append('chunk', file.slice(offset, offset + step), 'chunk');
           await api('upload.chunk', fd);
-          bar.value = Math.round(Math.min(file.size, offset + CHUNK) / file.size * 100);
+          bar.value = Math.round(Math.min(file.size, offset + step) / file.size * 100);
           status.textContent = bar.value + ' %';
         }
         status.textContent = 'wird importiert …';
-        const { track } = await api('upload.finish', { upload, name: file.name, playlist: playlistId });
+        const { track, duplicate } = await api('upload.finish', { upload, name: file.name, playlist: playlistId });
         created.push(track);
         row.classList.add('ok');
-        status.textContent = '✓ ' + track.title + (track.artist ? ' · ' + track.artist : '');
+        status.textContent = (duplicate ? '✓ schon in der Bibliothek: ' : '✓ ') + track.title + (track.artist ? ' · ' + track.artist : '');
       } catch (e) {
         row.classList.add('fail');
         status.textContent = e.message;
@@ -742,8 +761,9 @@
     btn.disabled = true;
     btn.textContent = 'Importiere …';
     try {
-      const { imported, errors } = await api('inbox.import', {});
-      toast(`${imported} importiert` + (errors.length ? `, ${errors.length} übersprungen: ${errors[0]}` : ''), errors.length ? 'error' : '');
+      const { imported, duplicates, errors } = await api('inbox.import', {});
+      const dupes = duplicates ? `, ${duplicates} schon in der Bibliothek` : '';
+      toast(`${imported} importiert${dupes}` + (errors.length ? `, ${errors.length} übersprungen: ${errors[0]}` : ''), errors.length ? 'error' : '');
     } catch (e) {
       toast(e.message, 'error');
     } finally {
@@ -858,7 +878,13 @@
   }
 
   async function loadLog() {
-    const { log } = await api('log');
+    let log;
+    try {
+      ({ log } = await api('log'));
+    } catch (e) {
+      toast(e.message, 'error');
+      return;
+    }
     const body = $('#log');
     body.replaceChildren();
     if (!log.length) {
@@ -896,6 +922,7 @@
   dialog.addEventListener('cancel', () => stationImage.destroy());
   form.addEventListener('submit', saveStation);
   F('description').addEventListener('input', updateCount);
+  F('stream_url').addEventListener('input', streamUrlChanged);
   $('#probe').addEventListener('click', runProbe);
   $('#delete').addEventListener('click', deleteStation);
 
@@ -934,7 +961,14 @@
     }
   });
   $('#log-refresh').addEventListener('click', loadLog);
-  $('#log-clear').addEventListener('click', async () => { await api('log.clear', {}); loadLog(); });
+  $('#log-clear').addEventListener('click', async () => {
+    try {
+      await api('log.clear', {});
+      loadLog();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  });
 
   // keep the browser from opening files dropped outside a drop zone
   ['dragover', 'drop'].forEach((t) => window.addEventListener(t, (e) => { if (!e.target.closest('.dropzone')) e.preventDefault(); }));
