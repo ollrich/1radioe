@@ -1,5 +1,6 @@
-// 1radiœ admin: station grid (preview + drag & drop), station and playlist editor,
-// playlist view with track order, track library with uploads, system page.
+// 1radiœ admin: station grid (preview + drag & drop), editor for stations, playlists
+// and categories, category view, playlist view with track order, track library with
+// uploads, system page.
 // Talks to api.php. No HTML from data: all text is inserted with textContent.
 (() => {
   'use strict';
@@ -11,7 +12,7 @@
   const MAX_TRACK = 300 * 1024 * 1024;
   const CHUNK = 2 * 1024 * 1024;
 
-  const state = { stations: [], mimes: {}, playlist: null, tracks: [] };
+  const state = { stations: [], mimes: {}, playlist: null, category: null, tracks: [] };
 
   /* ---------- Helpers ---------- */
 
@@ -262,12 +263,14 @@
     const hash = location.hash || '#stations';
     let view = 'stations';
     if (hash.startsWith('#playlist/')) view = 'playlist';
+    else if (hash.startsWith('#category/')) view = 'category';
     else if (hash === '#tracks') view = 'tracks';
     else if (hash === '#system') view = 'system';
     $$('.view').forEach((v) => { v.hidden = v.id !== 'view-' + view; });
-    const tab = view === 'playlist' ? 'stations' : view;
+    const tab = view === 'playlist' || view === 'category' ? 'stations' : view;
     $$('.tab').forEach((t) => t.setAttribute('aria-current', t.dataset.view === tab ? 'page' : 'false'));
     if (view === 'playlist') loadPlaylist(Number(hash.split('/')[1]));
+    if (view === 'category') loadCategory(Number(hash.split('/')[1]));
     if (view === 'tracks') loadLibrary();
     if (view === 'system') loadSystem();
     if (view === 'stations') loadState();
@@ -276,17 +279,28 @@
 
   /* ---------- Station grid ---------- */
 
+  function membersOf(id) {
+    return state.stations.filter((x) => x.category_id === id);
+  }
+
+  function entryCount(n) {
+    return n === 1 ? '1 Eintrag' : `${n} Einträge`;
+  }
+
   function tile(s) {
-    const emptyList = s.kind === 'playlist' && s.tracks === 0;
-    const t = el('div', 'tile' + (s.active ? '' : ' inactive') + (emptyList ? ' is-empty' : '') + (s.kind === 'playlist' ? ' is-playlist' : ''));
+    const size = s.kind === 'playlist' ? s.tracks : s.kind === 'category' ? membersOf(s.id).length : 1;
+    const empty = s.kind !== 'stream' && size === 0;
+    const t = el('div', 'tile' + (s.active ? '' : ' inactive') + (empty ? ' is-empty' : '') + (s.kind !== 'stream' ? ' is-' + s.kind : ''));
     t.dataset.id = s.id;
     t.tabIndex = 0;
     t.setAttribute('role', 'button');
-    t.setAttribute('aria-label', s.title + (s.kind === 'playlist' ? ', Playlist' : '') + (s.active ? '' : ', inaktiv') + (emptyList ? ', leer' : ''));
+    const kindName = { playlist: ', Playlist', category: ', Kategorie' }[s.kind] || '';
+    t.setAttribute('aria-label', s.title + kindName + (s.active ? '' : ', inaktiv') + (empty ? ', leer' : ''));
     const a = art(s.logo_url, s.title);
-    if (s.kind === 'playlist') {
-      const kind = el('span', 'kind', emptyList ? '♫ leer' : '♫ ' + trackCount(s.tracks));
-      if (emptyList) kind.title = 'Leere Playlists zeigt Sonos nicht an';
+    if (s.kind !== 'stream') {
+      const icon = s.kind === 'playlist' ? '♫ ' : '▦ ';
+      const kind = el('span', 'kind', icon + (empty ? 'leer' : s.kind === 'playlist' ? trackCount(size) : entryCount(size)));
+      if (empty) kind.title = 'Leere Playlists und Kategorien zeigt Sonos nicht an';
       a.append(kind);
     } else {
       const dot = el('span', 'dot ' + (s.check_ok === null ? 'unknown' : s.check_ok ? 'ok' : 'fail'));
@@ -297,6 +311,7 @@
     t.append(a, el('span', 'tile-name', s.title));
     const open = () => {
       if (s.kind === 'playlist') location.hash = '#playlist/' + s.id;
+      else if (s.kind === 'category') location.hash = '#category/' + s.id;
       else openEditor(s);
     };
     t.addEventListener('click', open);
@@ -304,22 +319,40 @@
     return t;
   }
 
+  /** "3 Sender, 1 Playlist, 2 Kategorien" */
+  function describe(list) {
+    const n = (k) => list.filter((s) => s.kind === k).length;
+    const parts = [`${n('stream')} Sender`];
+    if (n('playlist')) parts.push(n('playlist') === 1 ? '1 Playlist' : `${n('playlist')} Playlists`);
+    if (n('category')) parts.push(n('category') === 1 ? '1 Kategorie' : `${n('category')} Kategorien`);
+    return parts.join(', ');
+  }
+
   function renderGrid() {
-    $('#grid').replaceChildren(...state.stations.map(tile));
-    const streams = state.stations.filter((s) => s.kind !== 'playlist');
-    const lists = state.stations.length - streams.length;
+    $('#grid').replaceChildren(...state.stations.filter((s) => !s.category_id).map(tile));
     const active = state.stations.filter((s) => s.active).length;
-    $('#summary').textContent = state.stations.length
-      ? `${streams.length} Sender, ${lists} ${lists === 1 ? 'Playlist' : 'Playlists'}, davon ${active} aktiv`
-      : '';
+    $('#summary').textContent = state.stations.length ? `${describe(state.stations)}, davon ${active} aktiv` : '';
     $('#empty').hidden = state.stations.length > 0;
-    $('#check-all').hidden = streams.length === 0;
+    $('#check-all').hidden = !state.stations.some((s) => s.kind === 'stream');
+    if (state.category && location.hash === '#category/' + state.category.id) renderCategory();
+  }
+
+  function fillCategorySelect() {
+    const select = $('#category-select');
+    const none = el('option', '', 'Keine, direkt in der Liste');
+    none.value = '';
+    select.replaceChildren(none, ...state.stations.filter((s) => s.kind === 'category').map((c) => {
+      const o = el('option', '', c.title);
+      o.value = c.id;
+      return o;
+    }));
   }
 
   async function loadState() {
     try {
       const data = await api('state');
       state.stations = data.stations;
+      fillCategorySelect();
       if (!Object.keys(state.mimes).length) {
         state.mimes = data.mimes;
         const select = $('#mime');
@@ -333,32 +366,119 @@
         }
       }
       renderGrid();
+      return true;
     } catch (e) {
       toast(e.message, 'error');
+      return false;
     }
   }
 
-  function initGridSort() {
-    window.Sortable.create($('#grid'), {
+  /** Reloads whatever is on screen after a change. */
+  function refreshView() {
+    const hash = location.hash;
+    if (hash.startsWith('#playlist/')) return loadPlaylist(Number(hash.split('/')[1]));
+    if (hash.startsWith('#category/')) return loadCategory(Number(hash.split('/')[1]));
+    return loadState();
+  }
+
+  /** Drag & drop in the top level grid and in the grid of a category. */
+  function initGridSort(grid) {
+    window.Sortable.create(grid, {
       animation: 160, draggable: '.tile', delay: 150, delayOnTouchOnly: true, ghostClass: 'drag-ghost', chosenClass: 'drag-chosen',
       onEnd: async (evt) => {
         if (evt.oldIndex === evt.newIndex) return;
-        const ids = $$('.tile', $('#grid')).map((t) => Number(t.dataset.id));
-        state.stations.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+        const ids = $$('.tile', grid).map((t) => Number(t.dataset.id));
         try {
           await api('stations.reorder', { ids });
           toast('Reihenfolge gespeichert');
         } catch (e) {
           toast(e.message, 'error');
-          loadState();
         }
+        loadState();
       },
     });
   }
 
+  /* ---------- Category view ---------- */
+
+  async function loadCategory(id) {
+    if (!(await loadState())) return;
+    const c = state.stations.find((s) => s.id === id && s.kind === 'category');
+    if (!c) {
+      toast('Kategorie nicht gefunden.', 'error');
+      location.hash = '#stations';
+      return;
+    }
+    state.category = c;
+    renderCategory();
+  }
+
+  function renderCategory() {
+    const c = state.stations.find((s) => s.id === state.category.id) || state.category;
+    state.category = c;
+    const members = membersOf(c.id);
+    $('#cat-cover').replaceChildren(art(c.logo_url, c.title, 'art'));
+    $('#cat-title').textContent = c.title;
+    $('#cat-desc').textContent = c.description;
+    $('#cat-inactive').hidden = c.active;
+    $('#cat-meta').textContent = members.length ? describe(members) : 'Leer, Sonos zeigt die Kategorie erst mit Inhalt an';
+    $('#cat-grid').replaceChildren(...members.map(tile));
+    $('#cat-empty').hidden = members.length > 0;
+  }
+
+  /* Assign existing streams and playlists to the open category */
+
+  const stPicker = $('#st-picker');
+  async function openStationPicker() {
+    await loadState();
+    const c = state.category;
+    const names = Object.fromEntries(state.stations.filter((s) => s.kind === 'category').map((x) => [x.id, x.title]));
+    const list = $('#st-picker-list');
+    list.replaceChildren();
+    const candidates = state.stations.filter((s) => s.kind !== 'category' && s.category_id !== c.id);
+    if (!candidates.length) list.append(el('li', 'muted', 'Alle Sender und Playlists sind schon in dieser Kategorie.'));
+    for (const s of candidates) {
+      const label = el('label', 'pick');
+      const box = el('input');
+      box.type = 'checkbox';
+      box.value = s.id;
+      const text = el('span', 'track-text');
+      const where = s.category_id ? 'jetzt in „' + (names[s.category_id] || '?') + '“' : 'jetzt direkt in der Liste';
+      text.append(el('span', 'track-title', s.title), el('span', 'track-sub', (s.kind === 'playlist' ? 'Playlist, ' : '') + where));
+      label.append(box, art(s.logo_url, s.title, 'thumb'), text);
+      const li = el('li');
+      li.append(label);
+      list.append(li);
+    }
+    updateStationPickerCount();
+    stPicker.showModal();
+  }
+
+  function updateStationPickerCount() {
+    const n = $$('#st-picker-list input:checked').length;
+    $('#st-picker-count').textContent = n ? `${n} ausgewählt` : '';
+    $('#st-picker-add').disabled = n === 0;
+  }
+
+  async function assignPicked(e) {
+    e.preventDefault();
+    const ids = $$('#st-picker-list input:checked').map((b) => Number(b.value));
+    if (!ids.length) return;
+    try {
+      const { stations } = await api('stations.assign', { category: state.category.id, ids });
+      state.stations = stations;
+      stPicker.close();
+      renderGrid();
+      renderCategory();
+      toast(`${entryCount(ids.length)} zugeordnet`);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
   async function checkAll() {
     const btn = $('#check-all');
-    const streams = state.stations.filter((s) => s.kind !== 'playlist');
+    const streams = state.stations.filter((s) => s.kind === 'stream');
     btn.disabled = true;
     let ok = 0;
     let fail = 0;
@@ -400,15 +520,19 @@
     $('#desc-count').textContent = `${F('description').value.length}/500`;
   }
 
-  function openEditor(s, kind = 'stream') {
+  function openEditor(s, kind = 'stream', categoryId = null) {
     ed.station = s;
     ed.kind = s ? s.kind : kind;
     ed.probe = null;
-    const isList = ed.kind === 'playlist';
+    const isList = ed.kind !== 'stream';
     form.reset();
     clearErrors(form);
     $('.stream-only', form).hidden = isList;
-    $('#editor-title').textContent = s ? s.title : (isList ? 'Neue Playlist' : 'Neuer Sender');
+    $('#editor-title').textContent = s ? s.title : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie' }[ed.kind] || 'Neuer Sender');
+    // the category field only appears when there are categories; unknown state keeps the stored one
+    const hasCategories = state.stations.some((x) => x.kind === 'category');
+    $('.cat-field', form).hidden = ed.kind === 'category' || !hasCategories;
+    F('category_id').value = String((s ? s.category_id : categoryId) || '');
     F('title').value = s ? s.title : '';
     F('stream_url').value = s ? s.stream_url : '';
     F('mime').value = s && !isList ? s.mime : '';
@@ -419,13 +543,18 @@
     const del = $('#delete');
     del.hidden = !s;
     del.classList.remove('confirm');
-    del.textContent = isList ? 'Playlist löschen' : 'Löschen';
+    del.textContent = deleteLabel();
     $('#probe-result').hidden = !(s && s.check_info && !isList);
     if (s && s.check_info && !isList) setProbe(s.check_ok, 'Letzter Test: ' + s.check_info);
-    stationImage.reset(s ? s.logo_url : null);
+    stationImage.reset(s && s.has_logo ? s.logo_url : null);
+    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : 'Kein Logo';
     updateCount();
     dialog.showModal();
     F('title').focus();
+  }
+
+  function deleteLabel() {
+    return { playlist: 'Playlist löschen', category: 'Kategorie löschen' }[ed.kind] || 'Löschen';
   }
 
   function closeEditor() {
@@ -479,7 +608,7 @@
     try {
       const isNew = !ed.station;
       const url = F('stream_url').value.trim();
-      let { station } = await api('station.save', {
+      const data = {
         id: ed.station ? ed.station.id : null,
         kind: ed.kind,
         title: F('title').value,
@@ -489,19 +618,18 @@
         active: F('active').checked,
         is_playlist: F('is_playlist').value === '1',
         check: ed.probe && ed.probe.url === url ? { ok: ed.probe.ok, info: ed.probe.info } : null,
-      });
+      };
+      if (!$('.cat-field', form).hidden) data.category_id = Number(F('category_id').value) || null;
+      let { station } = await api('station.save', data);
       // from now on the record exists: saving again (e.g. after a failed logo upload) updates it
       ed.station = station;
       const img = await stationImage.commit('logo.upload', 'logo.remove', station.id);
       if (img) station = img.station;
       closeEditor();
       toast('Gespeichert');
-      if (station.kind === 'playlist' && (isNew || location.hash.startsWith('#playlist/'))) {
-        if (location.hash === '#playlist/' + station.id) loadPlaylist(station.id);
-        else location.hash = '#playlist/' + station.id;
-      } else {
-        loadState();
-      }
+      const own = '#' + station.kind + '/' + station.id;
+      if (station.kind !== 'stream' && isNew && location.hash !== own) location.hash = own;
+      else refreshView();
     } catch (err) {
       showErrors(form, err);
       toast(err.message, 'error');
@@ -512,13 +640,16 @@
 
   async function deleteStation() {
     const btn = $('#delete');
-    if (!confirmButton(btn, ed.kind === 'playlist' ? 'Playlist löschen' : 'Löschen')) return;
+    if (!confirmButton(btn, deleteLabel())) return;
     try {
       await api('station.delete', { id: ed.station.id });
       closeEditor();
-      toast(ed.kind === 'playlist' ? 'Playlist gelöscht, die Tracks bleiben in der Bibliothek' : 'Sender gelöscht');
-      if (location.hash.startsWith('#playlist/')) location.hash = '#stations';
-      else loadState();
+      toast({
+        playlist: 'Playlist gelöscht, die Tracks bleiben in der Bibliothek',
+        category: 'Kategorie gelöscht, ihre Einträge stehen wieder direkt in der Liste',
+      }[ed.kind] || 'Sender gelöscht');
+      if (location.hash === '#' + ed.kind + '/' + ed.station.id) location.hash = '#stations';
+      else refreshView();
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -638,6 +769,9 @@
   function renderPlaylist() {
     const p = state.playlist;
     const tracks = state.playlistTracks;
+    const back = $('#pl-back');
+    back.href = p.category_id ? '#category/' + p.category_id : '#stations';
+    back.textContent = p.category_id ? '‹ Zurück zur Kategorie' : '‹ Alle Sender';
     $('#pl-cover').replaceChildren(art(p.logo_url, p.title, 'art'));
     $('#pl-title').textContent = p.title;
     $('#pl-desc').textContent = p.description;
@@ -906,6 +1040,13 @@
   window.addEventListener('hashchange', route);
   $('#add-station').addEventListener('click', () => openEditor(null, 'stream'));
   $('#add-playlist').addEventListener('click', () => openEditor(null, 'playlist'));
+  $('#add-category').addEventListener('click', () => openEditor(null, 'category'));
+  $('#cat-edit').addEventListener('click', () => openEditor(state.category));
+  $('#cat-add').addEventListener('click', () => openEditor(null, 'stream', state.category.id));
+  $('#cat-pick').addEventListener('click', openStationPicker);
+  $$('[data-close]', stPicker).forEach((b) => b.addEventListener('click', () => stPicker.close()));
+  $('#st-picker-form').addEventListener('submit', assignPicked);
+  $('#st-picker-list').addEventListener('change', updateStationPickerCount);
   $('#add-first').addEventListener('click', () => openEditor(null, 'stream'));
   $('#check-all').addEventListener('click', checkAll);
   $('#import-lite').addEventListener('click', async () => {
@@ -973,7 +1114,8 @@
   // keep the browser from opening files dropped outside a drop zone
   ['dragover', 'drop'].forEach((t) => window.addEventListener(t, (e) => { if (!e.target.closest('.dropzone')) e.preventDefault(); }));
 
-  initGridSort();
+  initGridSort($('#grid'));
+  initGridSort($('#cat-grid'));
   initPlaylistSort();
   route();
 })();

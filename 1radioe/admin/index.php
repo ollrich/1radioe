@@ -172,11 +172,12 @@ render_page('Sender', <<<HTML
       </div>
       <div class="toolbar-actions">
         <button class="btn ghost" id="check-all">Alle Streams prüfen</button>
+        <button class="btn ghost" id="add-category">Kategorie hinzufügen</button>
         <button class="btn ghost" id="add-playlist">Playlist hinzufügen</button>
         <button class="btn primary" id="add-station">Sender hinzufügen</button>
       </div>
     </div>
-    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender oder die Playlist. Ausgegraute Einträge sind inaktiv oder leere Playlists und in Sonos nicht sichtbar.</p>
+    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender, die Playlist oder die Kategorie. Kategorien erscheinen in Sonos als Ordner. Ausgegraute Einträge sind inaktiv oder leer und in Sonos nicht sichtbar.</p>
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" hidden>
       <p>Noch keine Sender angelegt.</p>
@@ -184,8 +185,29 @@ render_page('Sender', <<<HTML
     </div>
   </section>
 
-  <section id="view-playlist" class="view" hidden>
+  <section id="view-category" class="view" hidden>
     <a href="#stations" class="back">‹ Alle Sender</a>
+    <div class="pl-head">
+      <div class="pl-cover" id="cat-cover"></div>
+      <div class="pl-info">
+        <p class="eyebrow">Kategorie <span class="badge-inline" id="cat-inactive" hidden>inaktiv</span></p>
+        <h1 id="cat-title"></h1>
+        <p class="muted" id="cat-meta"></p>
+        <p id="cat-desc"></p>
+        <div class="toolbar-actions">
+          <button class="btn ghost" id="cat-edit">Bearbeiten</button>
+          <button class="btn ghost" id="cat-pick">Vorhandene zuordnen</button>
+          <button class="btn primary" id="cat-add">Sender hinzufügen</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint">In Sonos ein Ordner mit diesen Einträgen. Reihenfolge per Drag &amp; Drop ändern. Herausnehmen kannst du einen Eintrag im Editor unter „Kategorie“.</p>
+    <div id="cat-grid" class="grid"></div>
+    <p class="empty small" id="cat-empty" hidden>Noch leer. Ordne vorhandene Sender und Playlists zu oder lege einen neuen Sender an.</p>
+  </section>
+
+  <section id="view-playlist" class="view" hidden>
+    <a href="#stations" class="back" id="pl-back">‹ Alle Sender</a>
     <div class="pl-head">
       <div class="pl-cover" id="pl-cover"></div>
       <div class="pl-info">
@@ -268,6 +290,7 @@ render_page('Sender', <<<HTML
           <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
         </div>
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
+        <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span>Aktiv, in Sonos sichtbar</span></label>
         <input type="hidden" name="is_playlist" value="0">
         <p class="muted small" id="smapi-id"></p>
@@ -323,6 +346,23 @@ render_page('Sender', <<<HTML
       <span class="spacer"></span>
       <button type="button" class="btn ghost" data-close>Abbrechen</button>
       <button type="submit" class="btn primary" id="picker-add">Hinzufügen</button>
+    </footer>
+  </form>
+</dialog>
+<dialog id="st-picker" class="editor narrow">
+  <form method="dialog" id="st-picker-form">
+    <header class="editor-head">
+      <h2>Sender und Playlists zuordnen</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button>
+    </header>
+    <div class="picker-body">
+      <ul class="picker-list" id="st-picker-list"></ul>
+    </div>
+    <footer class="editor-foot">
+      <span class="muted small" id="st-picker-count"></span>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary" id="st-picker-add">Zuordnen</button>
     </footer>
   </form>
 </dialog>

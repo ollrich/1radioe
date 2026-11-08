@@ -1,6 +1,9 @@
 <?php
 /**
- * Stations and playlists (kind = 'playlist'): reading, validation, saving, ordering.
+ * Stations, playlists (kind = 'playlist') and categories (kind = 'category'): reading,
+ * validation, saving, ordering. A category is a folder in Sonos; streams and playlists
+ * belong to at most one category (category_id), everything else stays at the top level.
+ * One sort column orders both the top level and the content of each category.
  *
  * Each station has a stable "smapi_id". Sonos stores it in favorites and alarms,
  * so it is created once from the title and never changes afterwards.
@@ -74,9 +77,9 @@ function station_save(array $in, ?int $id = null): array
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
-    $kind        = $existing['kind'] ?? (($in['kind'] ?? '') === 'playlist' ? 'playlist' : 'stream');
-    if ($kind === 'playlist') {
-        // playlists have no stream of their own; their tracks are played
+    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category'], true) ? $in['kind'] : 'stream');
+    if ($kind !== 'stream') {
+        // playlists and categories have no stream of their own
         $url  = '';
         $mime = 'audio/mpeg';
     }
@@ -95,6 +98,16 @@ function station_save(array $in, ?int $id = null): array
     if (!isset(MIME_TYPES[$mime])) {
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
     }
+    // category: kept as it is when the field is not sent, categories themselves never nest
+    $categoryId = $existing !== null && $existing['category_id'] !== null ? (int) $existing['category_id'] : null;
+    if ($kind === 'category') {
+        $categoryId = null;
+    } elseif (array_key_exists('category_id', $in)) {
+        $categoryId = (int) $in['category_id'] ?: null;
+        if ($categoryId !== null && (station_find($categoryId)['kind'] ?? '') !== 'category') {
+            $errors['category_id'] = 'Kategorie nicht gefunden.';
+        }
+    }
     if ($errors) {
         throw new InputError($errors);
     }
@@ -105,16 +118,18 @@ function station_save(array $in, ?int $id = null): array
         : null;
 
     if ($id === null) {
-        $sort = (int) q('SELECT COALESCE(MAX(sort), 0) + 1 FROM r1_stations')->fetchColumn();
-        q('INSERT INTO r1_stations (smapi_id, kind, title, description, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $kind, $title, $description, $url, $mime, $isPlaylist, $active, $sort, now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        q('UPDATE r1_stations SET title = ?, description = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
-            [$title, $description, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
+            [$categoryId, $title, $description, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        if (($old['category_id'] !== null ? (int) $old['category_id'] : null) !== $categoryId) {
+            q('UPDATE r1_stations SET sort = ? WHERE id = ?', [station_next_sort(), $id]);   // moved: goes to the end
+        }
         if ($old['stream_url'] !== $url) {
             // the cached playlist entry and the last test belong to the old address
             q('DELETE FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $old['stream_url'])]);
@@ -126,6 +141,70 @@ function station_save(array $in, ?int $id = null): array
     }
     catalog_bump();
     return station_find($id);
+}
+
+/** Sort value behind everything else. */
+function station_next_sort(): int
+{
+    return (int) q('SELECT COALESCE(MAX(sort), 0) + 1 FROM r1_stations')->fetchColumn();
+}
+
+/** Moves streams and playlists into a category ($categoryId) or to the top level (null), at the end. */
+function stations_assign(?int $categoryId, array $ids): void
+{
+    if ($categoryId !== null && (station_find($categoryId)['kind'] ?? '') !== 'category') {
+        throw new InputError([], 'Kategorie nicht gefunden.');
+    }
+    foreach (array_unique(array_map('intval', $ids)) as $id) {
+        q("UPDATE r1_stations SET category_id = ?, sort = ? WHERE id = ? AND kind <> 'category'", [$categoryId, station_next_sort(), $id]);
+    }
+    catalog_bump();
+}
+
+/**
+ * The entries Sonos shows at the top level ($categoryId null) or inside a category:
+ * active, playlists only with tracks, categories only with something to show.
+ * $rows: stations_all() in display order, $stats: playlist_stats().
+ */
+function sonos_visible(array $rows, array $stats, ?int $categoryId): array
+{
+    $out = [];
+    foreach ($rows as $s) {
+        $in = $s['category_id'] !== null ? (int) $s['category_id'] : null;
+        if (!$s['active'] || $in !== $categoryId) {
+            continue;
+        }
+        if ($s['kind'] === 'playlist' && ($stats[(int) $s['id']]['tracks'] ?? 0) === 0) {
+            continue;
+        }
+        if ($s['kind'] === 'category' && !sonos_visible($rows, $stats, (int) $s['id'])) {
+            continue;
+        }
+        $out[] = $s;
+    }
+    return $out;
+}
+
+/**
+ * Picture of a category: its own logo, otherwise a grid of the first four logos inside.
+ * Returns a file name in the media folder or null.
+ */
+function category_cover(array $category, array $rows): ?string
+{
+    if ($category['logo'] && is_file(media_dir() . '/' . basename($category['logo']))) {
+        return $category['logo'];
+    }
+    $logos = [];
+    foreach ($rows as $s) {
+        if ((int) ($s['category_id'] ?? 0) === (int) $category['id'] && $s['active'] && $s['logo']
+            && is_file(media_dir() . '/' . basename($s['logo']))) {
+            $logos[] = basename($s['logo']);
+            if (count($logos) === 4) {
+                break;
+            }
+        }
+    }
+    return $logos ? category_collage((int) $category['id'], $logos) : null;
 }
 
 function station_set_active(int $id, bool $active): void
@@ -169,8 +248,16 @@ function stations_reorder(array $ids): void
 
 function station_delete(int $id): void
 {
-    if (station_find($id) === null) {
+    $s = station_find($id);
+    if ($s === null) {
         return;
+    }
+    if ($s['kind'] === 'category') {
+        // the content stays and moves back to the top level
+        q('UPDATE r1_stations SET category_id = NULL WHERE category_id = ?', [$id]);
+        foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $collage) {
+            @unlink($collage);
+        }
     }
     station_set_logo($id, null);
     q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$id]);
@@ -178,14 +265,21 @@ function station_delete(int $id): void
     catalog_bump();
 }
 
-/** Station or playlist data for the admin (JSON). $stats: from playlist_stats(). */
-function station_public(array $s, ?array $stats = null): array
+/** Station, playlist or category for the admin (JSON). $stats: playlist_stats(), $rows: stations_all(). */
+function station_public(array $s, ?array $stats = null, ?array $rows = null): array
 {
     $stats ??= $s['kind'] === 'playlist' ? playlist_stats() : [];
+    $cover   = null;
+    if ($s['kind'] === 'category') {
+        $rows ??= stations_all();
+        $cover = category_cover($s, $rows);
+    }
     return [
         'id'          => (int) $s['id'],
         'smapi_id'    => $s['smapi_id'],
         'kind'        => $s['kind'],
+        'category_id' => $s['category_id'] !== null ? (int) $s['category_id'] : null,
+        'has_logo'    => logo_url($s['logo'], 1) !== null,
         'tracks'      => $stats[(int) $s['id']]['tracks'] ?? 0,
         'duration'    => $stats[(int) $s['id']]['duration'] ?? 0,
         'title'       => $s['title'],
@@ -193,7 +287,7 @@ function station_public(array $s, ?array $stats = null): array
         'stream_url'  => $s['stream_url'],
         'mime'        => $s['mime'],
         'is_playlist' => (bool) $s['is_playlist'],
-        'logo_url'    => logo_url($s['logo'], 1),
+        'logo_url'    => logo_url($cover ?? $s['logo'], 1),
         'active'      => (bool) $s['active'],
         'check_ok'    => $s['check_ok'] === null ? null : (bool) $s['check_ok'],
         'check_info'  => $s['check_info'],

@@ -41,7 +41,8 @@ $id     = isset($in['id']) && $in['id'] !== '' && $in['id'] !== null ? (int) $in
 function state_stations(): array
 {
     $stats = playlist_stats();
-    return array_map(static fn($s) => station_public($s, $stats), stations_all());
+    $rows  = stations_all();
+    return array_map(static fn($s) => station_public($s, $stats, $rows), $rows);
 }
 
 /** Playlist id from the request (optional), checked before any work is done. */
@@ -84,7 +85,7 @@ try {
                     'Datenbank'      => db()->getAttribute(PDO::ATTR_SERVER_VERSION),
                     'Erweiterungen'  => implode(', ', array_map(fn($e) => $e . (extension_loaded($e) ? ' ✓' : ' fehlt'), ['curl', 'gd', 'pdo_mysql', 'dom', 'mbstring'])),
                     'Konfiguration'  => $configPath . (config_in_webroot() ? '  ⚠ liegt im Web-Verzeichnis, bitte nach außerhalb verschieben' : ''),
-                    'Sender'         => count(stations_all(true)) . ' aktiv von ' . count(stations_all()),
+                    'Einträge'       => count(stations_all(true)) . ' aktiv von ' . count(stations_all()) . ' (Sender, Playlists, Kategorien)',
                     'Katalog-Stand'  => catalog_token(),
                     'Tracks'         => count(tracks_all()) . ', im FTP-Eingang: ' . count(inbox_files()),
                     'Upload'         => 'in Teilen zu ' . round(upload_chunk_size() / 1048576, 2) . ' MB, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Anfrage',
@@ -182,6 +183,10 @@ try {
         case 'POST station.delete':
             station_delete((int) $id);
             json_out(['ok' => true]);
+
+        case 'POST stations.assign':
+            stations_assign((int) ($in['category'] ?? 0) ?: null, (array) ($in['ids'] ?? []));
+            json_out(['stations' => state_stations()]);
 
         case 'POST stations.reorder':
             stations_reorder(array_map('intval', (array) ($in['ids'] ?? [])));

@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.3.0 (8. November 2026)
+
+* **Kategorien:** Sender und Playlists lassen sich in Kategorien wie „Lounge“ zusammenfassen. In Sonos erscheint eine Kategorie als Ordner mit ihren Einträgen. Im Admin gibt es dafür eine eigene Ansicht mit Drag & Drop, „Vorhandene zuordnen“ und das Feld „Kategorie“ im Editor. Ohne eigenes Bild bekommt eine Kategorie ein Raster aus den ersten vier Logos. Leere Kategorien zeigt Sonos nicht an, beim Löschen einer Kategorie bleiben ihre Einträge erhalten. Favoriten und Wecker in Sonos laufen weiter, weil sich die Kennungen der Sender nicht ändern
+* Kleine Akzentschrift auf Navy (zum Beispiel „♫ 3 Tracks“, „Playlist“, Links) in Mint `#9ac7bf` aus der Farbpalette von oliver eichhof, alles Klickbare bleibt im Logo-Blau `#1a80b6`
+
 ## 1.2.1 (8. November 2026)
 
 * Alle Blautöne der Oberfläche sind jetzt das Logo-Blau `#1a80b6`: auch Beschriftungen wie „♫ 3 Tracks“ und „Playlist“ (vorher ein helleres `#4db0e6`) und der Zuschnittrahmen im Bildeditor (vorher das Standardblau von Cropper.js). Beim Überfahren behält der Hauptknopf seine Farbe und hebt sich leicht an

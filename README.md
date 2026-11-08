@@ -2,7 +2,7 @@
 
 Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über eine kleine Webanwendung.
 
-* **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern und Playlists, Logos, Beschreibungen, Tracks und Abspieladressen
+* **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern, Playlists und Kategorien, Logos, Beschreibungen, Tracks und Abspieladressen
 * **Admin** (`admin/`): Sender anlegen, Stream testen mit automatischer Formaterkennung, Logo hochladen und zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Diagnose-Log
 * **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt: per FTP hochladen und fertig
@@ -42,7 +42,7 @@ Den Ordner `1radioe` per FTP hochladen und dabei ruhig komplett ersetzen. Beim n
 
 **Von 1.0 oder 1.1.0:** Diese Versionen speicherten Logos und Tracks noch in `1radioe/media/`. Ab 1.1.1 zieht die App sie beim ersten Aufruf automatisch nach `1radioe-media/` um, aber nur, wenn sie beim Update noch da sind. Also beim Wechsel von diesen Versionen einmalig nur Dateien überschreiben und den alten Ordner nicht löschen.
 
-**Auf 1.2:** Den Ordner `1radioe` ersetzen. Die Datenbank bekommt eine neue Spalte für die Erkennung doppelter MP3s, das erledigt der erste Aufruf des Admins oder die nächste Anfrage von Sonos. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
+**Auf 1.2 oder 1.3:** Den Ordner `1radioe` ersetzen. Neue Spalten in der Datenbank (doppelte MP3s in 1.2, Kategorien in 1.3) legt der erste Aufruf des Admins oder die nächste Anfrage von Sonos an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
 
 ## Umstellung im Sonos-Entwicklerportal
 
@@ -64,6 +64,13 @@ Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu sta
 * **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
 * **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme.
 * Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
+
+### Kategorien
+
+* **Anlegen:** „Kategorie hinzufügen“ mit Name, Beschreibung und Bild. Ohne eigenes Bild zeigt die Kategorie ein Raster aus den ersten vier Logos ihrer Sender.
+* **Füllen:** In der Kategorie „Vorhandene zuordnen“ oder „Sender hinzufügen“. Jeder Sender und jede Playlist steckt in höchstens einer Kategorie, alles andere steht direkt in der Liste. Im Editor wählst du die Kategorie im Feld „Kategorie“, dort nimmst du einen Eintrag auch wieder heraus.
+* **In Sonos:** Die Kategorie ist ein Ordner, darin die Sender und Playlists in deiner Reihenfolge. Leere Kategorien zeigt Sonos nicht an. Favoriten und Wecker bleiben beim Einsortieren erhalten.
+* **Löschen:** Die Einträge einer gelöschten Kategorie stehen danach wieder direkt in der Liste.
 
 ### Playlists
 

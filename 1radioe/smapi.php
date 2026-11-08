@@ -3,8 +3,9 @@
  * 1radiœ: Sonos Music API (SMAPI) endpoint, anonymous authentication.
  * Endpoint in the Sonos developer portal: https://eichhof.co/1radioe/smapi.php
  *
- * Sonos calls this file over HTTPS: it lists the active stations and playlists
- * (getMetadata), the tracks of a playlist (getMetadata with its id), their details
+ * Sonos calls this file over HTTPS: it lists the active stations, playlists and
+ * categories (getMetadata), the content of a category or the tracks of a playlist
+ * (getMetadata with its id), their details
  * (getMediaMetadata) and the address to play (getMediaURI). Everything is managed
  * in the admin (admin/).
  * Opening this file in a browser shows a short status line.
@@ -122,17 +123,19 @@ function media_inner(array $s): string
 }
 
 /**
- * A playlist as a playable folder. Sonos lists its tracks on click and queues all of
- * them on "play"; shuffle and repeat are handled by the Sonos queue.
+ * A folder. A playlist is playable: Sonos lists its tracks on click and queues all of
+ * them on "play" (shuffle and repeat are handled by the Sonos queue). A category is a
+ * plain container with streams and playlists inside.
  */
-function collection_xml(array $p, int $total): string
+function collection_xml(array $p, int $total, array $rows = []): string
 {
-    $art = logo_url($p['logo']);
+    $isCategory = $p['kind'] === 'category';
+    $art        = logo_url($isCategory ? category_cover($p, $rows) : $p['logo']);
     return '<mediaCollection>'
         . '<id>' . esc($p['smapi_id']) . '</id>'
-        . '<itemType>playlist</itemType>'
+        . '<itemType>' . ($isCategory ? 'container' : 'playlist') . '</itemType>'
         . '<title>' . esc($p['title']) . '</title>'
-        . '<canPlay>true</canPlay>'
+        . '<canPlay>' . ($isCategory ? 'false' : 'true') . '</canPlay>'
         . '<canEnumerate>true</canEnumerate>'
         . ($art !== null ? '<albumArtURI>' . esc($art) . '</albumArtURI>' : '')
         . '<total>' . $total . '</total>'
@@ -157,14 +160,17 @@ function track_inner(array $t, ?array $playlist = null): string
         . '</trackMetadata>';
 }
 
-/** One entry of a list: stream, playlist folder or track. */
-function item_xml(array $item, array $stats = [], ?array $playlist = null): string
+/** One entry of a list: stream, playlist, category or track. $rows: stations_all(true). */
+function item_xml(array $item, array $stats = [], ?array $playlist = null, array $rows = []): string
 {
     if (isset($item['file'])) {
         return '<mediaMetadata>' . track_inner($item, $playlist) . '</mediaMetadata>';
     }
     if ($item['kind'] === 'playlist') {
         return collection_xml($item, $stats[(int) $item['id']]['tracks'] ?? 0);
+    }
+    if ($item['kind'] === 'category') {
+        return collection_xml($item, count(sonos_visible($rows, $stats, (int) $item['id'])), $rows);
     }
     return '<mediaMetadata>' . media_inner($item) . '</mediaMetadata>';
 }
@@ -185,7 +191,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     try {
         db_migrate();
         $active = (int) q('SELECT COUNT(*) FROM r1_stations WHERE active = 1')->fetchColumn();
-        printf("SMAPI ok\n%s %s, %d aktive Sender und Playlists, Katalog %s\n", APP_NAME, APP_VERSION, $active, catalog_token());
+        printf("SMAPI ok\n%s %s, %d aktive Einträge, Katalog %s\n", APP_NAME, APP_VERSION, $active, catalog_token());
     } catch (Throwable) {
         http_response_code(503);
         echo "SMAPI Fehler: Datenbank nicht erreichbar oder nicht eingerichtet.\n";
@@ -230,16 +236,19 @@ $GLOBALS['log_item']   = $param('id');
 try {
     db_migrate();   // after an update the database may need new columns before the admin was opened
     switch ($call->localName) {
-        // Lists: "root" is the station list, a playlist id lists its tracks.
-        // Empty playlists and tracks whose MP3 file is missing are left out.
+        // Lists: "root" is the top level, a category id lists its streams and playlists,
+        // a playlist id its tracks. Empty playlists and categories and tracks whose MP3
+        // file is missing are left out.
         case 'getMetadata':
             $id    = $param('id', 'root');
             $index = max(0, (int) $param('index', '0'));
             $count = min(100, max(1, (int) $param('count', '100')));
-            if ($id === 'root') {
+            $item  = $id === 'root' ? null : station($id);
+            if ($item === null || $item['kind'] === 'category') {
                 $stats = playlist_stats();
-                $items = array_filter(stations_all(true), static fn($s) => $s['kind'] !== 'playlist' || ($stats[(int) $s['id']]['tracks'] ?? 0) > 0);
-                respond('getMetadata', list_result(array_values($items), $index, $count, static fn($i) => item_xml($i, $stats)));
+                $rows  = stations_all(true);
+                $items = sonos_visible($rows, $stats, $item !== null ? (int) $item['id'] : null);
+                respond('getMetadata', list_result($items, $index, $count, static fn($i) => item_xml($i, $stats, null, $rows)));
             }
             $playlist = station($id, 'playlist');
             $tracks   = array_filter(playlist_tracks((int) $playlist['id']), 'track_file_exists');
@@ -255,7 +264,7 @@ try {
                 respond('getExtendedMetadata', item_xml(track($id)));
             }
             $item = station($id);
-            respond('getExtendedMetadata', item_xml($item, $item['kind'] === 'playlist' ? playlist_stats() : []));
+            respond('getExtendedMetadata', $item['kind'] === 'stream' ? item_xml($item) : item_xml($item, playlist_stats(), null, stations_all(true)));
 
         // Playback: the stream address (.pls/.m3u are resolved) or the MP3 file of a track.
         case 'getMediaURI':

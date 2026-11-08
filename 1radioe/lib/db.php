@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 3;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)
+const SCHEMA_VERSION = 4;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)
 
 function db(): PDO
 {
@@ -149,6 +149,12 @@ function db_migrate_locked(): void
         // Filled when a track is imported; older tracks get it when a file of the same size arrives.
         if (!q("SHOW COLUMNS FROM r1_tracks LIKE 'sha1'")->fetch()) {
             db()->exec('ALTER TABLE r1_tracks ADD COLUMN sha1 CHAR(40) NULL AFTER size, ADD KEY k_size (size)');
+        }
+    }
+    if ($current < 4) {
+        // 1.3: rows with kind = 'category' are folders; streams and playlists may belong to one
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'category_id'")->fetch()) {
+            db()->exec('ALTER TABLE r1_stations ADD COLUMN category_id INT UNSIGNED NULL AFTER kind, ADD KEY k_category (category_id, sort)');
         }
     }
     setting_set('schema', (string) SCHEMA_VERSION);

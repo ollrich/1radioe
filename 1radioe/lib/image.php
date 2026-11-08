@@ -84,6 +84,41 @@ function image_has_alpha(GdImage $img): bool
     return false;
 }
 
+/**
+ * Cover for a category without its own picture: up to four logos in a 2 x 2 grid,
+ * stored once as cat<id>-<hash>.jpg (a new set of logos gives a new file).
+ * One logo is used as it is. Returns the file name.
+ */
+function category_collage(int $id, array $logos): string
+{
+    if (count($logos) === 1 || !function_exists('imagecreatetruecolor')) {
+        return $logos[0];
+    }
+    $name = 'cat' . $id . '-' . substr(sha1(implode(',', $logos)), 0, 12) . '.jpg';
+    if (is_file(media_dir() . '/' . $name)) {
+        return $name;
+    }
+    $cells = match (count($logos)) {
+        2       => [0, 1, 1, 0],
+        3       => [0, 1, 2, 0],
+        default => [0, 1, 2, 3],
+    };
+    $half = intdiv(LOGO_SIZE, 2);
+    $dst  = imagecreatetruecolor(LOGO_SIZE, LOGO_SIZE);
+    imagefill($dst, 0, 0, imagecolorallocate($dst, 11, 19, 40));   // navy behind transparent logos
+    $images = [];
+    foreach ($cells as $n => $i) {
+        $images[$i] ??= @imagecreatefromstring((string) @file_get_contents(media_dir() . '/' . $logos[$i]));
+        if ($images[$i] !== false) {
+            imagecopyresampled($dst, $images[$i], ($n % 2) * $half, intdiv($n, 2) * $half, 0, 0, $half, $half, imagesx($images[$i]), imagesy($images[$i]));
+        }
+    }
+    foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $old) {
+        @unlink($old);   // grid of an earlier set of logos
+    }
+    return imagejpeg($dst, media_dir() . '/' . $name, 88) ? $name : $logos[0];
+}
+
 /** Downloads an image from the web for the editor. Returns a data: URL. */
 function logo_fetch_remote(string $url): string
 {

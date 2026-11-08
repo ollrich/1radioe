@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/auth.php';
-require __DIR__ . '/image.php';
 
 /** Prepares an admin request. Returns null if ready, otherwise the name of a blocking problem. */
 function admin_boot(): ?string
