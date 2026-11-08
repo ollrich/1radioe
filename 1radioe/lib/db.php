@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;   // 1: stations (1.0)  2: playlists and tracks (1.1)
 
 function db(): PDO
 {
@@ -92,6 +92,36 @@ function db_migrate(): void
         status SMALLINT     NOT NULL,
         note   VARCHAR(255) NOT NULL
     ) $opts");
+    if ($current < 2) {
+        // 1.1: a row in r1_stations is either a stream or a playlist of uploaded MP3 tracks
+        $cols = q("SHOW COLUMNS FROM r1_stations LIKE 'kind'")->fetch();
+        if (!$cols) {
+            db()->exec("ALTER TABLE r1_stations ADD COLUMN kind VARCHAR(16) NOT NULL DEFAULT 'stream' AFTER smapi_id");
+        }
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_tracks (
+            id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            file       VARCHAR(64)  NOT NULL,
+            orig_name  VARCHAR(255) NOT NULL DEFAULT '',
+            title      VARCHAR(200) NOT NULL,
+            artist     VARCHAR(200) NOT NULL DEFAULT '',
+            album      VARCHAR(200) NOT NULL DEFAULT '',
+            duration   INT UNSIGNED NOT NULL DEFAULT 0,
+            bitrate    INT UNSIGNED NOT NULL DEFAULT 0,
+            size       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            cover      VARCHAR(64)  NULL,
+            created_at DATETIME     NOT NULL,
+            updated_at DATETIME     NOT NULL,
+            UNIQUE KEY uq_file (file)
+        ) $opts");
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_playlist_tracks (
+            playlist_id INT UNSIGNED NOT NULL,
+            track_id    INT UNSIGNED NOT NULL,
+            pos         INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (playlist_id, track_id),
+            KEY k_pos (playlist_id, pos),
+            KEY k_track (track_id)
+        ) $opts");
+    }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {
         catalog_bump();

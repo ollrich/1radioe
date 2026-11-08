@@ -1,6 +1,6 @@
 <?php
 /**
- * Stations: reading, validation, saving, ordering.
+ * Stations and playlists (kind = 'playlist'): reading, validation, saving, ordering.
  *
  * Each station has a stable "smapi_id". Sonos stores it in favorites and alarms,
  * so it is created once from the title and never changes afterwards.
@@ -70,13 +70,20 @@ function station_save(array $in, ?int $id = null): array
     $description = trim((string) ($in['description'] ?? ''));
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
+    $existing    = $id !== null ? station_find($id) : null;
+    $kind        = $existing['kind'] ?? (($in['kind'] ?? '') === 'playlist' ? 'playlist' : 'stream');
+    if ($kind === 'playlist') {
+        // playlists have no stream of their own; their tracks are played
+        $url  = '';
+        $mime = 'audio/mpeg';
+    }
 
     $errors = [];
     if ($title === '' || mb_strlen($title) > 120) {
         $errors['title'] = 'Name fehlt oder ist länger als 120 Zeichen.';
     }
     $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-    if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true) || strlen($url) > 1000) {
+    if ($kind === 'stream' && (!filter_var($url, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true) || strlen($url) > 1000)) {
         $errors['stream_url'] = 'Bitte eine gültige http(s)-Adresse eingeben.';
     }
     if (mb_strlen($description) > 500) {
@@ -92,13 +99,13 @@ function station_save(array $in, ?int $id = null): array
 
     if ($id === null) {
         $sort = (int) q('SELECT COALESCE(MAX(sort), 0) + 1 FROM r1_stations')->fetchColumn();
-        q('INSERT INTO r1_stations (smapi_id, title, description, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $title, $description, $url, $mime, $isPlaylist, $active, $sort, now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, title, description, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $title, $description, $url, $mime, $isPlaylist, $active, $sort, now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
-        $old = station_find($id) ?? throw new InputError([], 'Sender nicht gefunden.');
+        $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
         if ($old['stream_url'] !== $url) {
             q('DELETE FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $old['stream_url'])]);
         }
@@ -146,16 +153,21 @@ function stations_reorder(array $ids): void
 function station_delete(int $id): void
 {
     station_set_logo($id, null);
+    q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$id]);
     q('DELETE FROM r1_stations WHERE id = ?', [$id]);
     catalog_bump();
 }
 
-/** Station data for the admin (JSON). */
-function station_public(array $s): array
+/** Station or playlist data for the admin (JSON). $stats: from playlist_stats(). */
+function station_public(array $s, ?array $stats = null): array
 {
+    $stats ??= $s['kind'] === 'playlist' ? playlist_stats() : [];
     return [
         'id'          => (int) $s['id'],
         'smapi_id'    => $s['smapi_id'],
+        'kind'        => $s['kind'],
+        'tracks'      => $stats[(int) $s['id']]['tracks'] ?? 0,
+        'duration'    => $stats[(int) $s['id']]['duration'] ?? 0,
         'title'       => $s['title'],
         'description' => $s['description'],
         'stream_url'  => $s['stream_url'],

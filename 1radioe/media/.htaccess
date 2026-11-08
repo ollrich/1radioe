@@ -6,3 +6,6 @@ Options -Indexes -ExecCGI
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
+<IfModule mod_mime.c>
+    AddType audio/mpeg .mp3
+</IfModule>

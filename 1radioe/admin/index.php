@@ -114,12 +114,50 @@ if (!is_logged_in()) {
 
 /* ---------- Station manager ---------- */
 
-$logout = '<form method="post" class="inline"><input type="hidden" name="csrf" value="' . h(csrf_token()) . '"><input type="hidden" name="action" value="logout"><button class="btn ghost small">Abmelden</button></form>';
+/** Logo/cover editor markup, used in the station and the track dialog (wired up in app.js). */
+function image_editor(string $empty): string
+{
+    return <<<HTML
+<div class="image-editor" data-ie="root">
+  <div class="logo-stage">
+    <img data-ie="preview" alt="" hidden>
+    <span data-ie="placeholder" class="logo-placeholder">{$empty}</span>
+    <div data-ie="cropwrap" class="crop-wrap" hidden><img data-ie="cropimg" alt="Zuschnitt"></div>
+  </div>
+  <div class="crop-tools" data-ie="tools" hidden>
+    <button type="button" class="btn small ghost" data-crop="zoom-in" title="Vergrößern">＋</button>
+    <button type="button" class="btn small ghost" data-crop="zoom-out" title="Verkleinern">－</button>
+    <button type="button" class="btn small ghost" data-crop="rotate" title="90° drehen">⟳</button>
+    <button type="button" class="btn small ghost" data-crop="fit" title="Ganzes Bild einpassen">Einpassen</button>
+    <button type="button" class="btn small ghost" data-crop="fill" title="Fläche füllen">Füllen</button>
+    <label class="bg-pick">Hintergrund
+      <select data-ie="bg"><option value="">transparent</option><option value="#ffffff">weiß</option><option value="#000000">schwarz</option><option value="custom">Farbe …</option></select>
+      <input type="color" data-ie="bgcolor" value="#0a1328" hidden>
+    </label>
+  </div>
+  <div class="logo-actions">
+    <label class="btn small ghost file-btn">Bild hochladen<input type="file" data-ie="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+    <button type="button" class="btn small ghost" data-ie="fromurl">Von URL</button>
+    <button type="button" class="btn small ghost danger-text" data-ie="remove" hidden>Entfernen</button>
+  </div>
+  <div class="url-row" data-ie="urlrow" hidden>
+    <input type="url" data-ie="url" placeholder="https://… Bildadresse">
+    <button type="button" class="btn small" data-ie="urlload">Laden</button>
+  </div>
+  <p class="specs">Quadratisch 1:1, gespeichert als 600 × 600 px. Ideal: mindestens 600 × 600 px, PNG mit Transparenz oder JPG, höchstens 8 MB. Den Ausschnitt legst du im Editor fest.</p>
+</div>
+HTML;
+}
+
+$logout       = '<form method="post" class="inline"><input type="hidden" name="csrf" value="' . h(csrf_token()) . '"><input type="hidden" name="action" value="logout"><button class="btn ghost small">Abmelden</button></form>';
+$stationImage = image_editor('Kein Logo');
+$trackImage   = image_editor('Kein Cover');
 render_page('Sender', <<<HTML
 <header class="topbar">
   <img class="brand" src="assets/logo.png" alt="1radiœ" width="116" height="40">
   <nav class="tabs" aria-label="Bereiche">
     <a href="#stations" data-view="stations" class="tab">Sender</a>
+    <a href="#tracks" data-view="tracks" class="tab">Tracks</a>
     <a href="#system" data-view="system" class="tab">System</a>
   </nav>
   {$logout}
@@ -133,15 +171,56 @@ render_page('Sender', <<<HTML
       </div>
       <div class="toolbar-actions">
         <button class="btn ghost" id="check-all">Alle Streams prüfen</button>
+        <button class="btn ghost" id="add-playlist">Playlist hinzufügen</button>
         <button class="btn primary" id="add-station">Sender hinzufügen</button>
       </div>
     </div>
-    <p class="hint">Vorschau der Senderliste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender. Ausgegraute Sender sind inaktiv und in Sonos nicht sichtbar.</p>
+    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender oder die Playlist. Ausgegraute Einträge sind inaktiv und in Sonos nicht sichtbar.</p>
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" hidden>
       <p>Noch keine Sender angelegt.</p>
       <p><button class="btn primary" id="add-first">Ersten Sender hinzufügen</button> <button class="btn ghost" id="import-lite">Die drei Sender aus RADIOE Lite übernehmen</button></p>
     </div>
+  </section>
+
+  <section id="view-playlist" class="view" hidden>
+    <a href="#stations" class="back">‹ Alle Sender</a>
+    <div class="pl-head">
+      <div class="pl-cover" id="pl-cover"></div>
+      <div class="pl-info">
+        <p class="eyebrow">Playlist <span class="badge-inline" id="pl-inactive" hidden>inaktiv</span></p>
+        <h1 id="pl-title"></h1>
+        <p class="muted" id="pl-meta"></p>
+        <p id="pl-desc"></p>
+        <div class="toolbar-actions">
+          <button class="btn ghost" id="pl-edit">Bearbeiten</button>
+          <button class="btn ghost" id="pl-pick">Aus Bibliothek hinzufügen</button>
+          <label class="btn primary file-btn">MP3s hochladen<input type="file" id="pl-files" accept=".mp3,audio/mpeg" multiple></label>
+        </div>
+      </div>
+    </div>
+    <div class="dropzone" data-drop="playlist">MP3-Dateien hierher ziehen, sie landen in der Bibliothek und am Ende dieser Playlist.</div>
+    <ul class="uploads" id="pl-uploads"></ul>
+    <p class="hint">Reihenfolge per Drag &amp; Drop am Griff ändern. Zufallswiedergabe schaltest du in der Sonos-App ein.</p>
+    <ol class="tracklist sortable" id="pl-tracks"></ol>
+    <p class="empty small" id="pl-empty" hidden>Noch keine Tracks. Lade MP3s hoch oder füge welche aus der Bibliothek hinzu.</p>
+  </section>
+
+  <section id="view-tracks" class="view" hidden>
+    <div class="toolbar">
+      <div>
+        <h1>Tracks</h1>
+        <p class="muted" id="lib-summary"></p>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn ghost" id="inbox-import" hidden></button>
+        <label class="btn primary file-btn">MP3s hochladen<input type="file" id="lib-files" accept=".mp3,audio/mpeg" multiple></label>
+      </div>
+    </div>
+    <div class="dropzone" data-drop="library">MP3-Dateien hierher ziehen. Titel, Interpret, Album und Cover werden aus den MP3-Tags übernommen. Große Sammlungen kannst du auch per FTP in den Ordner <code>1radioe/inbox/</code> legen und hier importieren.</div>
+    <ul class="uploads" id="lib-uploads"></ul>
+    <ul class="tracklist" id="lib-tracks"></ul>
+    <p class="empty small" id="lib-empty" hidden>Noch keine Tracks in der Bibliothek.</p>
   </section>
 
   <section id="view-system" class="view" hidden>
@@ -163,7 +242,7 @@ render_page('Sender', <<<HTML
           <button class="btn ghost small" id="log-clear">Leeren</button>
         </div>
         <p class="muted">Zeichnet die letzten 500 Anfragen von Sonos auf, mit IP-Adressen. Nur zur Fehlersuche einschalten.</p>
-        <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Methode</th><th>Sender</th><th>Status</th><th>Hinweis</th><th>Absender</th></tr></thead><tbody id="log"></tbody></table></div>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Methode</th><th>Eintrag</th><th>Status</th><th>Hinweis</th><th>Absender</th></tr></thead><tbody id="log"></tbody></table></div>
       </div>
     </div>
   </section>
@@ -176,42 +255,17 @@ render_page('Sender', <<<HTML
       <button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button>
     </header>
     <div class="editor-body">
-      <div class="logo-col">
-        <div class="logo-stage" id="logo-stage">
-          <img id="logo-preview" alt="" hidden>
-          <span id="logo-placeholder" class="logo-placeholder">Kein Logo</span>
-          <div id="crop-wrap" class="crop-wrap" hidden><img id="crop-img" alt="Zuschnitt"></div>
-        </div>
-        <div class="crop-tools" id="crop-tools" hidden>
-          <button type="button" class="btn small ghost" data-crop="zoom-in" title="Vergrößern">＋</button>
-          <button type="button" class="btn small ghost" data-crop="zoom-out" title="Verkleinern">－</button>
-          <button type="button" class="btn small ghost" data-crop="rotate" title="90° drehen">⟳</button>
-          <button type="button" class="btn small ghost" data-crop="fit" title="Ganzes Bild einpassen">Einpassen</button>
-          <button type="button" class="btn small ghost" data-crop="fill" title="Fläche füllen">Füllen</button>
-          <label class="bg-pick">Hintergrund
-            <select id="crop-bg"><option value="">transparent</option><option value="#ffffff">weiß</option><option value="#000000">schwarz</option><option value="custom">Farbe …</option></select>
-            <input type="color" id="crop-bg-color" value="#0a1328" hidden>
-          </label>
-        </div>
-        <div class="logo-actions">
-          <label class="btn small ghost file-btn">Bild hochladen<input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
-          <button type="button" class="btn small ghost" id="logo-from-url">Von URL</button>
-          <button type="button" class="btn small ghost danger-text" id="logo-remove" hidden>Entfernen</button>
-        </div>
-        <div class="url-row" id="logo-url-row" hidden>
-          <input type="url" id="logo-url" placeholder="https://… Bildadresse">
-          <button type="button" class="btn small" id="logo-url-load">Laden</button>
-        </div>
-        <p class="specs">Quadratisch 1:1, gespeichert als 600 × 600 px. Ideal: mindestens 600 × 600 px, PNG mit Transparenz oder JPG, höchstens 8 MB. Den Ausschnitt legst du im Editor fest.</p>
-      </div>
+      <div class="logo-col">{$stationImage}</div>
       <div class="field-col">
         <label>Name<input name="title" maxlength="120" required><small class="err" data-err="title"></small></label>
-        <label>Stream-URL
-          <span class="row"><input name="stream_url" type="url" required placeholder="https://… .mp3, .aac, .ogg, .m3u8, .pls, .m3u"><button type="button" class="btn small" id="probe">Stream testen</button></span>
-          <small class="err" data-err="stream_url"></small>
-        </label>
-        <p class="probe" id="probe-result" hidden></p>
-        <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
+        <div class="stream-only">
+          <label>Stream-URL
+            <span class="row"><input name="stream_url" type="url" placeholder="https://… .mp3, .aac, .ogg, .m3u8, .pls, .m3u"><button type="button" class="btn small" id="probe">Stream testen</button></span>
+            <small class="err" data-err="stream_url"></small>
+          </label>
+          <p class="probe" id="probe-result" hidden></p>
+          <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
+        </div>
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span>Aktiv, in Sonos sichtbar</span></label>
         <input type="hidden" name="is_playlist" value="0">
@@ -223,6 +277,51 @@ render_page('Sender', <<<HTML
       <span class="spacer"></span>
       <button type="button" class="btn ghost" data-close>Abbrechen</button>
       <button type="submit" class="btn primary" id="save">Speichern</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="track-editor" class="editor">
+  <form id="track-form" method="dialog" novalidate>
+    <header class="editor-head">
+      <h2 id="track-editor-title">Track</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button>
+    </header>
+    <div class="editor-body">
+      <div class="logo-col">{$trackImage}</div>
+      <div class="field-col">
+        <label>Titel<input name="title" maxlength="200" required><small class="err" data-err="title"></small></label>
+        <label>Interpret<input name="artist" maxlength="200"><small class="err" data-err="artist"></small></label>
+        <label>Album<input name="album" maxlength="200"><small class="err" data-err="album"></small></label>
+        <audio id="track-audio" controls preload="none"></audio>
+        <p class="muted small" id="track-info"></p>
+        <p class="muted small">Ohne eigenes Cover zeigt Sonos das Bild der Playlist.</p>
+      </div>
+    </div>
+    <footer class="editor-foot">
+      <button type="button" class="btn ghost danger-text" id="track-delete">Aus Bibliothek löschen</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary" id="track-save">Speichern</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="picker" class="editor narrow">
+  <form method="dialog" id="picker-form">
+    <header class="editor-head">
+      <h2>Tracks aus der Bibliothek</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Schließen">✕</button>
+    </header>
+    <div class="picker-body">
+      <input type="search" id="picker-filter" placeholder="Suchen nach Titel, Interpret, Album">
+      <ul class="picker-list" id="picker-list"></ul>
+    </div>
+    <footer class="editor-foot">
+      <span class="muted small" id="picker-count"></span>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary" id="picker-add">Hinzufügen</button>
     </footer>
   </form>
 </dialog>

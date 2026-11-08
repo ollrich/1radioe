@@ -29,7 +29,14 @@ $id     = isset($in['id']) && $in['id'] !== '' && $in['id'] !== null ? (int) $in
 /** Station list for the admin. */
 function state_stations(): array
 {
-    return array_map('station_public', stations_all());
+    $stats = playlist_stats();
+    return array_map(static fn($s) => station_public($s, $stats), stations_all());
+}
+
+function playlist_payload(int $id): array
+{
+    $p = playlist_find($id) ?? throw new InputError([], 'Playlist nicht gefunden.');
+    return ['playlist' => station_public($p), 'tracks' => array_map('track_public', playlist_tracks($id))];
 }
 
 try {
@@ -58,7 +65,9 @@ try {
                     'Konfiguration'  => $configPath . (config_in_webroot() ? '  ⚠ liegt im Web-Verzeichnis, bitte nach außerhalb verschieben' : ''),
                     'Sender'         => count(stations_all(true)) . ' aktiv von ' . count(stations_all()),
                     'Katalog-Stand'  => catalog_token(),
-                    'media/ beschreibbar' => is_writable(MEDIA_DIR) ? 'ja' : 'nein, bitte Schreibrechte setzen',
+                    'Tracks'         => count(tracks_all()) . ', im FTP-Eingang: ' . count(inbox_files()),
+                    'Upload'         => 'in 2-MB-Teilen, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Teil',
+                    'Schreibrechte'  => implode(', ', array_map(static fn($d) => substr($d, strlen(APP_DIR) + 1) . (is_dir($d) && is_writable($d) ? ' ✓' : ' fehlt'), [MEDIA_DIR, TRACK_DIR, UPLOAD_DIR, INBOX_DIR])),
                 ],
                 'log_enabled' => setting('log_enabled', '0') === '1',
             ]);
@@ -73,6 +82,68 @@ try {
         case 'POST station.save':
             $saved = station_save($in, $id);
             json_out(['station' => station_public($saved)]);
+
+        /* ----- Track library ----- */
+
+        case 'GET tracks':
+            json_out(['tracks' => array_map('track_public', tracks_all()), 'inbox' => count(inbox_files())]);
+
+        case 'POST track.save':
+            json_out(['track' => track_public(track_save((int) $id, $in))]);
+
+        case 'POST track.delete':
+            track_delete((int) $id);
+            json_out(['ok' => true]);
+
+        case 'POST track.cover':
+            $file = $_FILES['logo'] ?? null;
+            if (!$file || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
+                throw new InputError([], 'Upload fehlgeschlagen.');
+            }
+            track_set_cover((int) $id, logo_store((string) file_get_contents($file['tmp_name'])));
+            json_out(['track' => track_public(track_find((int) $id))]);
+
+        case 'POST track.cover.remove':
+            track_set_cover((int) $id, null);
+            json_out(['track' => track_public(track_find((int) $id))]);
+
+        // Upload in chunks: start, chunk (repeated), finish
+        case 'POST upload.start':
+            json_out(['upload' => upload_start((int) ($in['size'] ?? 0))]);
+
+        case 'POST upload.chunk':
+            $chunk = $_FILES['chunk'] ?? null;
+            if (!$chunk || $chunk['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($chunk['tmp_name'])) {
+                throw new InputError([], 'Teil-Upload fehlgeschlagen (Fehler ' . ($chunk['error'] ?? '?') . ').');
+            }
+            json_out(['received' => upload_chunk((string) ($in['upload'] ?? ''), (int) ($in['offset'] ?? -1), $chunk['tmp_name'])]);
+
+        case 'POST upload.finish':
+            $track = upload_finish((string) ($in['upload'] ?? ''), (string) ($in['name'] ?? 'upload.mp3'));
+            if (!empty($in['playlist'])) {
+                playlist_add_tracks((int) $in['playlist'], [(int) $track['id']]);
+            }
+            json_out(['track' => track_public($track)]);
+
+        case 'POST inbox.import':
+            [$tracks, $errors] = inbox_import();
+            if ($tracks && !empty($in['playlist'])) {
+                playlist_add_tracks((int) $in['playlist'], array_column($tracks, 'id'));
+            }
+            json_out(['imported' => count($tracks), 'errors' => $errors]);
+
+        /* ----- Playlists ----- */
+
+        case 'GET playlist':
+            json_out(playlist_payload((int) ($_GET['id'] ?? 0)));
+
+        case 'POST playlist.tracks':
+            playlist_set_tracks((int) $id, (array) ($in['tracks'] ?? []));
+            json_out(playlist_payload((int) $id));
+
+        case 'POST playlist.add':
+            playlist_add_tracks((int) $id, (array) ($in['tracks'] ?? []));
+            json_out(playlist_payload((int) $id));
 
         case 'POST station.active':
             station_set_active((int) $id, !empty($in['active']));

@@ -1,9 +1,10 @@
 # 1radiœ
 
-Eigene Radiosender als Dienst in der Sonos-App, gepflegt über eine kleine Webanwendung.
+Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über eine kleine Webanwendung.
 
-* **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Senderliste, Logos, Beschreibungen und Stream-Adressen
+* **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern und Playlists, Logos, Beschreibungen, Tracks und Abspieladressen
 * **Admin** (`admin/`): Sender anlegen, Stream testen mit automatischer Formaterkennung, Logo hochladen und zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Diagnose-Log
+* **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt: per FTP hochladen und fertig
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
@@ -14,7 +15,10 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 1radioe/              → in den Domain-Ordner laden, ergibt https://eichhof.co/1radioe/
   smapi.php           SMAPI-Endpoint für Sonos
   admin/              Verwaltung (Login mit Passwort und TOTP)
-  media/              hochgeladene Logos (muss beschreibbar sein)
+  media/              Logos und Cover (muss beschreibbar sein)
+  media/tracks/       MP3-Dateien, wird automatisch angelegt
+  inbox/              FTP-Eingang für MP3s, per .htaccess gesperrt
+  tmp/                Zwischenablage für Uploads, per .htaccess gesperrt
   lib/                Programmcode, per .htaccess gesperrt
 1radioe-private/      → AUSSERHALB des Domain-Ordners ablegen
   config.sample.php   Vorlage, als config.php kopieren
@@ -30,6 +34,10 @@ Die App sucht `1radioe-private/config.php` in den Ordnern oberhalb ihres eigenen
 4. **Einrichtung:** `https://eichhof.co/1radioe/admin/` öffnen. Der Assistent fragt ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block für die `config.php`. Diesen einfügen und die Datei wieder hochladen. Der QR-Code wird im Browser erzeugt, das Geheimnis verlässt den Server nicht.
 5. **Anmelden** mit Benutzer, Passwort und dem 6-stelligen Code.
 6. **Sender:** Bei leerer Liste übernimmt „Die drei Sender aus RADIOE Lite übernehmen“ die bisherigen Sender mit ihren alten IDs, damit Favoriten und Wecker in Sonos weiter funktionieren.
+
+## Update von 1.0
+
+Den Ordner `1radioe` per FTP überschreiben, `media/` und die Config bleiben dabei unangetastet. Beim nächsten Öffnen des Admins erweitert die App die Datenbank automatisch. Danach müssen `media/`, `tmp/` und `inbox/` beschreibbar sein; die Systemseite zeigt das unter „Schreibrechte“.
 
 ## Umstellung im Sonos-Entwicklerportal
 
@@ -52,13 +60,24 @@ Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu sta
 * **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme.
 * Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
 
+### Playlists
+
+* **Anlegen:** „Playlist hinzufügen“ mit Name, Beschreibung und Cover. Die Playlist erscheint als Kachel zwischen den Sendern und lässt sich wie diese sortieren und deaktivieren.
+* **MP3s hinzufügen:** in der Playlist hochladen oder per Drag & Drop ablegen. Uploads laufen in 2-MB-Teilen, die Upload-Grenze des Hosters spielt also keine Rolle (höchstens 300 MB je Datei). Titel, Interpret, Album, Cover und Dauer kommen aus den MP3-Tags (ID3v1 und v2), fehlt der Titel, wird der Dateiname genommen.
+* **Per FTP:** Dateien in `1radioe/inbox/` legen und unter „Tracks“ auf „FTP-Eingang importieren“ klicken.
+* **Bibliothek:** Jeder Track liegt nur einmal auf dem Server und kann in mehreren Playlists stehen. „Aus Bibliothek hinzufügen“ ordnet vorhandene Tracks zu, das ✕ entfernt einen Track nur aus der Playlist, gelöscht wird er unter „Tracks“.
+* **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
+* **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App.
+* Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
+
 ## Sicherheit
 
 * Passwort nur als Hash in der Config, zweiter Faktor per TOTP mit Schutz gegen wiederverwendete Codes
 * Sperre nach 5 Fehlversuchen pro IP für 15 Minuten, zusätzlich eine globale Bremse
 * Sitzungen nur über HTTPS, `SameSite=Strict`, Ablauf nach 2 Stunden Inaktivität
 * CSRF-Schutz für alle Änderungen, strenge Content Security Policy ohne Inline-Skripte
-* Logos werden mit GD neu kodiert, `media/` führt keine Skripte aus
+* Logos und Cover werden mit GD neu kodiert, `media/` führt keine Skripte aus
+* MP3s werden vor dem Import geprüft (echte MPEG-Frames), getarnte Dateien abgelehnt
 * Stream-Test und Logo-Download erreichen keine internen Netze
 * SMAPI-Antworten gegen das offizielle Sonos-Schema geprüft, XML mit DTD wird abgelehnt
 
