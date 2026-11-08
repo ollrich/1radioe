@@ -35,8 +35,63 @@ function admin_boot(): ?string
     } catch (PDOException) {
         return 'db';
     }
+    storage_prepare();
     session_begin();
     return null;
+}
+
+/** Rules for the public media folder: files only, never scripts, no listing. */
+const MEDIA_HTACCESS = <<<'HT'
+# 1radiœ media (logos, covers, MP3 tracks). Created by the app.
+Options -Indexes -ExecCGI
+<FilesMatch "\.(?i:php\d?|phtml|phar|pht|cgi|pl|py|sh|htm|html|svg)$">
+    Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+<IfModule mod_mime.c>
+    AddType audio/mpeg .mp3
+</IfModule>
+
+HT;
+
+/**
+ * Creates the storage folders outside the app folder and moves content left over
+ * from 1.0/1.1.0, where it lived inside the app folder (media/, inbox/, tmp/).
+ */
+function storage_prepare(): void
+{
+    foreach ([media_dir(), track_dir(), inbox_dir(), upload_dir()] as $dir) {
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+    }
+    $rules = media_dir() . '/.htaccess';
+    if (is_dir(media_dir()) && @file_get_contents($rules) !== MEDIA_HTACCESS) {
+        @file_put_contents($rules, MEDIA_HTACCESS);
+    }
+    $legacy = [
+        APP_DIR . '/media'        => media_dir(),
+        APP_DIR . '/media/tracks' => track_dir(),
+        APP_DIR . '/inbox'        => inbox_dir(),
+    ];
+    foreach ($legacy as $from => $to) {
+        foreach (glob($from . '/*') ?: [] as $file) {
+            $target = $to . '/' . basename($file);
+            if (is_file($file) && is_dir($to) && !file_exists($target)) {
+                if (!@rename($file, $target) && @copy($file, $target)) {
+                    @unlink($file);
+                }
+            }
+        }
+    }
+}
+
+/** Status line for a storage folder on the system page. */
+function storage_state(string $dir): string
+{
+    return $dir . (is_dir($dir) ? (is_writable($dir) ? ' ✓' : ' (nicht beschreibbar)') : ' (fehlt)');
 }
 
 /** Outputs a complete HTML page. $scripts are file names in assets/. */

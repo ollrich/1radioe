@@ -11,9 +11,8 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const APP_DIR     = __DIR__ . '/..';
-const MEDIA_DIR   = APP_DIR . '/media';
 const CONFIG_DIR  = '1radioe-private';
 
 // Warnings must never leak into HTML, JSON or SOAP output.
@@ -78,6 +77,61 @@ function cfg(string $key, mixed $default = null): mixed
         $value = $value[$part];
     }
     return $value;
+}
+
+/* ---------- Storage ----------
+ *
+ * Uploaded content never lives in the app folder, so an update may replace that
+ * folder completely:
+ *
+ *   1radioe-private/inbox/   FTP inbox for MP3 files          (outside the web root)
+ *   1radioe-private/tmp/     chunks of running uploads        (outside the web root)
+ *   1radioe-media/           logos and covers, next to the app folder (public)
+ *   1radioe-media/tracks/    MP3 files                        (public)
+ *
+ * media_dir and media_url can be set in config.php if another location is wanted.
+ */
+
+/** Folder for logos, covers and tracks. */
+function media_dir(): string
+{
+    $dir = trim((string) cfg('media_dir', ''));
+    return $dir !== '' ? rtrim($dir, '/') : dirname(realpath(APP_DIR) ?: APP_DIR) . '/1radioe-media';
+}
+
+function track_dir(): string
+{
+    return media_dir() . '/tracks';
+}
+
+/** The private folder that holds config.php. */
+function private_dir(): string
+{
+    return dirname((string) config_path());
+}
+
+function upload_dir(): string
+{
+    return private_dir() . '/tmp';
+}
+
+function inbox_dir(): string
+{
+    return private_dir() . '/inbox';
+}
+
+/** Public URL of the media folder. $levels as for base_url(). */
+function media_url(int $levels = 0): string
+{
+    $configured = trim((string) cfg('media_url', ''));
+    if ($configured !== '') {
+        return rtrim($configured, '/');
+    }
+    // sibling of the app folder: https://eichhof.co/1radioe -> https://eichhof.co/1radioe-media
+    $p      = parse_url(base_url($levels));
+    $origin = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
+    $parent = rtrim(str_replace('\\', '/', dirname($p['path'] ?? '/')), '/');
+    return $origin . $parent . '/1radioe-media';
 }
 
 /** True if config.php sits inside the web root (works, but should be moved out). */

@@ -580,7 +580,8 @@
     const text = el('div', 'track-text');
     text.append(el('span', 'track-title', t.title));
     const sub = [t.artist, t.album].filter(Boolean).join(' · ');
-    text.append(el('span', 'track-sub', sub || 'Kein Interpret'));
+    text.append(el('span', 'track-sub', t.missing ? 'MP3-Datei fehlt auf dem Server' : (sub || 'Kein Interpret')));
+    if (t.missing) li.classList.add('missing');
     li.append(text);
     if (showPlaylists) li.append(el('span', 'track-meta', t.playlists ? (t.playlists === 1 ? 'in 1 Playlist' : `in ${t.playlists} Playlists`) : 'in keiner Playlist'));
     li.append(el('span', 'track-time', clock(t.duration)));

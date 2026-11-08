@@ -67,7 +67,10 @@ try {
                     'Katalog-Stand'  => catalog_token(),
                     'Tracks'         => count(tracks_all()) . ', im FTP-Eingang: ' . count(inbox_files()),
                     'Upload'         => 'in 2-MB-Teilen, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Teil',
-                    'Schreibrechte'  => implode(', ', array_map(static fn($d) => substr($d, strlen(APP_DIR) + 1) . (is_dir($d) && is_writable($d) ? ' ✓' : ' fehlt'), [MEDIA_DIR, TRACK_DIR, UPLOAD_DIR, INBOX_DIR])),
+                    'Medien'         => storage_state(media_dir()) . ', erreichbar unter ' . media_url(1),
+                    'Track-Ordner'   => storage_state(track_dir()),
+                    'FTP-Eingang'    => storage_state(inbox_dir()),
+                    'Upload-Puffer'  => storage_state(upload_dir()),
                 ],
                 'log_enabled' => setting('log_enabled', '0') === '1',
             ]);

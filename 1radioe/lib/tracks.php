@@ -2,7 +2,7 @@
 /**
  * MP3 track library and playlists.
  *
- * Tracks are stored once in media/tracks/ under random, unguessable file names
+ * Tracks are stored once in 1radioe-media/tracks/ under random, unguessable file names
  * (Sonos speakers download them directly). Playlists are rows in r1_stations with
  * kind = 'playlist'; r1_playlist_tracks holds their tracks in order. A track can be
  * part of several playlists.
@@ -12,9 +12,6 @@
  */
 declare(strict_types=1);
 
-const TRACK_DIR       = MEDIA_DIR . '/tracks';
-const UPLOAD_DIR      = APP_DIR . '/tmp';
-const INBOX_DIR       = APP_DIR . '/inbox';
 const TRACK_MAX_BYTES = 300 * 1024 * 1024;
 
 /* =====================================================================================
@@ -266,7 +263,7 @@ function tracks_all(): array
 
 function track_url(array $t): string
 {
-    return base_url() . '/media/tracks/' . rawurlencode($t['file']);
+    return media_url() . '/tracks/' . rawurlencode($t['file']);
 }
 
 /** Cover of a track, falling back to the cover of a playlist it belongs to. */
@@ -296,7 +293,8 @@ function track_public(array $t): array
         'size'      => (int) $t['size'],
         'orig_name' => $t['orig_name'],
         'cover_url' => logo_url($t['cover'], 1),
-        'audio_url' => base_url(1) . '/media/tracks/' . rawurlencode($t['file']),
+        'audio_url' => media_url(1) . '/tracks/' . rawurlencode($t['file']),
+        'missing'   => !is_file(track_dir() . '/' . basename($t['file'])),
         'playlists' => (int) ($t['playlists'] ?? 0),
     ];
 }
@@ -312,15 +310,15 @@ function track_import(string $path, string $origName): array
         throw new InputError([], '„' . $origName . '“ ist keine MP3-Datei.');
     }
     $tags = id3_read($path);
-    if (!is_dir(TRACK_DIR) && !@mkdir(TRACK_DIR, 0755, true)) {
-        throw new InputError([], 'Ordner media/tracks fehlt und kann nicht angelegt werden.');
+    if (!is_dir(track_dir()) && !@mkdir(track_dir(), 0755, true)) {
+        throw new InputError([], 'Ordner 1radioe-media/tracks fehlt und kann nicht angelegt werden.');
     }
     $file = bin2hex(random_bytes(16)) . '.mp3';
     $size = filesize($path);
-    if (!@rename($path, TRACK_DIR . '/' . $file) && !(@copy($path, TRACK_DIR . '/' . $file) && @unlink($path))) {
-        throw new InputError([], 'Datei konnte nicht gespeichert werden. Schreibrechte für media/tracks prüfen.');
+    if (!@rename($path, track_dir() . '/' . $file) && !(@copy($path, track_dir() . '/' . $file) && @unlink($path))) {
+        throw new InputError([], 'Datei konnte nicht gespeichert werden. Schreibrechte für 1radioe-media/tracks prüfen.');
     }
-    @chmod(TRACK_DIR . '/' . $file, 0644);
+    @chmod(track_dir() . '/' . $file, 0644);
     $cover = null;
     if ($tags['cover'] !== null) {
         try {
@@ -368,7 +366,7 @@ function track_set_cover(int $id, ?string $file): void
 {
     $old = track_find($id) ?? throw new InputError([], 'Track nicht gefunden.');
     if ($old['cover'] && $old['cover'] !== $file) {
-        @unlink(MEDIA_DIR . '/' . basename($old['cover']));
+        @unlink(media_dir() . '/' . basename($old['cover']));
     }
     q('UPDATE r1_tracks SET cover = ?, updated_at = ? WHERE id = ?', [$file, now_sql(), $id]);
     catalog_bump();
@@ -383,9 +381,9 @@ function track_delete(int $id): void
     }
     q('DELETE FROM r1_playlist_tracks WHERE track_id = ?', [$id]);
     q('DELETE FROM r1_tracks WHERE id = ?', [$id]);
-    @unlink(TRACK_DIR . '/' . basename($t['file']));
+    @unlink(track_dir() . '/' . basename($t['file']));
     if ($t['cover']) {
-        @unlink(MEDIA_DIR . '/' . basename($t['cover']));
+        @unlink(media_dir() . '/' . basename($t['cover']));
     }
     catalog_bump();
 }
@@ -451,25 +449,25 @@ function upload_start(int $size): string
     if ($size <= 0 || $size > TRACK_MAX_BYTES) {
         throw new InputError([], 'Dateien dürfen höchstens 300 MB groß sein.');
     }
-    if (!is_dir(UPLOAD_DIR) && !@mkdir(UPLOAD_DIR, 0755, true)) {
-        throw new InputError([], 'Ordner tmp/ fehlt und kann nicht angelegt werden.');
+    if (!is_dir(upload_dir()) && !@mkdir(upload_dir(), 0755, true)) {
+        throw new InputError([], 'Ordner 1radioe-private/tmp fehlt und kann nicht angelegt werden.');
     }
-    foreach (glob(UPLOAD_DIR . '/*.part') ?: [] as $old) {
+    foreach (glob(upload_dir() . '/*.part') ?: [] as $old) {
         if (filemtime($old) < time() - 86400) {
             @unlink($old);
         }
     }
     $id = bin2hex(random_bytes(16));
-    file_put_contents(UPLOAD_DIR . '/' . $id . '.part', '');
+    file_put_contents(upload_dir() . '/' . $id . '.part', '');
     return $id;
 }
 
 function upload_path(string $id): string
 {
-    if (!preg_match('~^[a-f0-9]{32}$~', $id) || !is_file(UPLOAD_DIR . '/' . $id . '.part')) {
+    if (!preg_match('~^[a-f0-9]{32}$~', $id) || !is_file(upload_dir() . '/' . $id . '.part')) {
         throw new InputError([], 'Upload nicht gefunden, bitte erneut versuchen.');
     }
-    return UPLOAD_DIR . '/' . $id . '.part';
+    return upload_dir() . '/' . $id . '.part';
 }
 
 /** Appends a chunk. $offset must match the bytes received so far. */
@@ -506,7 +504,7 @@ function upload_finish(string $id, string $name): array
 /** MP3 files waiting in the FTP inbox. */
 function inbox_files(): array
 {
-    return is_dir(INBOX_DIR) ? array_values(array_filter(glob(INBOX_DIR . '/*') ?: [], static fn($f) => is_file($f) && preg_match('~\.mp3$~i', $f))) : [];
+    return is_dir(inbox_dir()) ? array_values(array_filter(glob(inbox_dir() . '/*') ?: [], static fn($f) => is_file($f) && preg_match('~\.mp3$~i', $f))) : [];
 }
 
 /** Imports all MP3 files from the inbox. Returns [tracks, errors]. */

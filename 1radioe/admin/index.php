@@ -217,7 +217,7 @@ render_page('Sender', <<<HTML
         <label class="btn primary file-btn">MP3s hochladen<input type="file" id="lib-files" accept=".mp3,audio/mpeg" multiple></label>
       </div>
     </div>
-    <div class="dropzone" data-drop="library">MP3-Dateien hierher ziehen. Titel, Interpret, Album und Cover werden aus den MP3-Tags übernommen. Große Sammlungen kannst du auch per FTP in den Ordner <code>1radioe/inbox/</code> legen und hier importieren.</div>
+    <div class="dropzone" data-drop="library">MP3-Dateien hierher ziehen. Titel, Interpret, Album und Cover werden aus den MP3-Tags übernommen. Große Sammlungen kannst du auch per FTP in den Ordner <code>1radioe-private/inbox/</code> legen und hier importieren.</div>
     <ul class="uploads" id="lib-uploads"></ul>
     <ul class="tracklist" id="lib-tracks"></ul>
     <p class="empty small" id="lib-empty" hidden>Noch keine Tracks in der Bibliothek.</p>

@@ -1,7 +1,7 @@
 <?php
 /**
  * Station logos. Every upload is decoded and re-encoded with GD (removes metadata and
- * anything that is not an image) and stored as a 600 x 600 square in media/.
+ * anything that is not an image) and stored as a 600 x 600 square in 1radioe-media/.
  * Logos with transparency are saved as PNG, all others as JPEG.
  */
 declare(strict_types=1);
@@ -41,18 +41,18 @@ function logo_store(string $data): string
     imagecopyresampled($dst, $src, 0, 0, intdiv($w - $side, 2), intdiv($h - $side, 2), LOGO_SIZE, LOGO_SIZE, $side, $side);
 
     $name = bin2hex(random_bytes(8));
-    if (!is_dir(MEDIA_DIR) && !@mkdir(MEDIA_DIR, 0755, true)) {
-        throw new InputError([], 'Ordner media/ fehlt und kann nicht angelegt werden.');
+    if (!is_dir(media_dir()) && !@mkdir(media_dir(), 0755, true)) {
+        throw new InputError([], 'Ordner 1radioe-media fehlt und kann nicht angelegt werden.');
     }
     if (image_has_alpha($dst)) {
         $file = $name . '.png';
-        $ok   = imagepng($dst, MEDIA_DIR . '/' . $file, 9);
+        $ok   = imagepng($dst, media_dir() . '/' . $file, 9);
     } else {
         $file = $name . '.jpg';
-        $ok   = imagejpeg($dst, MEDIA_DIR . '/' . $file, 90);
+        $ok   = imagejpeg($dst, media_dir() . '/' . $file, 90);
     }
     if (!$ok) {
-        throw new InputError([], 'Bild konnte nicht gespeichert werden. Schreibrechte für media/ prüfen.');
+        throw new InputError([], 'Bild konnte nicht gespeichert werden. Schreibrechte für 1radioe-media prüfen.');
     }
     return $file;
 }

@@ -15,16 +15,17 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 1radioe/              → in den Domain-Ordner laden, ergibt https://eichhof.co/1radioe/
   smapi.php           SMAPI-Endpoint für Sonos
   admin/              Verwaltung (Login mit Passwort und TOTP)
-  media/              Logos und Cover (muss beschreibbar sein)
-  media/tracks/       MP3-Dateien, wird automatisch angelegt
-  inbox/              FTP-Eingang für MP3s, per .htaccess gesperrt
-  tmp/                Zwischenablage für Uploads, per .htaccess gesperrt
   lib/                Programmcode, per .htaccess gesperrt
 1radioe-private/      → AUSSERHALB des Domain-Ordners ablegen
   config.sample.php   Vorlage, als config.php kopieren
+  inbox/              FTP-Eingang für MP3s (wird angelegt)
+  tmp/                Zwischenablage für Uploads (wird angelegt)
+1radioe-media/        → legt die App selbst neben 1radioe an: Logos, Cover, tracks/
 ```
 
-Die App sucht `1radioe-private/config.php` in den Ordnern oberhalb ihres eigenen Ordners. Liegt die Config versehentlich im Web-Verzeichnis, warnt die Systemseite, und die mitgelieferte `.htaccess` sperrt den Ordner trotzdem.
+Der Ordner `1radioe` enthält nur Programmcode. Alles, was du hochlädst, liegt in `1radioe-media` und `1radioe-private`. Ein Update darf `1radioe` deshalb komplett ersetzen, ohne dass Logos oder Tracks verloren gehen.
+
+Die App sucht `1radioe-private/config.php` in den Ordnern oberhalb ihres eigenen Ordners. Liegt die Config versehentlich im Web-Verzeichnis, warnt die Systemseite, und die mitgelieferte `.htaccess` sperrt den Ordner trotzdem. `1radioe-media` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen; die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
 
 ## Installation auf All-Inkl
 
@@ -35,9 +36,11 @@ Die App sucht `1radioe-private/config.php` in den Ordnern oberhalb ihres eigenen
 5. **Anmelden** mit Benutzer, Passwort und dem 6-stelligen Code.
 6. **Sender:** Bei leerer Liste übernimmt „Die drei Sender aus RADIOE Lite übernehmen“ die bisherigen Sender mit ihren alten IDs, damit Favoriten und Wecker in Sonos weiter funktionieren.
 
-## Update von 1.0
+## Update
 
-Den Ordner `1radioe` per FTP überschreiben, `media/` und die Config bleiben dabei unangetastet. Beim nächsten Öffnen des Admins erweitert die App die Datenbank automatisch. Danach müssen `media/`, `tmp/` und `inbox/` beschreibbar sein; die Systemseite zeigt das unter „Schreibrechte“.
+Den Ordner `1radioe` per FTP hochladen und dabei ruhig komplett ersetzen. Beim nächsten Öffnen des Admins erweitert die App bei Bedarf die Datenbank und legt fehlende Ordner an. Die Systemseite zeigt unter Medien, Track-Ordner, FTP-Eingang und Upload-Puffer, ob alles beschreibbar ist.
+
+**Von 1.0 oder 1.1.0:** Diese Versionen speicherten Logos und Tracks noch in `1radioe/media/`. 1.1.1 zieht sie beim ersten Aufruf automatisch nach `1radioe-media/` um, aber nur, wenn sie beim Update noch da sind. Also beim Wechsel auf 1.1.1 einmalig nur Dateien überschreiben und den alten Ordner nicht löschen.
 
 ## Umstellung im Sonos-Entwicklerportal
 
@@ -64,7 +67,7 @@ Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu sta
 
 * **Anlegen:** „Playlist hinzufügen“ mit Name, Beschreibung und Cover. Die Playlist erscheint als Kachel zwischen den Sendern und lässt sich wie diese sortieren und deaktivieren.
 * **MP3s hinzufügen:** in der Playlist hochladen oder per Drag & Drop ablegen. Uploads laufen in 2-MB-Teilen, die Upload-Grenze des Hosters spielt also keine Rolle (höchstens 300 MB je Datei). Titel, Interpret, Album, Cover und Dauer kommen aus den MP3-Tags (ID3v1 und v2), fehlt der Titel, wird der Dateiname genommen.
-* **Per FTP:** Dateien in `1radioe/inbox/` legen und unter „Tracks“ auf „FTP-Eingang importieren“ klicken.
+* **Per FTP:** Dateien in `1radioe-private/inbox/` legen und unter „Tracks“ auf „FTP-Eingang importieren“ klicken.
 * **Bibliothek:** Jeder Track liegt nur einmal auf dem Server und kann in mehreren Playlists stehen. „Aus Bibliothek hinzufügen“ ordnet vorhandene Tracks zu, das ✕ entfernt einen Track nur aus der Playlist, gelöscht wird er unter „Tracks“.
 * **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
 * **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App.
@@ -83,7 +86,7 @@ Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu sta
 
 ## Voraussetzungen
 
-PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd` und `dom`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. Die Systemseite zeigt, ob alles vorhanden ist.
+PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd` und `dom`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. PHP muss neben dem App-Ordner einen Ordner anlegen dürfen (bei All-Inkl gegeben). Die Systemseite zeigt, ob alles vorhanden ist.
 
 ## Mitgelieferte Bibliotheken
 

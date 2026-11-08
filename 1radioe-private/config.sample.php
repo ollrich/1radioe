@@ -25,8 +25,12 @@ return [
         'password_hash' => '',
         'totp_secret'   => '',
     ],
-    // Public address of the app, used for logo URLs sent to Sonos.
+    // Public address of the app.
     'base_url'       => 'https://eichhof.co/1radioe',
+    // Optional: where logos, covers and tracks are stored and their public address.
+    // Default: a folder "1radioe-media" next to the app folder.
+    // 'media_dir'   => '/www/htdocs/w0123456/eichhof.co/1radioe-media',
+    // 'media_url'   => 'https://eichhof.co/1radioe-media',
     // Shown on the system page (Integration ID in the Sonos developer portal).
     'integration_id' => 'co.eichhof.radioe',
     'timezone'       => 'Europe/Berlin',

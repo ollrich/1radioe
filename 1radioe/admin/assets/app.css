@@ -296,3 +296,5 @@ label small { font-weight: 400; }
   .edit-btn::before { content: "✎"; font-size: 1rem; }
   .track-row .edit-btn { min-height: 34px; width: 36px; padding: 0; }
 }
+.track-row.missing { border-color: rgb(255 107 107 / .5); }
+.track-row.missing .track-sub { color: #ffd3d3; }

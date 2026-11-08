@@ -33,10 +33,13 @@ function station_by_smapi(string $smapiId): ?array
     return q('SELECT * FROM r1_stations WHERE smapi_id = ?', [$smapiId])->fetch() ?: null;
 }
 
-/** Public logo URL of a station, or null. */
+/** Public URL of a logo or cover file, or null if there is none or the file is missing. */
 function logo_url(?string $file, int $levels = 0): ?string
 {
-    return ($file !== null && $file !== '') ? base_url($levels) . '/media/' . rawurlencode($file) : null;
+    if ($file === null || $file === '' || !is_file(media_dir() . '/' . basename($file))) {
+        return null;
+    }
+    return media_url($levels) . '/' . rawurlencode($file);
 }
 
 /** True if the URL looks like a .pls or .m3u playlist (HLS .m3u8 is not a playlist here). */
@@ -132,7 +135,7 @@ function station_set_logo(int $id, ?string $file): void
 {
     $old = station_find($id);
     if ($old !== null && $old['logo'] && $old['logo'] !== $file) {
-        @unlink(MEDIA_DIR . '/' . basename($old['logo']));
+        @unlink(media_dir() . '/' . basename($old['logo']));
     }
     q('UPDATE r1_stations SET logo = ?, updated_at = ? WHERE id = ?', [$file, now_sql(), $id]);
     catalog_bump();
