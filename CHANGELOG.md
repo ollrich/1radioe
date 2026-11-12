@@ -1,5 +1,17 @@
 # Änderungen
 
+## 1.6.0 (12. November 2026)
+
+**Playlist-Dateien und Sender als JSON**
+
+* `/streams.m3u` und `/streams.pls`: alle aktiven Sender in der Reihenfolge des Admins, zum Beispiel für VLC unter „Netzwerkstream öffnen“. Die Einträge zeigen direkt auf die Original-Streams, `.pls` und `.m3u` der Sender sind aufgelöst
+* `/s/<id>.m3u`: ein einzelner Sender als Playlist
+* `/api/stations.json`: alle aktiven Sender mit Beschreibung, Website, Kategorie, Reihenfolge, Stream und Logo samt Prüfsumme, für eine eigene App. Mit `If-None-Match` kommt `304`, solange sich nichts geändert hat
+* MP3-Playlists und Tracks bleiben Sonos vorbehalten und erscheinen in keiner dieser Ausgaben
+* Neues Feld „Website des Senders“ im Editor, für „Über den Sender“ in der Web-App
+* Der Stream-Test prüft, ob ein Stream per HTTPS erreichbar ist. Bei `http://` probiert er dieselbe Adresse mit `https://` und bietet sie zur Übernahme an. „Alle Streams prüfen“ speichert das Ergebnis, Sender ohne HTTPS tragen im Raster die Marke „HTTP“
+* Systemseite: neuer Bereich „Öffentliche Adressen“ mit Kopier-Knopf
+
 ## 1.5.0 (12. November 2026)
 
 **Hörstatus, Kern und Sonos**

@@ -306,6 +306,11 @@
       const dot = el('span', 'dot ' + (s.check_ok === null ? 'unknown' : s.check_ok ? 'ok' : 'fail'));
       dot.title = s.check_info ? 'Letzter Test: ' + s.check_info : 'Noch nicht getestet';
       a.append(dot);
+      if (s.https_ok === false) {
+        const http = el('span', 'badge http', 'HTTP');
+        http.title = 'Nur per HTTP erreichbar, spielt nicht in der Web-App';
+        a.append(http);
+      }
     }
     if (!s.active) a.append(el('span', 'badge', 'inaktiv'));
     t.append(a, el('span', 'tile-name', s.title));
@@ -488,6 +493,7 @@
         const { probe } = await api('probe', { url: s.stream_url, id: s.id });
         s.check_ok = probe.ok;
         s.check_info = probe.info;
+        s.https_ok = probe.https;
       } catch (e) {
         s.check_ok = false;
         s.check_info = e.message;
@@ -516,6 +522,29 @@
     p.textContent = (ok ? '✓ ' : '✗ ') + text;
   }
 
+  /** Browser playback: true = HTTPS, false = HTTP only, null = unknown. $variant: working https address. */
+  function setHttps(https, variant = null) {
+    const box = $('#probe-https');
+    box.replaceChildren();
+    box.hidden = https === null || https === undefined;
+    if (box.hidden) return;
+    box.className = 'probe probe-https ' + (https ? 'ok' : 'warn');
+    box.append(el('span', '', https
+      ? '✓ Per HTTPS erreichbar, spielt auch in der Web-App.'
+      : '⚠ Nur per HTTP erreichbar. Browser spielen das auf 1radioe.net nicht ab.'));
+    if (!https && variant) {
+      const b = el('button', 'btn small', 'HTTPS-Variante übernehmen');
+      b.type = 'button';
+      b.title = variant;
+      b.addEventListener('click', () => {
+        F('stream_url').value = variant;
+        streamUrlChanged();
+        runProbe();
+      });
+      box.append(b);
+    }
+  }
+
   function updateCount() {
     $('#desc-count').textContent = `${F('description').value.length}/500`;
   }
@@ -527,7 +556,7 @@
     const isList = ed.kind !== 'stream';
     form.reset();
     clearErrors(form);
-    $('.stream-only', form).hidden = isList;
+    $$('.stream-only', form).forEach((n) => { n.hidden = isList; });
     $('#editor-title').textContent = s ? s.title : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie' }[ed.kind] || 'Neuer Sender');
     // the category field only appears when there are categories; unknown state keeps the stored one
     const hasCategories = state.stations.some((x) => x.kind === 'category');
@@ -537,6 +566,7 @@
     F('stream_url').value = s ? s.stream_url : '';
     F('mime').value = s && !isList ? s.mime : '';
     F('description').value = s ? s.description : '';
+    F('website').value = s ? (s.website || '') : '';
     F('active').checked = s ? s.active : true;
     F('is_playlist').value = s && s.is_playlist ? '1' : '0';
     $('#smapi-id').textContent = s ? `SMAPI-ID: ${s.smapi_id} (bleibt dauerhaft gleich, Sonos speichert sie in Favoriten)` : '';
@@ -546,6 +576,7 @@
     del.textContent = deleteLabel();
     $('#probe-result').hidden = !(s && s.check_info && !isList);
     if (s && s.check_info && !isList) setProbe(s.check_ok, 'Letzter Test: ' + s.check_info);
+    setHttps(s && !isList ? s.https_ok : null);
     stationImage.reset(s && s.has_logo ? s.logo_url : null);
     $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : 'Kein Logo';
     updateCount();
@@ -574,8 +605,9 @@
     btn.textContent = 'Teste …';
     try {
       const { probe } = await api('probe', { url, id: ed.station && ed.station.stream_url === url ? ed.station.id : null });
-      ed.probe = { url, ok: probe.ok, info: probe.info };
+      ed.probe = { url, ok: probe.ok, info: probe.info, https: probe.https };
       setProbe(probe.ok, probe.info);
+      setHttps(probe.https, probe.https_url);
       if (probe.ok) {
         F('mime').value = probe.mime;
         F('is_playlist').value = probe.is_playlist ? '1' : '0';
@@ -594,6 +626,7 @@
   /** A changed address makes the last test and the playlist flag meaningless. */
   function streamUrlChanged() {
     F('is_playlist').value = '0';
+    setHttps(null);
     const p = $('#probe-result');
     p.hidden = !F('stream_url').value.trim();
     p.className = 'probe';
@@ -615,9 +648,10 @@
         stream_url: url,
         mime: F('mime').value,
         description: F('description').value,
+        website: F('website').value.trim(),
         active: F('active').checked,
         is_playlist: F('is_playlist').value === '1',
-        check: ed.probe && ed.probe.url === url ? { ok: ed.probe.ok, info: ed.probe.info } : null,
+        check: ed.probe && ed.probe.url === url ? { ok: ed.probe.ok, info: ed.probe.info, https: ed.probe.https } : null,
       };
       if (!$('.cat-field', form).hidden) data.category_id = Number(F('category_id').value) || null;
       let { station } = await api('station.save', data);
@@ -1003,6 +1037,7 @@
     try {
       const data = await api('system');
       fillKv('#portal', data.portal, true);
+      fillKv('#public', data.public, true);
       fillKv('#status', data.status, false);
       $('#log-enabled').checked = data.log_enabled;
       loadLog();

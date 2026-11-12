@@ -258,6 +258,11 @@ render_page('Sender', <<<HTML
         <dl class="kv" id="status"></dl>
       </div>
       <div class="panel wide">
+        <h2>Öffentliche Adressen</h2>
+        <p class="muted">Alle aktiven Sender, ohne MP3-Playlists. Die Playlists zeigen direkt auf die Original-Streams, zum Beispiel für VLC unter „Medien, Netzwerkstream öffnen“.</p>
+        <dl class="kv" id="public"></dl>
+      </div>
+      <div class="panel wide">
         <div class="panel-head">
           <h2>Hörstatus</h2>
           <button class="btn ghost small" id="listen-refresh">Aktualisieren</button>
@@ -295,8 +300,10 @@ render_page('Sender', <<<HTML
             <small class="err" data-err="stream_url"></small>
           </label>
           <p class="probe" id="probe-result" hidden></p>
+          <div class="probe probe-https" id="probe-https" hidden></div>
           <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
         </div>
+        <label class="stream-only">Website des Senders <small class="muted">für „Über den Sender“ in der Web-App</small><input name="website" type="url" maxlength="500" placeholder="https://…"><small class="err" data-err="website"></small></label>
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span>Aktiv, in Sonos sichtbar</span></label>
