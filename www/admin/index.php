@@ -259,6 +259,14 @@ render_page('Sender', <<<HTML
       </div>
       <div class="panel wide">
         <div class="panel-head">
+          <h2>Hörstatus</h2>
+          <button class="btn ghost small" id="listen-refresh">Aktualisieren</button>
+        </div>
+        <p class="muted">Zum Testen: Ein Sender läuft, solange seine letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Sonos meldet beim Start, danach jede Minute, und beim Stoppen. Gespeichert werden nur Sender und Zeitpunkt. Die Liste aktualisiert sich alle 10 Sekunden.</p>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Sender</th><th>Zustand</th><th>Letzte Meldung</th></tr></thead><tbody id="listen"></tbody></table></div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head">
           <h2>Diagnose-Log</h2>
           <label class="switch"><input type="checkbox" id="log-enabled"><span>Protokollieren</span></label>
           <button class="btn ghost small" id="log-refresh">Aktualisieren</button>

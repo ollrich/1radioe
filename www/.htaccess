@@ -6,6 +6,13 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
+# Public addresses without file extension. app/dev-router.php mirrors these rules
+# for PHP's built-in server, keep both in sync.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^api/status$ api/status.php [L]
+</IfModule>
+
 # Personal project, not meant for search engines (see robots.txt)
 <IfModule mod_headers.c>
     Header set X-Robots-Tag "noindex, nofollow"

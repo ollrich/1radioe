@@ -1006,9 +1006,46 @@
       fillKv('#status', data.status, false);
       $('#log-enabled').checked = data.log_enabled;
       loadLog();
+      loadListen();
     } catch (e) {
       toast(e.message, 'error');
     }
+  }
+
+  /* Listening status, for testing: refreshes itself while the system page is visible. */
+  let listenTimer;
+  function ago(sec) {
+    if (sec < 60) return `vor ${sec} s`;
+    if (sec < 3600) return `vor ${Math.floor(sec / 60)} min`;
+    return `vor ${Math.floor(sec / 3600)} h`;
+  }
+
+  async function loadListen() {
+    clearTimeout(listenTimer);
+    if (location.hash !== '#system') return;
+    let rows;
+    try {
+      ({ rows } = await api('listen'));
+    } catch {
+      rows = null;
+    }
+    const body = $('#listen');
+    if (rows) {
+      body.replaceChildren();
+      if (!rows.length) {
+        const tr = el('tr');
+        const td = el('td', 'muted', 'Noch keine Meldung.');
+        td.colSpan = 3;
+        tr.append(td);
+        body.append(tr);
+      }
+      for (const r of rows) {
+        const tr = el('tr', r.state === 'läuft' ? 'is-live' : '');
+        tr.append(el('td', '', r.title), el('td', 'listen-state', r.state === 'läuft' ? '● läuft' : r.state), el('td', '', `${r.at} (${ago(r.age)})`));
+        body.append(tr);
+      }
+    }
+    listenTimer = setTimeout(loadListen, document.hidden ? 30000 : 10000);
   }
 
   async function loadLog() {
@@ -1102,6 +1139,7 @@
     }
   });
   $('#log-refresh').addEventListener('click', loadLog);
+  $('#listen-refresh').addEventListener('click', loadListen);
   $('#log-clear').addEventListener('click', async () => {
     try {
       await api('log.clear', {});
