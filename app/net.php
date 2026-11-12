@@ -57,9 +57,10 @@ function net_absolute(string $base, string $location): string
 
 /**
  * GET request that reads at most $maxBytes (enough for headers and the start of a stream).
+ * $icy requests ICY metadata (song titles), $done($body, $headers) can end the read early.
  * Returns ['ok', 'status', 'headers' (lowercase keys), 'body', 'url' (final), 'error'].
  */
-function http_get(string $url, int $maxBytes, int $timeout, int $redirects = 3): array
+function http_get(string $url, int $maxBytes, int $timeout, int $redirects = 3, bool $icy = false, ?Closure $done = null): array
 {
     $fail = static fn(string $error): array => ['ok' => false, 'status' => 0, 'headers' => [], 'body' => '', 'url' => $url, 'error' => $error];
     if (!function_exists('curl_init')) {
@@ -85,7 +86,8 @@ function http_get(string $url, int $maxBytes, int $timeout, int $redirects = 3):
             CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
             CURLOPT_TIMEOUT        => $timeout,
             CURLOPT_USERAGENT      => '1radioe/' . APP_VERSION,
-            CURLOPT_HTTPHEADER     => ['Accept: */*', 'Icy-MetaData: 0'],
+            // $icy asks Shoutcast/Icecast to mix the song titles into the stream
+            CURLOPT_HTTPHEADER     => ['Accept: */*', 'Icy-MetaData: ' . ($icy ? '1' : '0')],
             // connect to the checked address only (no second DNS lookup that could differ)
             CURLOPT_RESOLVE        => filter_var(trim($p['host'], '[]'), FILTER_VALIDATE_IP) ? []
                 : [$p['host'] . ':' . $port . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)],
@@ -101,9 +103,11 @@ function http_get(string $url, int $maxBytes, int $timeout, int $redirects = 3):
                 }
                 return $len;
             },
-            CURLOPT_WRITEFUNCTION  => static function ($ch, string $chunk) use (&$body, $maxBytes): int {
+            CURLOPT_WRITEFUNCTION  => static function ($ch, string $chunk) use (&$body, &$headers, &$status, $maxBytes, $done): int {
                 $body .= $chunk;
-                return strlen($body) >= $maxBytes ? -1 : strlen($chunk);   // -1 stops after enough data
+                // -1 stops after enough data; $done may stop earlier, e.g. once a song title arrived
+                $redirect = $status >= 300 && $status < 400;
+                return strlen($body) >= $maxBytes || (!$redirect && $done !== null && $done($body, $headers)) ? -1 : strlen($chunk);
             },
         ]);
         curl_exec($ch);

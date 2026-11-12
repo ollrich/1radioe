@@ -16,7 +16,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -32,6 +32,7 @@ require __DIR__ . '/net.php';
 require __DIR__ . '/image.php';
 require __DIR__ . '/listen.php';
 require __DIR__ . '/social.php';
+require __DIR__ . '/nowplaying.php';
 require __DIR__ . '/catalog.php';
 
 date_default_timezone_set((string) cfg('timezone', 'Europe/Berlin'));

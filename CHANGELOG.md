@@ -1,5 +1,16 @@
 # Änderungen
 
+## 1.10.0 (12. November 2026)
+
+**Song im Player, Info am Hörstatus**
+
+* Schickt ein Stream Titel und Interpret mit (ICY-Metadaten), zeigt die Web-App beides beim Hören: im Player unter dem Sendernamen, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen
+* Der Server liest die Titel aus dem Stream (`/api/nowplaying?id=<id>`), weil Browser sie nicht aus dem Audio holen können. Höchstens alle 20 Sekunden je Sender, Streams ohne Titel nur alle 5 Minuten, parallele Anfragen warten auf eine Abfrage. HLS wird übersprungen
+* Robust gegen leere Titel vor dem eigentlichen Song, Latin-1, Apostrophe im Namen und zusätzliche Felder wie `json=`. Ein Titel, der nur den Sendernamen wiederholt, wird nicht gezeigt, der Sendername als Interpret entfällt
+* `stations.json` nennt die Adresse als `nowplaying_url`
+* Die Mint-Balken „Ollie hört gerade“ zeigen beim Darüberfahren eine Info mit dem Sender, an Kategorien mit dem Sender darin. Auf Touch-Geräten zeigt ein Tipp auf die Balken die Info, statt den Sender zu starten
+* Datenbank-Schema 7, wieder nur ergänzend
+
 ## 1.9.0 (12. November 2026)
 
 **Posting zu Bluesky und Mastodon**

@@ -95,6 +95,8 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde, mit Umlauf, und überspringt Ordner. Medientasten und Sperrbildschirm folgen derselben Regel.
 * **Tastatur:** Leertaste, Pfeiltasten, 1 bis 0, Esc. Erklärt im (?) über der Skala.
 * **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
+* **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. HLS-Streams und Streams ohne Titel zeigen nur den Sender. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
+* **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Ollie hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
 * **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollies gemerkter Browser hat das Hör-Cookie.
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenschutz als Abschnitte.
 
@@ -111,6 +113,7 @@ Alle aktiven Sender, nie MP3-Playlists oder Tracks. Die Reihenfolge ist die des 
 | `/s/<id>.m3u` | ein Sender |
 | `/api/stations.json` | alles für eine eigene App |
 | `/api/status` | laufende Sender |
+| `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
 | `/api/listen` | Meldungen des eigenen Browsers, nur mit Hör-Cookie |
 
 Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
@@ -123,6 +126,7 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
   "generated": "2026-11-12T16:00:00+01:00",
   "status_url": "https://1radioe.net/api/status",
   "ping_url": "https://1radioe.net/api/ping",
+  "nowplaying_url": "https://1radioe.net/api/nowplaying?id={id}",
   "categories": [ { "id": "jazz", "name": "Jazz", "sort": 3, "logo": null } ],
   "stations": [
     {

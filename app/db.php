@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 6;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)
+const SCHEMA_VERSION = 7;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)
 
 function db(): PDO
 {
@@ -209,6 +209,14 @@ function db_migrate_locked(): void
             masto_error VARCHAR(255) NULL,
             KEY k_station (station_id, created_at),
             KEY k_at (created_at)
+        ) $opts");
+    }
+    if ($current < 7) {
+        // 1.10: the song title last read from a stream, kept for a few seconds
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_now_playing (
+            station_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            text       VARCHAR(300) NULL,
+            fetched_at INT UNSIGNED NOT NULL
         ) $opts");
     }
     setting_set('schema', (string) SCHEMA_VERSION);

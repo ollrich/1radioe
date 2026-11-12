@@ -130,7 +130,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
       <div class="stage-info">
         <p class="kicker" data-r1="kicker" hidden></p>
         <h2 class="disp stage-name" data-r1="name"></h2>
-        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" title="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
+        <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
+        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
           <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
           <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
@@ -199,7 +200,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
       <span class="numchip" data-r1="num" aria-hidden="true"></span>
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
-    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" title="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
+    <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
+    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
       <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
       <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
