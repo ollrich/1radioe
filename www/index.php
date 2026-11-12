@@ -85,6 +85,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
     <h1 class="sr">1radiœ: Ollies Radiosender</h1>
 <?php if ($levels === null): ?>
     <p class="notice">Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.</p>
+<?php elseif (!$levels['root']): ?>
+    <p class="notice">Noch keine Sender.</p>
 <?php else: ?>
     <section class="stage" aria-label="Player" data-js>
       <div class="stage-art">
