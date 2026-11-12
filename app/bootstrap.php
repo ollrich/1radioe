@@ -16,7 +16,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -134,6 +134,22 @@ function media_url(int $levels = 0): string
 {
     $configured = trim((string) cfg('media_url', ''));
     return $configured !== '' ? rtrim($configured, '/') : base_url($levels) . '/media';
+}
+
+/**
+ * Origin of the media folder for a Content Security Policy, with a leading space,
+ * if it differs from the page's own origin (e.g. www. or a configured media_url).
+ * $levels as for base_url().
+ */
+function media_origin(int $levels = 0): string
+{
+    $p = parse_url(media_url($levels));
+    if (!isset($p['scheme'], $p['host'])) {
+        return '';
+    }
+    $origin = strtolower($p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : ''));
+    $self   = strtolower((is_https() ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? ''));
+    return $origin !== $self && preg_match('~^https?://[a-z0-9.-]+(:\d+)?$~', $origin) ? ' ' . $origin : '';
 }
 
 /** True if config.php sits inside the web root (works, but should be moved out). */

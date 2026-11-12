@@ -1,0 +1,8 @@
+/* Without JavaScript: a plain list of links to the streams, the dialogs as sections. */
+[data-js], .mini { display: none !important; }
+.list-title { display: block; }
+.nojs-list { display: block; margin: 0; padding: 0 0 0 1.2rem; line-height: 2; }
+.nojs-list ul { padding-left: 1.2rem; }
+dialog { display: block; position: static; margin: 32px 0 0; max-width: 640px; }
+dialog .close { display: none; }
+#info, #sheet { display: none; }

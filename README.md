@@ -1,7 +1,8 @@
 # 1radiœ
 
-Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über eine kleine Webanwendung.
+Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, dazu eine Web-App mit Player unter 1radioe.net, gepflegt über eine kleine Verwaltung.
 
+* **Web-App** (`/`): alle Sender mit Player im Browser, Medientasten, Hörstatus
 * **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern, Playlists und Kategorien, Logos, Beschreibungen, Tracks und Abspieladressen
 * **Admin** (`admin/`): Sender anlegen, Stream testen mit automatischer Formaterkennung, Logo hochladen und zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Diagnose-Log
 * **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
@@ -17,6 +18,8 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 ```
 app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
 www/                  Web-Verzeichnis der Domain https://1radioe.net
+  index.php           Web-App mit Player
+  assets/             CSS, JavaScript, Schrift Mona Sans der Web-App
   smapi.php           SMAPI-Endpoint für Sonos
   admin/              Verwaltung (Login mit Passwort und TOTP)
   deploy.php          Ziel des GitHub-Webhooks
@@ -82,6 +85,20 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
 * **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App. Leere Playlists und Tracks, deren Datei fehlt, zeigt Sonos nicht an.
 * Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
+
+## Web-App
+
+`https://1radioe.net/` zeigt alle aktiven Sender, keine MP3-Playlists.
+
+* **Desktop:** Player in der Mitte, darunter die Sender als Skala mit Nadel. Ein Klick spielt, ein zweiter pausiert. Kategorien öffnen eine eigene Skala. Sind es zu viele für die Breite, blättern Pfeile die Skala.
+* **Handy:** Liste mit aufklappbaren Kategorien, nach dem ersten Start ein angedockter Player, der sich zur Vollansicht aufziehen lässt.
+* **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde, mit Umlauf, und überspringt Ordner. Medientasten und Sperrbildschirm folgen derselben Regel.
+* **Tastatur:** Leertaste, Pfeiltasten, 1 bis 0, Esc. Erklärt im (?) über der Skala.
+* **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
+* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen.
+* **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenschutz als Abschnitte.
+
+Die Texte von Impressum und Datenschutz in `www/index.php` sind Platzhalter.
 
 ## Playlist-Dateien und App-Schnittstelle
 
@@ -155,7 +172,7 @@ PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.
 
 ## Mitgelieferte Bibliotheken
 
-[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden.
+[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`).
 
 ## Lizenz
 
