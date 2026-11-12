@@ -197,6 +197,14 @@ label small { font-weight: 400; }
 .log td:last-child { color: var(--muted); max-width: 320px; overflow-wrap: anywhere; }
 .log tr.is-error td { color: #ffd3d3; }
 .log tr.is-live .listen-state { color: var(--accent-text); font-weight: 600; }
+.log tr.is-revoked td { color: var(--muted); }
+.banner { display: flex; flex-wrap: wrap; gap: .8rem 1.5rem; align-items: center; justify-content: space-between; margin: 0 0 1.5rem; padding: 1rem 1.2rem; background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius); }
+.banner p { margin: 0; }
+.banner > div { flex: 1 1 320px; }
+.banner-title { font-weight: 700; }
+.banner-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .6rem 0 1rem; }
+.banner .banner-form { margin: 0; }
+.banner-form input { width: auto; flex: 1 1 14rem; max-width: 22rem; margin: 0; }
 
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100;

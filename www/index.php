@@ -12,9 +12,12 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 require dirname(__DIR__) . '/app/webapp.php';
 
 webapp_headers();
+header('Vary: Cookie');   // Ollie's own browser gets the listening switch
+$listener = null;
 try {
     db_migrate();
-    $levels = webapp_levels();
+    $levels   = webapp_levels();
+    $listener = listen_current_device();
 } catch (Throwable $e) {
     error_log('1radioe web app: ' . $e->getMessage());
     http_response_code(503);
@@ -22,7 +25,7 @@ try {
 }
 
 $v    = h(APP_VERSION);
-$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL]) : '';
+$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL]) : '';
 
 /** The plain list for browsers without JavaScript. */
 function nojs_list(array $levels): string
@@ -68,7 +71,14 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <div class="page">
   <header class="top">
     <a class="wm" href="./"><span class="sr">1radiœ, Startseite</span><span aria-hidden="true">1radi<span class="oe">œ</span></span></a>
-    <a class="pillbtn" href="#about" data-dialog="about"><span class="wide-only">Über 1radiœ</span><span class="narrow-only">Über</span></a>
+    <span class="top-actions">
+<?php if ($listener !== null): ?>
+      <button type="button" class="listen-switch" data-listen-switch aria-pressed="true" data-js title="Nur für dich sichtbar: Dein Hören in diesem Browser wird als Hörstatus erfasst (<?= h($listener['name']) ?>).">
+        <span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span data-listen-label>Hören wird erfasst</span>
+      </button>
+<?php endif; ?>
+      <a class="pillbtn" href="#about" data-dialog="about"><span class="wide-only">Über 1radiœ</span><span class="narrow-only">Über</span></a>
+    </span>
   </header>
 
   <main id="main">

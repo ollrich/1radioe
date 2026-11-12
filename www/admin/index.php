@@ -164,6 +164,17 @@ render_page('Sender', <<<HTML
   {$logout}
 </header>
 <main class="container">
+  <div class="banner" id="listen-banner" hidden>
+    <div>
+      <p class="banner-title">Dieses Gerät zum Hören merken?</p>
+      <p class="muted">Dann zeigt 1radioe.net an deinem Sender, wenn du hier im Browser hörst. Das Gerät bekommt dafür ein eigenes Cookie, das nur den Hörstatus melden darf und nicht in die Verwaltung führt.</p>
+    </div>
+    <form class="banner-form" data-remember>
+      <input name="name" maxlength="80" required placeholder="Name, z. B. Firmenrechner" aria-label="Name des Geräts">
+      <button class="btn primary small">Merken</button>
+      <button type="button" class="btn ghost small" id="listen-banner-dismiss">Nicht jetzt</button>
+    </form>
+  </div>
   <section id="view-stations" class="view" hidden>
     <div class="toolbar">
       <div>
@@ -261,6 +272,16 @@ render_page('Sender', <<<HTML
         <h2>Öffentliche Adressen</h2>
         <p class="muted">Alle aktiven Sender, ohne MP3-Playlists. Die Playlists zeigen direkt auf die Original-Streams, zum Beispiel für VLC unter „Medien, Netzwerkstream öffnen“.</p>
         <dl class="kv" id="public"></dl>
+      </div>
+      <div class="panel wide">
+        <h2>Hörgeräte</h2>
+        <p class="muted">Browser, die deinen Hörstatus melden dürfen. Das Cookie gilt 180 Tage und verlängert sich bei Benutzung. Es erlaubt nur Meldungen an <code>/api/listen</code>, nie den Zugang zur Verwaltung. Gespeichert ist nur eine Prüfsumme.</p>
+        <p id="listen-this"></p>
+        <form class="banner-form" data-remember id="listen-remember" hidden>
+          <input name="name" maxlength="80" required placeholder="Name, z. B. Firmenrechner" aria-label="Name des Geräts">
+          <button class="btn primary small">Dieses Gerät merken</button>
+        </form>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
       </div>
       <div class="panel wide">
         <div class="panel-head">

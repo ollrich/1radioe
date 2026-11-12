@@ -1,5 +1,17 @@
 # Änderungen
 
+## 1.8.0 (12. November 2026)
+
+**Hörzugang: Hören im Browser zählt für den Hörstatus**
+
+* Nach dem Login bietet der Admin an, den Browser zum Hören zu merken, mit einem Namen wie „Firmenrechner“. Der Browser bekommt ein eigenes Cookie `r1listen` (180 Tage, verlängert sich bei Benutzung, `HttpOnly`, `SameSite=Lax`). Es erlaubt nur Meldungen an `/api/listen` und führt nie in die Verwaltung. Die Admin-Sitzung bleibt so kurzlebig wie bisher
+* Gespeichert wird nur die Prüfsumme des Cookies. System → Hörgeräte zeigt alle Geräte mit „zuletzt benutzt“ und lässt sie widerrufen, auch „Hier nicht mehr merken“ für den aktuellen Browser
+* Mit gemerktem Browser meldet der Player in der Web-App „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen des Tabs. Der eigene Status erscheint sofort, ohne auf die nächste Abfrage zu warten
+* Nur in diesem Browser zeigt die Web-App oben „Hören wird erfasst“. Ein Klick pausiert die Erfassung für die laufende Sitzung
+* `POST /api/listen` prüft Cookie und Herkunft (`Origin`), „läuft“ braucht zusätzlich den Header `X-1radioe: 1`. „aus“ kommt auch ohne ihn an, weil `sendBeacon` beim Schließen keine eigenen Header senden kann
+* Besucher ohne Cookie melden nie etwas
+* Auf der Skala endet die Nadel jetzt über den Status-Balken statt sie zu verdecken
+
 ## 1.7.0 (12. November 2026)
 
 **Web-App mit Player auf 1radioe.net**

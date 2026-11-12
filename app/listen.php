@@ -44,6 +44,108 @@ function listen_active(): array
               ORDER BY s.sort, s.id", [time() - LISTEN_TTL])->fetchAll(PDO::FETCH_COLUMN);
 }
 
+/* ---------- Devices allowed to report: listening cookie (browser) and later app tokens ----------
+ *
+ * After logging in to the admin, Ollie can let a browser remember that it may report
+ * the listening status. It gets a long-lived cookie with a random token, which allows
+ * POST /api/listen and nothing else: it never opens the admin. Only the SHA-256 of the
+ * token is stored, the token itself exists only in the cookie.
+ */
+
+const LISTEN_COOKIE      = 'r1listen';
+const LISTEN_COOKIE_DAYS = 180;
+
+/** Creates a device and returns ['device' => row, 'token' => plain token, shown or set once]. */
+function listen_device_create(string $name, string $kind): array
+{
+    $name = clean_text($name);
+    if ($name === '' || mb_strlen($name) > 80) {
+        throw new InputError(['name' => 'Bitte einen Namen mit höchstens 80 Zeichen angeben.']);
+    }
+    $token = bin2hex(random_bytes(32));
+    q('INSERT INTO r1_listen_devices (name, kind, token_hash, created_at) VALUES (?, ?, ?, ?)',
+        [$name, $kind === 'app' ? 'app' : 'browser', hash('sha256', $token), now_sql()]);
+    return ['device' => listen_device_find((int) db()->lastInsertId()), 'token' => $token];
+}
+
+function listen_device_find(int $id): ?array
+{
+    return q('SELECT * FROM r1_listen_devices WHERE id = ?', [$id])->fetch() ?: null;
+}
+
+/** The device a token belongs to, if it exists and was not revoked. */
+function listen_device_by_token(string $token, ?string $kind = null): ?array
+{
+    if (!preg_match('~^[a-f0-9]{64}$~', $token)) {
+        return null;
+    }
+    $d = q('SELECT * FROM r1_listen_devices WHERE token_hash = ? AND revoked_at IS NULL', [hash('sha256', $token)])->fetch() ?: null;
+    return $d !== null && ($kind === null || $d['kind'] === $kind) ? $d : null;
+}
+
+/** The browser device of the current request (listening cookie), or null. */
+function listen_current_device(): ?array
+{
+    return listen_device_by_token((string) ($_COOKIE[LISTEN_COOKIE] ?? ''), 'browser');
+}
+
+function listen_devices(): array
+{
+    return q('SELECT * FROM r1_listen_devices ORDER BY revoked_at IS NOT NULL, created_at DESC')->fetchAll();
+}
+
+function listen_device_revoke(int $id): void
+{
+    q('UPDATE r1_listen_devices SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL', [now_sql(), $id]);
+}
+
+/**
+ * Notes the use of a device for the admin overview, at most every ten minutes, and
+ * keeps a browser's cookie alive for another LISTEN_COOKIE_DAYS, at most once a day.
+ */
+function listen_device_touch(array $device, ?string $token = null): void
+{
+    $last = $device['last_used_at'] !== null ? strtotime((string) $device['last_used_at']) : 0;
+    if (time() - $last < 600) {
+        return;
+    }
+    q('UPDATE r1_listen_devices SET last_used_at = ? WHERE id = ?', [now_sql(), (int) $device['id']]);
+    if ($token !== null && time() - $last > 86400) {
+        listen_cookie_set($token);
+    }
+}
+
+/** HttpOnly, SameSite=Lax, for the whole site, secure on HTTPS. */
+function listen_cookie_set(string $token): void
+{
+    setcookie(LISTEN_COOKIE, $token, [
+        'expires'  => time() + LISTEN_COOKIE_DAYS * 86400,
+        'path'     => '/',
+        'secure'   => is_https(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function listen_cookie_clear(): void
+{
+    setcookie(LISTEN_COOKIE, '', ['expires' => time() - 3600, 'path' => '/', 'secure' => is_https(), 'httponly' => true, 'samesite' => 'Lax']);
+}
+
+/** A device row for the admin, without the token hash. */
+function listen_device_public(array $d, ?int $currentId = null): array
+{
+    return [
+        'id'        => (int) $d['id'],
+        'name'      => $d['name'],
+        'kind'      => $d['kind'],
+        'created'   => date('d.m.Y', (int) strtotime((string) $d['created_at'])),
+        'last_used' => $d['last_used_at'] !== null ? date('d.m.Y H:i', (int) strtotime((string) $d['last_used_at'])) : null,
+        'revoked'   => $d['revoked_at'] !== null ? date('d.m.Y', (int) strtotime((string) $d['revoked_at'])) : null,
+        'this'      => $currentId !== null && (int) $d['id'] === $currentId,
+    ];
+}
+
 /** Every station with a report, newest first, for the admin. */
 function listen_overview(): array
 {

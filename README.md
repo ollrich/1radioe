@@ -95,7 +95,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde, mit Umlauf, und überspringt Ordner. Medientasten und Sperrbildschirm folgen derselben Regel.
 * **Tastatur:** Leertaste, Pfeiltasten, 1 bis 0, Esc. Erklärt im (?) über der Skala.
 * **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
-* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen.
+* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollies gemerkter Browser hat das Hör-Cookie.
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenschutz als Abschnitte.
 
 Die Texte von Impressum und Datenschutz in `www/index.php` sind Platzhalter.
@@ -111,6 +111,7 @@ Alle aktiven Sender, nie MP3-Playlists oder Tracks. Die Reihenfolge ist die des 
 | `/s/<id>.m3u` | ein Sender |
 | `/api/stations.json` | alles für eine eigene App |
 | `/api/status` | laufende Sender |
+| `/api/listen` | Meldungen des eigenen Browsers, nur mit Hör-Cookie |
 
 Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
 
@@ -151,6 +152,8 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
 * **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung und ob „aus“ kam (`r1_listen_status`).
 * **Sonos:** `getMediaURI` für einen Sender startet, `reportPlaySeconds` hält am Leben (Antwort `interval` 60), `reportPlayStatus` beendet. Tracks und Playlists zählen nicht.
 * **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
+* **Browser:** Nach dem Login im Admin lässt sich ein Browser zum Hören merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `POST /api/listen` erlaubt und nie den Admin öffnet. Der Player in der Web-App meldet dann „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. In diesem Browser zeigt die Web-App oben „Hören wird erfasst“, ein Klick pausiert das für die Sitzung. Geräte verwalten und widerrufen: System → Hörgeräte.
+* **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}`. Verlangt das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`.
 * **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt.
 
 ## Sicherheit
