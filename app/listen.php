@@ -27,9 +27,15 @@ function listen_report(array $station, bool $playing): bool
     }
     $id = (int) $station['id'];
     if ($playing) {
-        $now = time();
-        q('INSERT INTO r1_listen_status (station_id, last_seen, stopped) VALUES (?, ?, 0)
-           ON DUPLICATE KEY UPDATE last_seen = ?, stopped = 0', [$id, $now, $now]);
+        // a listening session runs from the first report until "off" or a timeout;
+        // its start ("since") lets posting wait until a station really keeps playing
+        $now     = time();
+        $row     = q('SELECT last_seen, stopped, since, posted_since FROM r1_listen_status WHERE station_id = ?', [$id])->fetch();
+        $running = $row && (int) $row['stopped'] === 0 && (int) $row['last_seen'] > $now - LISTEN_TTL && (int) $row['since'] > 0;
+        $since   = $running ? (int) $row['since'] : $now;
+        q('INSERT INTO r1_listen_status (station_id, last_seen, stopped, since) VALUES (?, ?, 0, ?)
+           ON DUPLICATE KEY UPDATE last_seen = ?, stopped = 0, since = ?', [$id, $now, $since, $now, $since]);
+        social_heard($station, $since, $now, $row ? (int) $row['posted_since'] : 0);
     } else {
         q('UPDATE r1_listen_status SET stopped = 1 WHERE station_id = ?', [$id]);
     }
@@ -149,7 +155,7 @@ function listen_device_public(array $d, ?int $currentId = null): array
 /** Every station with a report, newest first, for the admin. */
 function listen_overview(): array
 {
-    $rows = q('SELECT s.smapi_id, s.title, s.active, l.last_seen, l.stopped FROM r1_listen_status l
+    $rows = q('SELECT s.smapi_id, s.title, s.active, l.last_seen, l.stopped, l.since FROM r1_listen_status l
                JOIN r1_stations s ON s.id = l.station_id ORDER BY l.last_seen DESC')->fetchAll();
     $now  = time();
     return array_map(static fn(array $r): array => [
@@ -158,5 +164,6 @@ function listen_overview(): array
         'state'    => (int) $r['stopped'] === 1 ? 'aus' : ($now - (int) $r['last_seen'] < LISTEN_TTL && $r['active'] ? 'läuft' : 'abgelaufen'),
         'age'      => max(0, $now - (int) $r['last_seen']),
         'at'       => date('d.m. H:i:s', (int) $r['last_seen']),
+        'since'    => (int) $r['since'] > 0 ? date('H:i', (int) $r['since']) : '',
     ], $rows);
 }

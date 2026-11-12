@@ -159,6 +159,7 @@ render_page('Sender', <<<HTML
   <nav class="tabs" aria-label="Bereiche">
     <a href="#stations" data-view="stations" class="tab">Sender</a>
     <a href="#tracks" data-view="tracks" class="tab">Tracks</a>
+    <a href="#posting" data-view="posting" class="tab">Posting</a>
     <a href="#system" data-view="system" class="tab">System</a>
   </nav>
   {$logout}
@@ -257,6 +258,121 @@ render_page('Sender', <<<HTML
     <p class="empty small" id="lib-empty" hidden>Noch keine Tracks in der Bibliothek.</p>
   </section>
 
+  <section id="view-posting" class="view" hidden>
+    <div class="toolbar">
+      <div>
+        <h1>Posting</h1>
+        <p class="muted" id="social-summary"></p>
+      </div>
+    </div>
+    <p class="hint">Startest du einen Sender, egal ob auf Sonos oder im Browser, und läuft er nach der Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Er verrät dasselbe wie das Status-Icon auf 1radioe.net, nie Gerät oder Quelle. Setzt du in der Web-App das Erfassen aus, wird auch nicht gepostet.</p>
+    <div class="banner" id="social-key" hidden>
+      <div>
+        <p class="banner-title">Schlüssel für App-Passwort und Token fehlt</p>
+        <p class="muted">Zugangsdaten werden verschlüsselt gespeichert. Dafür in <code>config.php</code> diese Zeile ergänzen, der Wert ist frisch erzeugt und wird nirgends gespeichert:</p>
+        <p class="key-line"><code id="social-key-line"></code> <button type="button" class="btn ghost small" id="social-key-copy">Kopieren</button></p>
+        <p class="muted" id="social-sodium" hidden>Außerdem fehlt die PHP-Erweiterung sodium. Sie gehört seit PHP 7.2 zum Standard, bitte im KAS die PHP-Version prüfen.</p>
+      </div>
+    </div>
+    <form id="social-form" novalidate>
+      <div class="panels">
+        <div class="panel wide">
+          <div class="panel-head">
+            <h2>Beitrag</h2>
+            <label class="switch"><input type="checkbox" name="enabled"><span>Automatisch posten</span></label>
+          </div>
+          <small class="err" data-err="enabled"></small>
+          <div class="social-grid">
+            <div class="field-col">
+              <label>Textvorlage<textarea name="template" rows="5" maxlength="1000"></textarea><small class="err" data-err="template"></small></label>
+              <p class="chips" aria-label="Platzhalter einfügen">
+                <button type="button" class="chip" data-insert="{sender}">{sender}</button>
+                <button type="button" class="chip" data-insert="{link}">{link}</button>
+                <button type="button" class="chip" data-insert="{website}">{website}</button>
+                <button type="button" class="chip" data-insert="{hashtags}">{hashtags}</button>
+              </p>
+              <p class="muted small">{sender}: Name des Senders. {link}: seine Seite auf 1radioe.net, dort steht er gleich im Player. {website}: Website des Senders, entfällt, wenn keine eingetragen ist. {hashtags}: die Hashtags unten plus die am Sender. Wird ein Beitrag zu lang, fallen Hashtags von hinten weg.</p>
+              <label>Hashtags für alle Sender<input name="hashtags" maxlength="255" placeholder="#Radio #NowPlaying"><small class="err" data-err="hashtags"></small></label>
+              <label>Adresse der Web-App <small class="muted" id="site-hint"></small><input name="site_url" type="url" maxlength="200"><small class="err" data-err="site_url"></small></label>
+            </div>
+            <div class="field-col">
+              <label>Vorschau für<select id="social-station"></select></label>
+              <figure class="preview">
+                <figcaption><span>Bluesky</span><span class="count" id="pv-bsky-count"></span></figcaption>
+                <p class="preview-text" id="pv-bsky"></p>
+              </figure>
+              <figure class="preview">
+                <figcaption><span>Mastodon</span><span class="count" id="pv-masto-count"></span></figcaption>
+                <p class="preview-text" id="pv-masto"></p>
+              </figure>
+              <p class="muted small">Bluesky zeigt Links gekürzt und bekommt eine Link-Karte mit dem Senderlogo. Mastodon baut die Karte selbst aus der Senderseite und zählt jeden Link als 23 Zeichen.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Bluesky</h2>
+            <label class="switch"><input type="checkbox" name="bsky.enabled"><span>Ein</span></label>
+          </div>
+          <small class="err" data-err="bsky.enabled"></small>
+          <div class="field-col">
+            <label>Handle<input name="bsky.handle" maxlength="253" placeholder="name.bsky.social" autocomplete="off" spellcheck="false"><small class="err" data-err="bsky.handle"></small></label>
+            <label>App-Passwort<input name="bsky.password" type="password" maxlength="19" autocomplete="new-password" spellcheck="false"><small class="muted">Anlegen in Bluesky unter Einstellungen, Datenschutz und Sicherheit, App-Passwörter. Nie das Hauptpasswort.</small><small class="err" data-err="bsky.password"></small></label>
+            <label class="switch" data-secret="bsky" hidden><input type="checkbox" name="bsky.clear"><span>Gespeichertes App-Passwort entfernen</span></label>
+            <label>PDS <small class="muted">bei Konten auf bsky.social so lassen</small><input name="bsky.pds" maxlength="200" placeholder="https://bsky.social" spellcheck="false"><small class="err" data-err="bsky.pds"></small></label>
+            <p class="row"><button type="button" class="btn ghost small" data-check="bsky">Verbindung prüfen</button></p>
+            <p class="probe" id="bsky-state" hidden></p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Mastodon</h2>
+            <label class="switch"><input type="checkbox" name="masto.enabled"><span>Ein</span></label>
+          </div>
+          <small class="err" data-err="masto.enabled"></small>
+          <div class="field-col">
+            <label>Instanz<input name="masto.instance" maxlength="200" placeholder="https://mastodon.social" spellcheck="false"><small class="err" data-err="masto.instance"></small></label>
+            <label>Access-Token<input name="masto.token" type="password" maxlength="200" autocomplete="new-password" spellcheck="false"><small class="muted">In Mastodon unter Einstellungen, Entwicklung, Neue Anwendung. Die Berechtigung write:statuses genügt, mit profile zeigt die Prüfung auch den Kontonamen.</small><small class="err" data-err="masto.token"></small></label>
+            <label class="switch" data-secret="masto" hidden><input type="checkbox" name="masto.clear"><span>Gespeichertes Token entfernen</span></label>
+            <label>Sichtbarkeit<select name="masto.visibility"><option value="public">Öffentlich</option><option value="unlisted">Nicht gelistet</option><option value="private">Nur für Follower</option></select></label>
+            <p class="row"><button type="button" class="btn ghost small" data-check="masto">Verbindung prüfen</button></p>
+            <p class="probe" id="masto-state" hidden></p>
+          </div>
+        </div>
+
+        <div class="panel wide">
+          <h2>Bremsen</h2>
+          <div class="brakes">
+            <label>Wartezeit <small class="muted">Minuten, die ein Sender laufen muss</small><input name="delay" type="number" min="0" max="60" step="1"><small class="err" data-err="delay"></small></label>
+            <label>Sperrfrist <small class="muted">Stunden bis zum nächsten Beitrag über denselben Sender</small><input name="cooldown" type="number" min="0" max="168" step="1"><small class="err" data-err="cooldown"></small></label>
+            <label>Höchstens <small class="muted">Beiträge pro Tag</small><input name="daily" type="number" min="1" max="50" step="1"><small class="err" data-err="daily"></small></label>
+            <label>Sprache <small class="muted">Kürzel für die Netzwerke</small><input name="lang" maxlength="2" pattern="[a-z]{2}" spellcheck="false"></label>
+          </div>
+          <label class="switch"><input type="checkbox" name="card"><span>Link-Karte mit Senderlogo bei Bluesky</span></label>
+          <p class="muted small">Die Wartezeit filtert Durchzappen und Fehlstarts. Einzelne Sender schließt du im Sender-Editor aus, dort gibt es auch eigene Hashtags.</p>
+        </div>
+      </div>
+      <small class="err" data-err="secret"></small>
+      <div class="form-foot">
+        <button type="submit" class="btn primary" id="social-save">Speichern</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" id="social-test">Testbeitrag senden</button>
+      </div>
+      <p class="muted small right">Der Testbeitrag geht wirklich raus, für den Sender aus der Vorschau, an alle eingeschalteten Netzwerke. Wartezeit und Bremsen gelten dafür nicht.</p>
+    </form>
+
+    <div class="panel wide log-panel">
+      <div class="panel-head">
+        <h2>Protokoll</h2>
+        <button class="btn ghost small" id="social-log-refresh">Aktualisieren</button>
+      </div>
+      <p class="muted">Die letzten Beiträge, auch übersprungene und fehlgeschlagene. Nur hier sichtbar.</p>
+      <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Sender</th><th>Ergebnis</th><th>Bluesky</th><th>Mastodon</th></tr></thead><tbody id="social-log"></tbody></table></div>
+    </div>
+  </section>
+
   <section id="view-system" class="view" hidden>
     <h1>System</h1>
     <div class="panels">
@@ -325,6 +441,10 @@ render_page('Sender', <<<HTML
           <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
         </div>
         <label class="stream-only">Website des Senders <small class="muted">für „Über den Sender“ in der Web-App</small><input name="website" type="url" maxlength="500" placeholder="https://…"><small class="err" data-err="website"></small></label>
+        <div class="stream-only social-fields">
+          <label class="switch"><input type="checkbox" name="social" checked><span>Posten, wenn ich diesen Sender höre</span></label>
+          <label>Eigene Hashtags <small class="muted">kommen zu denen aus „Posting“ dazu</small><input name="hashtags" maxlength="255" placeholder="#Jazz #Köln"><small class="err" data-err="hashtags"></small></label>
+        </div>
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span>Aktiv, in Sonos sichtbar</span></label>

@@ -15,6 +15,7 @@ Options -Indexes
     RewriteRule ^api/stations\.json$ api/stations.php [L]
     RewriteRule ^streams\.(m3u|pls)$ playlist.php?format=$1 [L]
     RewriteRule ^s/([A-Za-z0-9._-]+)\.m3u$ playlist.php?format=m3u&id=$1 [L]
+    RewriteRule ^s/([A-Za-z0-9._-]+)$ index.php?s=$1&go=1 [L]
 </IfModule>
 
 # Personal project, not meant for search engines (see robots.txt)

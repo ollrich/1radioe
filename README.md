@@ -149,12 +149,27 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
 Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
 
 * **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
-* **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung und ob „aus“ kam (`r1_listen_status`).
+* **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft, für das Posting (`r1_listen_status`).
 * **Sonos:** `getMediaURI` für einen Sender startet, `reportPlaySeconds` hält am Leben (Antwort `interval` 60), `reportPlayStatus` beendet. Tracks und Playlists zählen nicht.
 * **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
 * **Browser:** Nach dem Login im Admin lässt sich ein Browser zum Hören merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `POST /api/listen` erlaubt und nie den Admin öffnet. Der Player in der Web-App meldet dann „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. In diesem Browser zeigt die Web-App oben „Hören wird erfasst“, ein Klick pausiert das für die Sitzung. Geräte verwalten und widerrufen: System → Hörgeräte.
 * **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}`. Verlangt das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`.
 * **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt.
+
+## Posting zu Bluesky und Mastodon
+
+Startet Ollie einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Eingerichtet im Admin unter „Posting“.
+
+* **Auslöser:** der Hörstatus. Eine Hörsitzung beginnt, wenn ein Sender von „läuft nicht“ auf „läuft“ wechselt. Die erste Meldung nach Ablauf der Wartezeit (Standard 3 Minuten) übernimmt die Sitzung, auch bei mehreren gleichzeitigen Meldungen genau einmal. Durchzappen und Fehlstarts lösen so nichts aus. Kein Cron nötig.
+* **Bremsen:** Schalter „Automatisch posten“, pro Sender ein Schalter „Posten“ im Editor, Sperrfrist je Sender (Standard 6 Stunden), Höchstzahl pro Tag (Standard 4). Wer in der Web-App das Erfassen aussetzt, postet auch nicht.
+* **Text:** Vorlage mit `{sender}`, `{link}`, `{website}` und `{hashtags}`. Hashtags gibt es für alle Sender und zusätzlich pro Sender. Ist ein Beitrag zu lang (Bluesky 300 Grapheme, Mastodon laut Instanz, Links zählen dort 23 Zeichen), fallen Hashtags von hinten weg. Die Vorschau im Admin zeigt beide Fassungen mit Länge.
+* **Link:** `{link}` zeigt auf `1radioe.net/s/<smapi_id>`. Die Adresse leitet auf `/?s=<smapi_id>` weiter, die Web-App mit dem Sender im Player und Open-Graph-Tags für die Link-Karte.
+* **Bluesky:** Handle, App-Passwort und PDS (Standard `https://bsky.social`). Links und Hashtags als Facets, Links gekürzt angezeigt, dazu eine Link-Karte mit Senderlogo.
+* **Mastodon:** Instanz und Access-Token mit der Berechtigung `write:statuses`, Sichtbarkeit wählbar. Die Link-Karte baut Mastodon aus der Senderseite. Ein `Idempotency-Key` verhindert doppelte Beiträge.
+* **Ohne Wartezeit für Sonos:** Der Beitrag geht raus, nachdem die Antwort gesendet ist (`fastcgi_finish_request`). Fehlt das auf dem Server, sagt es der Admin.
+* **Geheimnisse:** App-Passwort und Token liegen verschlüsselt in der Datenbank (libsodium). Der Schlüssel steht als `secret_key` in `config.php`, der Admin zeigt einen frisch erzeugten, solange keiner gesetzt ist. Im Admin steht nur „gespeichert“.
+* **Protokoll:** Admin → Posting zeigt die letzten Beiträge mit Ergebnis, Links und Fehlern, auch übersprungene. Die letzten 500 bleiben erhalten.
+* **Testen:** „Verbindung prüfen“ meldet sich an, ohne zu posten. „Testbeitrag senden“ postet wirklich, ohne Wartezeit und Bremsen.
 
 ## Sicherheit
 
@@ -166,7 +181,8 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
 * Programmcode, Git-Verzeichnis und Config liegen außerhalb des Web-Verzeichnisses
 * Deploy nur mit gültiger Webhook-Signatur (HMAC-SHA256), ohne Secret wird nichts ausgerollt
 * MP3s werden vor dem Import geprüft (echte MPEG-Frames), getarnte Dateien abgelehnt, Texte aus Tags und Dateinamen von ungültigen Zeichen befreit
-* Stream-Test und Logo-Download erreichen keine internen Netze
+* Stream-Test, Logo-Download und Posting erreichen keine internen Netze
+* Bluesky-App-Passwort und Mastodon-Token verschlüsselt in der Datenbank, der Schlüssel liegt in der Config
 * SMAPI-Antworten gegen das offizielle Sonos-Schema geprüft, XML mit DTD wird abgelehnt
 
 ## Voraussetzungen

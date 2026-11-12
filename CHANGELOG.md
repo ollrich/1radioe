@@ -1,5 +1,21 @@
 # Änderungen
 
+## 1.9.0 (12. November 2026)
+
+**Posting zu Bluesky und Mastodon**
+
+* Neuer Bereich „Posting“ im Admin. Läuft ein Sender nach einer Wartezeit noch, egal ob auf Sonos oder im Browser, geht ein Beitrag an Bluesky und Mastodon
+* Bremsen: Schalter „Automatisch posten“, Wartezeit (Standard 3 Minuten), Sperrfrist je Sender (6 Stunden), Höchstzahl pro Tag (4). Im Sender-Editor lässt sich ein Sender vom Posten ausnehmen und mit eigenen Hashtags versehen
+* Textvorlage mit `{sender}`, `{link}`, `{website}` und `{hashtags}`, Vorschau für beide Netzwerke mit Längenprüfung. Zu lange Beiträge verlieren Hashtags von hinten
+* Bluesky mit Handle, App-Passwort und frei wählbarem PDS, Links und Hashtags als Facets, Link-Karte mit Senderlogo. Mastodon mit Instanz und Access-Token, Sichtbarkeit wählbar, Zeichengrenze wird von der Instanz gelesen
+* App-Passwort und Token verschlüsselt gespeichert (libsodium, Schlüssel `secret_key` in `config.php`)
+* „Verbindung prüfen“ und „Testbeitrag senden“, Protokoll der letzten Beiträge mit Links und Fehlern
+* Der Beitrag läuft nach der Antwort an Sonos oder den Browser, eine Meldung wartet nie auf Bluesky oder Mastodon
+* Senderseiten: `1radioe.net/s/<smapi_id>` öffnet die Web-App mit diesem Sender im Player, mit Open-Graph-Tags für Link-Karten. Auf dem Handy steht der Sender gleich im angedockten Player, Kategorien öffnen sich
+* Der Hörstatus merkt sich, seit wann ein Sender läuft. System → Hörstatus zeigt das an
+* Die Skala springt beim Laden zuverlässig zum aktuellen Sender, auch wenn er außerhalb des sichtbaren Bereichs liegt
+* Datenbank-Schema 6, wieder nur ergänzend
+
 ## 1.8.0 (12. November 2026)
 
 **Hörzugang: Hören im Browser zählt für den Hörstatus**

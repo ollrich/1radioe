@@ -195,8 +195,15 @@
       return;
     }
     const left = 8 + idx * SLOT;
-    if (jump || left < scroller.scrollLeft || left + SLOT > scroller.scrollLeft + scroller.clientWidth) {
-      scroller.scrollTo({ left: Math.max(0, left + SLOT / 2 - scroller.clientWidth / 2), behavior: jump ? 'auto' : 'smooth' });
+    const target = Math.max(0, left + SLOT / 2 - scroller.clientWidth / 2);
+    if (jump) {
+      // a jump must not animate: the CSS asks for smooth scrolling, which can stall on load
+      scroller.style.scrollBehavior = 'auto';
+      scroller.scrollLeft = target;
+      scroller.style.scrollBehavior = '';
+      measure();
+    } else if (left < scroller.scrollLeft || left + SLOT > scroller.scrollLeft + scroller.clientWidth) {
+      scroller.scrollTo({ left: target, behavior: 'smooth' });
     }
   }
 
@@ -252,9 +259,9 @@
       if (it.type === 'category') {
         const inner = el('ul');
         inner.id = 'cat-' + it.id;
-        inner.hidden = true;
+        inner.hidden = state.openCat !== it.id;
         row.setAttribute('aria-controls', inner.id);
-        row.setAttribute('aria-expanded', 'false');
+        row.setAttribute('aria-expanded', String(state.openCat === it.id));
         for (const ch of levels[it.id] || []) {
           const li2 = el('li');
           const r2 = rowFor(ch, it.id);
@@ -673,11 +680,19 @@
 
   /* ---------- Start ---------- */
 
-  const first = stationsOf('root')[0] || [...items.values()].find((x) => x.type === 'station');
+  // a station page (?s=<id>, the link in posts) puts that station in the player
+  const start = data.start ? items.get(data.start) : null;
+  const first = (start && start.type === 'station' ? start : null)
+    || stationsOf('root')[0] || [...items.values()].find((x) => x.type === 'station');
   if (first) {
     state.cur = first;
     state.curLevel = first.level;
+    if (first === start && first.level !== 'root') {
+      state.view = first.level;      // the scale shows its category
+      state.openCat = first.level;   // the phone list opens it
+    }
     renderPlayer();
+    if (first === start) $('[data-r1="mini"]').hidden = false;   // on phones: one tap to play
   }
   renderList();
   renderScale();

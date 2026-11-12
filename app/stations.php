@@ -80,11 +80,15 @@ function station_save(array $in, ?int $id = null): array
     $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category'], true) ? $in['kind'] : 'stream');
     // website: kept as it is when the field is not sent (e.g. by an older admin)
     $website     = array_key_exists('website', $in) ? trim((string) $in['website']) : (string) ($existing['website'] ?? '');
+    // posting (1.9): kept as they are when not sent
+    $social      = array_key_exists('social', $in) ? (!empty($in['social']) ? 1 : 0) : (int) ($existing['social'] ?? 1);
+    $hashtags    = array_key_exists('hashtags', $in) ? social_tags_text((string) $in['hashtags']) : (string) ($existing['hashtags'] ?? '');
     if ($kind !== 'stream') {
         // playlists and categories have no stream and no website of their own
-        $url     = '';
-        $mime    = 'audio/mpeg';
-        $website = '';
+        $url      = '';
+        $mime     = 'audio/mpeg';
+        $website  = '';
+        $hashtags = '';
     }
 
     $errors = [];
@@ -101,6 +105,9 @@ function station_save(array $in, ?int $id = null): array
     $webScheme = strtolower((string) parse_url($website, PHP_URL_SCHEME));
     if ($website !== '' && (!filter_var($website, FILTER_VALIDATE_URL) || !in_array($webScheme, ['http', 'https'], true) || strlen($website) > 500)) {
         $errors['website'] = 'Bitte eine gültige http(s)-Adresse eingeben.';
+    }
+    if (mb_strlen($hashtags) > 255) {
+        $errors['hashtags'] = 'Höchstens 255 Zeichen.';
     }
     if (!isset(MIME_TYPES[$mime])) {
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
@@ -126,15 +133,15 @@ function station_save(array $in, ?int $id = null): array
         : null;
 
     if ($id === null) {
-        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, social, hashtags, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $social, $hashtags, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
-            [$categoryId, $title, $description, $website, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, social = ?, hashtags = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
+            [$categoryId, $title, $description, $website, $social, $hashtags, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
         if (($old['category_id'] !== null ? (int) $old['category_id'] : null) !== $categoryId) {
             q('UPDATE r1_stations SET sort = ? WHERE id = ?', [station_next_sort(), $id]);   // moved: goes to the end
         }
@@ -297,6 +304,8 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'title'       => $s['title'],
         'description' => $s['description'],
         'website'     => (string) ($s['website'] ?? ''),
+        'social'      => (int) ($s['social'] ?? 1) === 1,
+        'hashtags'    => (string) ($s['hashtags'] ?? ''),
         'stream_url'  => $s['stream_url'],
         'mime'        => $s['mime'],
         'is_playlist' => (bool) $s['is_playlist'],
