@@ -1,12 +1,10 @@
 # Secrets and server data: never commit
 #
-# On the server, config and secrets live in 1radioe-private/ outside the
-# checkout. In the repo only the sample and the .htaccess are versioned;
-# anything else placed there locally (config.php, webhook-secret, deploy
-# log, inbox/, tmp/) stays out of git.
-1radioe-private/*
-!1radioe-private/.htaccess
-!1radioe-private/config.sample.php
+# On the server, config and secrets live in 1radioe-private/ next to the
+# checkout. A local copy inside the checkout (for development) stays out
+# of git with everything in it: config.php, webhook-secret, deploy log,
+# inbox/, tmp/. The template is config.sample.php in the repo root.
+1radioe-private/
 
 # Generic secret material, wherever it ends up
 .env
@@ -28,11 +26,8 @@ webhook-secret
 # Uploads stay untracked on purpose. The deploy runs `git reset --hard`,
 # which leaves untracked files alone. If anything under media/ were ever
 # committed, a deploy could overwrite uploads. Never use `git clean`.
-1radioe-media/
-1radioe/media/
-1radioe/tmp/
-1radioe/inbox/
 www/media/
+1radioe-media/
 
 # Purchased music must never be published
 *.mp3

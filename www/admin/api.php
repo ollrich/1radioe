@@ -6,7 +6,7 @@
  */
 declare(strict_types=1);
 
-require __DIR__ . '/../lib/admin.php';
+require dirname(__DIR__, 2) . '/app/admin.php';
 
 // A fatal error (out of memory, time limit) cannot be caught: still answer with JSON.
 register_shutdown_function(static function (): void {
@@ -43,6 +43,18 @@ function state_stations(): array
     $stats = playlist_stats();
     $rows  = stations_all();
     return array_map(static fn($s) => station_public($s, $stats, $rows), $rows);
+}
+
+/** "keine ✓" or e.g. "2 Logos, 14 Tracks fehlen im Medienordner". */
+function media_missing_text(): string
+{
+    $parts = [];
+    foreach (media_missing() as $label => $count) {
+        if ($count > 0) {
+            $parts[] = $count . ' ' . $label;
+        }
+    }
+    return $parts ? implode(', ', $parts) . ' fehlen im Medienordner' : 'keine ✓';
 }
 
 /** Playlist id from the request (optional), checked before any work is done. */
@@ -88,6 +100,7 @@ try {
                     'Einträge'       => count(stations_all(true)) . ' aktiv von ' . count(stations_all()) . ' (Sender, Playlists, Kategorien)',
                     'Katalog-Stand'  => catalog_token(),
                     'Tracks'         => count(tracks_all()) . ', im FTP-Eingang: ' . count(inbox_files()),
+                    'Fehlende Dateien' => media_missing_text(),
                     'Upload'         => 'in Teilen zu ' . round(upload_chunk_size() / 1048576, 2) . ' MB, Server erlaubt ' . ini_get('upload_max_filesize') . ' je Anfrage',
                     'Medien'         => storage_state(media_dir()) . ', erreichbar unter ' . media_url(1),
                     'Track-Ordner'   => storage_state(track_dir()),

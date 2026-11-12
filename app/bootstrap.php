@@ -1,19 +1,25 @@
 <?php
 /**
- * 1radiœ: shared bootstrap. Loaded by smapi.php and the admin.
+ * 1radiœ: shared bootstrap. Loaded by every script in www/.
  *
- * The configuration lives OUTSIDE the web root in a folder named "1radioe-private".
- * It is searched upwards from the app folder, so this layout works:
+ * Layout on the server, the domain points at www/:
  *
- *   /www/htdocs/w0123456/1radioe-private/config.php    <- config, not reachable via web
- *   /www/htdocs/w0123456/eichhof.co/1radioe/            <- this app
+ *   /www/htdocs/w0123456/1radioe-private/config.php   <- config and secrets, never in git
+ *   /www/htdocs/w0123456/1radioe.net/                 <- git checkout (APP_ROOT)
+ *     app/                                            <- this code, outside the web root
+ *     www/                                            <- document root (WEB_ROOT)
+ *     www/media/                                      <- uploads, untracked
+ *
+ * The folder "1radioe-private" is searched upwards from the checkout, so it can sit
+ * right next to it. It must never be inside the checkout on the server.
  */
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.3.0';
-const APP_DIR     = __DIR__ . '/..';
+const APP_VERSION = '1.4.0';
 const CONFIG_DIR  = '1radioe-private';
+define('APP_ROOT', dirname(__DIR__));
+define('WEB_ROOT', APP_ROOT . '/www');
 
 // Warnings must never leak into HTML, JSON or SOAP output.
 ini_set('display_errors', '0');
@@ -35,7 +41,7 @@ function config_path(): ?string
         return $path;
     }
     $path = null;
-    $dir  = dirname(realpath(APP_DIR) ?: APP_DIR);
+    $dir  = realpath(APP_ROOT) ?: APP_ROOT;
     for ($i = 0; $i < 10; $i++) {
         $candidate = $dir . '/' . CONFIG_DIR . '/config.php';
         if (@is_file($candidate)) {   // @: paths outside open_basedir only warn
@@ -82,13 +88,13 @@ function cfg(string $key, mixed $default = null): mixed
 
 /* ---------- Storage ----------
  *
- * Uploaded content never lives in the app folder, so an update may replace that
- * folder completely:
+ * Uploaded content is never tracked by git. The deploy runs "git reset --hard", which
+ * leaves untracked files alone, so uploads survive every deploy:
  *
  *   1radioe-private/inbox/   FTP inbox for MP3 files          (outside the web root)
  *   1radioe-private/tmp/     chunks of running uploads        (outside the web root)
- *   1radioe-media/           logos and covers, next to the app folder (public)
- *   1radioe-media/tracks/    MP3 files                        (public)
+ *   www/media/               logos and covers                 (public, gitignored)
+ *   www/media/tracks/        MP3 files                        (public, gitignored)
  *
  * media_dir and media_url can be set in config.php if another location is wanted.
  */
@@ -97,7 +103,7 @@ function cfg(string $key, mixed $default = null): mixed
 function media_dir(): string
 {
     $dir = trim((string) cfg('media_dir', ''));
-    return $dir !== '' ? rtrim($dir, '/') : dirname(realpath(APP_DIR) ?: APP_DIR) . '/1radioe-media';
+    return $dir !== '' ? rtrim($dir, '/') : (realpath(WEB_ROOT) ?: WEB_ROOT) . '/media';
 }
 
 function track_dir(): string
@@ -125,14 +131,7 @@ function inbox_dir(): string
 function media_url(int $levels = 0): string
 {
     $configured = trim((string) cfg('media_url', ''));
-    if ($configured !== '') {
-        return rtrim($configured, '/');
-    }
-    // sibling of the app folder: https://eichhof.co/1radioe -> https://eichhof.co/1radioe-media
-    $p      = parse_url(base_url($levels));
-    $origin = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
-    $parent = rtrim(str_replace('\\', '/', dirname($p['path'] ?? '/')), '/');
-    return $origin . $parent . '/1radioe-media';
+    return $configured !== '' ? rtrim($configured, '/') : base_url($levels) . '/media';
 }
 
 /** True if config.php sits inside the web root (works, but should be moved out). */
@@ -150,9 +149,9 @@ function is_https(): bool
 }
 
 /**
- * Public base URL of the app, e.g. https://eichhof.co/1radioe.
+ * Public base URL of the site, e.g. https://1radioe.net (no trailing slash).
  * Taken from config 'base_url', otherwise derived from the current request.
- * $levels: how many folders the running script sits below the app folder.
+ * $levels: how many folders the running script sits below www/ (admin/ = 1).
  */
 function base_url(int $levels = 0): string
 {

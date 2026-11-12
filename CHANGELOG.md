@@ -1,5 +1,18 @@
 # Änderungen
 
+## 1.4.0 (12. November 2026)
+
+**Umzug nach 1radioe.net, ohne neue Funktionen**
+
+* Neue Struktur: Programmcode in `app/` außerhalb des Web-Verzeichnisses, Web-Verzeichnis `www/` mit Admin und SMAPI-Endpunkt. Logos, Cover und Tracks liegen in `www/media/` und gehören nie ins Repository
+* Automatisches Ausrollen: Ein Push auf `main` ruft per GitHub-Webhook `deploy.php` auf. Nach geprüfter Signatur bringt `git reset --hard` den Server auf den neuen Stand, Uploads bleiben unberührt. Secret und Deploy-Log liegen in `1radioe-private`, die Einrichtung steht in `DEPLOY-SETUP.md`
+* Keine Indexierung: `robots.txt` sperrt Suchmaschinen, dazu der Header `X-Robots-Tag: noindex, nofollow`
+* Die Systemseite zeigt fehlende Logo-, Cover- und Track-Dateien, praktisch nach dem Kopieren der Medien
+* `base_url` darf leer bleiben, die Adresse ergibt sich dann aus der Anfrage. So teilen sich alte und neue Installation während des Umzugs eine Config
+* Die Config-Vorlage liegt als `config.sample.php` im Hauptordner des Repositorys
+* Der automatische Umzug von Medien aus 1.0 und 1.1.0 entfällt
+* MIT-Lizenz
+
 ## 1.3.0 (8. November 2026)
 
 * **Kategorien:** Sender und Playlists lassen sich in Kategorien wie „Lounge“ zusammenfassen. In Sonos erscheint eine Kategorie als Ordner mit ihren Einträgen. Im Admin gibt es dafür eine eigene Ansicht mit Drag & Drop, „Vorhandene zuordnen“ und das Feld „Kategorie“ im Editor. Ohne eigenes Bild bekommt eine Kategorie ein Raster aus den ersten vier Logos. Leere Kategorien zeigt Sonos nicht an, beim Löschen einer Kategorie bleiben ihre Einträge erhalten. Favoriten und Wecker in Sonos laufen weiter, weil sich die Kennungen der Sender nicht ändern

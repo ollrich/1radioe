@@ -2,7 +2,7 @@
 /**
  * MP3 track library and playlists.
  *
- * Tracks are stored once in 1radioe-media/tracks/ under random, unguessable file names
+ * Tracks are stored once in www/media/tracks/ under random, unguessable file names
  * (Sonos speakers download them directly). Playlists are rows in r1_stations with
  * kind = 'playlist'; r1_playlist_tracks holds their tracks in order. A track can be
  * part of several playlists.
@@ -350,7 +350,7 @@ function track_find_duplicate(int $size, string $sha1): ?array
 
 /**
  * Imports an MP3 file into the library: checks it, reads tags and duration, moves it
- * to 1radioe-media/tracks/ and stores the cover. Returns the track row with 'duplicate'
+ * to www/media/tracks/ and stores the cover. Returns the track row with 'duplicate'
  * set if the same file was already in the library: then nothing is stored twice (a
  * missing audio file of that track is restored) and the source file is removed.
  */
@@ -364,7 +364,7 @@ function track_import(string $path, string $origName): array
     $size = (int) filesize($path);
     $sha1 = (string) sha1_file($path);
     if (!is_dir(track_dir()) && !@mkdir(track_dir(), 0755, true)) {
-        throw new InputError([], 'Ordner 1radioe-media/tracks fehlt und kann nicht angelegt werden.');
+        throw new InputError([], 'Ordner media/tracks fehlt und kann nicht angelegt werden.');
     }
 
     $existing = track_find_duplicate($size, $sha1);
@@ -382,7 +382,7 @@ function track_import(string $path, string $origName): array
     $file   = bin2hex(random_bytes(16)) . '.mp3';
     $target = track_dir() . '/' . $file;
     if (!move_file($path, $target)) {
-        throw new InputError([], 'Datei konnte nicht gespeichert werden. Schreibrechte für 1radioe-media/tracks prüfen.');
+        throw new InputError([], 'Datei konnte nicht gespeichert werden. Schreibrechte für media/tracks prüfen.');
     }
     @chmod($target, 0644);
     $cover = null;

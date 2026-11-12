@@ -5,15 +5,15 @@
  */
 declare(strict_types=1);
 
-require __DIR__ . '/../lib/admin.php';
+require dirname(__DIR__, 2) . '/app/admin.php';
 
 $problem = admin_boot();
 
 if ($problem === 'config') {
     render_card('Konfiguration fehlt', '<h1>Konfiguration fehlt</h1>'
-        . '<p>Lege die Datei <code>config.php</code> in einen Ordner <code>' . CONFIG_DIR . '</code> oberhalb dieser App, am besten außerhalb des Web-Verzeichnisses, zum Beispiel:</p>'
-        . '<pre>' . h(dirname(realpath(APP_DIR) ?: APP_DIR, 2)) . '/' . CONFIG_DIR . "/config.php</pre>"
-        . '<p>Eine Vorlage liegt im Ordner <code>' . CONFIG_DIR . '</code> des Repositorys als <code>config.sample.php</code>.</p>');
+        . '<p>Lege die Datei <code>config.php</code> in einen Ordner <code>' . CONFIG_DIR . '</code> neben dem Checkout, also außerhalb des Web-Verzeichnisses:</p>'
+        . '<pre>' . h(dirname(realpath(APP_ROOT) ?: APP_ROOT)) . '/' . CONFIG_DIR . "/config.php</pre>"
+        . '<p>Eine Vorlage liegt im Repository als <code>config.sample.php</code>.</p>');
 }
 if ($problem === 'db') {
     render_card('Datenbank', '<h1>Datenbank nicht erreichbar</h1>'

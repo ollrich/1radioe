@@ -73,8 +73,8 @@ Options -Indexes -ExecCGI
 HT;
 
 /**
- * Creates the storage folders outside the app folder and moves content left over
- * from 1.0/1.1.0, where it lived inside the app folder (media/, inbox/, tmp/).
+ * Creates the storage folders and keeps the rules file of the media folder current.
+ * The media folder is untracked, so the app writes its .htaccess itself.
  */
 function storage_prepare(): void
 {
@@ -87,27 +87,31 @@ function storage_prepare(): void
     if (is_dir(media_dir()) && @file_get_contents($rules) !== MEDIA_HTACCESS) {
         @file_put_contents($rules, MEDIA_HTACCESS);
     }
-    $legacy = [
-        APP_DIR . '/media'        => media_dir(),
-        APP_DIR . '/media/tracks' => track_dir(),
-        APP_DIR . '/inbox'        => inbox_dir(),
-    ];
-    foreach ($legacy as $from => $to) {
-        foreach (glob($from . '/*') ?: [] as $file) {
-            $target = $to . '/' . basename($file);
-            if (is_file($file) && is_dir($to) && !file_exists($target)) {
-                if (!@rename($file, $target) && @copy($file, $target)) {
-                    @unlink($file);
-                }
-            }
-        }
-    }
 }
 
 /** Status line for a storage folder on the system page. */
 function storage_state(string $dir): string
 {
     return $dir . (is_dir($dir) ? (is_writable($dir) ? ' ✓' : ' (nicht beschreibbar)') : ' (fehlt)');
+}
+
+/**
+ * Files the database refers to but the media folder lacks, e.g. after moving to a
+ * new server before all media were copied. Returns counts for the system page.
+ */
+function media_missing(): array
+{
+    $missing = ['Logos' => 0, 'Tracks' => 0, 'Cover' => 0];
+    foreach (q('SELECT logo FROM r1_stations WHERE logo IS NOT NULL AND logo <> \'\'')->fetchAll(PDO::FETCH_COLUMN) as $file) {
+        $missing['Logos'] += is_file(media_dir() . '/' . basename((string) $file)) ? 0 : 1;
+    }
+    foreach (q('SELECT file, cover FROM r1_tracks')->fetchAll() as $t) {
+        $missing['Tracks'] += is_file(track_dir() . '/' . basename((string) $t['file'])) ? 0 : 1;
+        if ($t['cover']) {
+            $missing['Cover'] += is_file(media_dir() . '/' . basename((string) $t['cover'])) ? 0 : 1;
+        }
+    }
+    return $missing;
 }
 
 /** Outputs a complete HTML page. $scripts are file names in assets/. */
