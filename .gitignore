@@ -1,7 +1,81 @@
-# Never commit the real configuration
-1radioe-private/config.php
-# Content lives outside the app folder; never commit it
+# Secrets and server data: never commit
+#
+# On the server, config and secrets live in 1radioe-private/ outside the
+# checkout. In the repo only the sample and the .htaccess are versioned;
+# anything else placed there locally (config.php, webhook-secret, deploy
+# log, inbox/, tmp/) stays out of git.
+1radioe-private/*
+!1radioe-private/.htaccess
+!1radioe-private/config.sample.php
+
+# Generic secret material, wherever it ends up
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*deploy_key*
+webhook-secret
+
+# Database dumps contain station data, the admin password hash and the
+# TOTP secret
+*.sql
+*.sql.gz
+
+# Uploaded content: never commit
+#
+# Uploads stay untracked on purpose. The deploy runs `git reset --hard`,
+# which leaves untracked files alone. If anything under media/ were ever
+# committed, a deploy could overwrite uploads. Never use `git clean`.
 1radioe-media/
 1radioe/media/
 1radioe/tmp/
 1radioe/inbox/
+www/media/
+
+# Purchased music must never be published
+*.mp3
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.opus
+*.wav
+
+# Local working files
+#
+# Design sources (Affinity) and drafts are kept locally only. Assets the
+# app actually serves get exported into its asset folders and committed
+# there. The handover is internal project planning, not part of the repo.
+design/
+HANDOVER.md
+
+# Release archives (releases are git tags)
+*.zip
+*.tar.gz
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+._*
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# Claude Code and other AI tooling, local only
+#
+# Approved shell commands are stored as permission rules in
+# .claude/settings*.json, verbatim, including any token or password that
+# was part of the command. The global gitignore does not travel with the
+# repo, so the whole folder is excluded here. Project MCP configs can hold
+# API keys in their env blocks. CLAUDE.md itself may be committed, but
+# must never contain secrets.
+.claude/
+.mcp.json
+CLAUDE.local.md
