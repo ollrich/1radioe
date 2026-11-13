@@ -62,21 +62,33 @@
     return img;
   }
 
-  /** Fills a tile with the logo, or the initials if there is none (or it fails to load). */
+  /* small stack in the top right corner: this tile is a category, not a station */
+  const STACK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" '
+    + 'stroke-linecap="round" aria-hidden="true"><rect x="2" y="5.5" width="8.5" height="8.5" rx="2"/>'
+    + '<path d="M5.5 2.5h6a2 2 0 0 1 2 2v6"/></svg>';
+
+  /**
+   * Fills a tile with the logo, or the initials if there is none (or it fails to load).
+   * A category shows its own picture from the admin, without one the collage the server
+   * makes from the first logos inside (as in Sonos), and the stack on top.
+   */
   function fillTile(node, it) {
+    const isCat = it.type === 'category';
     node.replaceChildren();
-    node.classList.remove('folder');
-    if (it.type === 'category') {
-      node.classList.add('folder');
-      (levels[it.id] || []).slice(0, 4).forEach((ch) => {
-        const m = el('span');
-        if (ch.logo) m.append(image(ch.logo, () => m.replaceChildren()));
-        node.append(m);
-      });
-      return;
-    }
-    if (it.logo) node.append(image(it.logo, () => { node.textContent = initials(it.name); }));
-    else node.textContent = initials(it.name);
+    node.classList.toggle('cat', isCat);
+    const stack = () => {
+      if (!isCat) return;
+      const s = el('span', 'stack');
+      s.innerHTML = STACK;
+      node.append(s);
+    };
+    if (it.logo) {
+      node.append(image(it.logo, () => {
+        node.textContent = initials(it.name);
+        stack();
+      }));
+    } else node.textContent = initials(it.name);
+    stack();
   }
 
   function pillEl(it) {
