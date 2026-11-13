@@ -1,6 +1,6 @@
 # Einrichtung auf All-Inkl mit automatischem Deploy
 
-Diese Anleitung bringt 1radiœ auf `https://1radioe.net` und richtet das automatische Ausrollen ein: Ein Push auf `main` aktualisiert den Server von selbst. Sie geht davon aus, dass die bisherige Installation unter `eichhof.co/1radioe` im selben All-Inkl-Account läuft und weiterläuft, bis Sonos umgestellt ist.
+Diese Anleitung bringt 1radiœ auf `https://1radioe.net` und richtet das automatische Ausrollen ein: Ein Push auf `main` aktualisiert den Server von selbst. Sie geht davon aus, dass die bisherige Installation unter `eichhof.co/1radioe` im selben All-Inkl-Account läuft. Ab Schritt 8 führt ihre Sonos-Adresse auf den neuen Code, ab Schritt 9 bleibt von ihr nur diese eine Datei.
 
 `w0123456` steht überall für deine Account-Kennung. Im Webspace sieht das am Ende so aus:
 
@@ -11,7 +11,7 @@ Diese Anleitung bringt 1radiœ auf `https://1radioe.net` und richtet das automat
     app/                  Programmcode, nicht per Web erreichbar
     www/                  Web-Verzeichnis der Domain
       media/              Logos, Cover, Tracks. Nicht in Git.
-  eichhof.co/1radioe/     alte Installation, bleibt vorerst
+  eichhof.co/1radioe/     alte Installation, nach Schritt 9 nur noch smapi.php, die hierher führt
 ```
 
 `1radioe-private/` liegt neben `www/` und damit außerhalb des Web-Verzeichnisses. Git schließt den Ordner aus (`.gitignore`), deshalb landet er nie im Repository und das Ausrollen lässt ihn unberührt.
@@ -168,21 +168,87 @@ Damit die Web-App deinen Hörstatus meldet: im Admin unter System → Hörgerät
 
 ## 8. Sonos umstellen
 
-Erst wenn Schritt 7 klappt. Im Sonos-Entwicklerportal in der Integration `co.eichhof.radioe`:
+Erst wenn Schritt 7 klappt.
+
+### Alte Adressen auf den neuen Code führen
+
+Lautsprecher, die noch eine alte Adresse aufrufen, sollen sofort den neuen Stand bekommen. Dafür wird die alte `smapi.php` durch eine Datei ersetzt, die nur den neuen Code einbindet. Das ist keine Weiterleitung, Sonos merkt davon nichts. Eine echte Weiterleitung ginge nicht, Sonos folgt ihr bei SOAP-Anfragen nicht.
+
+Im Ordner `1radioe.net` den Pfad zum neuen Code merken und die alte Datei sichern:
+
+```bash
+NEU="$(pwd)/www/smapi.php"; echo "$NEU"
+```
+
+```bash
+cp -p ../eichhof.co/1radioe/smapi.php 1radioe-private/smapi-alt.php
+```
+
+Die Ausgabe muss `/www/htdocs/w0123456/1radioe.net/www/smapi.php` sein. Dann die alte Datei ersetzen:
+
+```bash
+printf "<?php\n// Old address: runs the 1radioe code in 1radioe.net, speakers that still use it get the same.\nrequire '%s';\n" "$NEU" > ../eichhof.co/1radioe/smapi.php
+```
+
+Prüfen:
+
+```bash
+curl -s https://eichhof.co/1radioe/smapi.php
+```
+
+Die Antwort beginnt mit `SMAPI ok` und nennt die Version der neuen Installation. Bei einem Fehler 500 erlaubt der Server die Einbindung nicht, dann die Sicherung zurückholen:
+
+```bash
+cp -p 1radioe-private/smapi-alt.php ../eichhof.co/1radioe/smapi.php
+```
+
+Die ältere RADIOE-Lite-Adresse bindet bisher `../1radioe/smapi.php` ein und bricht, sobald dort aufgeräumt wird. So findet man sie:
+
+```bash
+grep -rl --include=smapi.php '\.\./1radioe/smapi\.php' ../eichhof.co
+```
+
+Für jede gefundene Datei denselben `printf`-Befehl wie oben ausführen, mit ihrem Pfad statt `../eichhof.co/1radioe/smapi.php`.
+
+Jetzt einen Sender auf Sonos starten. Im Admin unter System erscheinen der Sender im Hörstatus und unter „Sonos-Adressen“ die alte Adresse. Beides kann nur der neue Code.
+
+### Endpunkt im Sonos-Portal
+
+Im Sonos-Entwicklerportal in der Integration `co.eichhof.radioe`:
 
 * Sonos Music API: SMAPI Endpoint `https://1radioe.net/smapi.php`
 * Service Configuration: Refresh, dann Send
 
-Integration ID, Favoriten und Wecker bleiben, die Kennungen der Sender ändern sich nicht. Logo- und Track-Adressen holt Sonos bei der nächsten Abfrage neu.
-
-Der alte Endpunkt `eichhof.co/1radioe/smapi.php` läuft weiter, bis Sonos sicher umgestellt ist. Eine Weiterleitung ersetzt das nicht, Sonos folgt bei SOAP-Anfragen keiner Weiterleitung.
+Integration ID, Favoriten und Wecker bleiben, die Kennungen der Sender ändern sich nicht. Logo- und Track-Adressen holt Sonos bei der nächsten Abfrage neu. Unter „Sonos-Adressen“ taucht danach `1radioe.net/smapi.php` als aktuelle Adresse auf. Eilig ist das nicht mehr, beide Adressen liefern denselben Stand.
 
 ## 9. Aufräumen, später
 
-Wenn Sonos einige Tage nur noch `1radioe.net` anfragt (Diagnose-Log im Admin):
+Wenn Schritt 8 läuft, braucht von der alten Installation nur noch `smapi.php` zu bleiben. Erst ansehen, was dort liegt und was gelöscht würde:
 
-* `eichhof.co/1radioe` löschen und `eichhof.co/1radioe-media` zuerst umbenennen, nach einer Weile löschen
-* Den alten Ordner `1radioe-private` der alten Installation im Account-Root löschen. Er enthält Passwort-Hash und TOTP-Secret, die neue Installation braucht ihn nicht. Danach liegt außer `1radioe.net/` nichts mehr von 1radiœ im Account
+```bash
+cd ../eichhof.co/1radioe && ls -A && find . -mindepth 1 -maxdepth 1 ! -name smapi.php
+```
+
+Passt die Liste, löschen und Browser, die noch alte Adressen wie `admin/` aufrufen, zu `1radioe.net` schicken:
+
+```bash
+find . -mindepth 1 -maxdepth 1 ! -name smapi.php -exec rm -rf {} +
+```
+
+```bash
+printf 'RewriteEngine On\nRewriteRule ^smapi\\.php$ - [L]\nRewriteRule ^(.*)$ https://1radioe.net/$1 [R=301,L]\n' > .htaccess
+```
+
+```bash
+cd /www/htdocs/w0123456/1radioe.net
+```
+
+Danach:
+
+* `eichhof.co/1radioe-media` zuerst umbenennen, nach einer Weile löschen. Die neue Installation nutzt `www/media/`.
+* Den alten Ordner `1radioe-private` im Account-Root löschen, und mit ihm `1radioe-private/smapi-alt.php`. Er enthält Passwort-Hash und TOTP-Secret, die neue Installation braucht ihn nicht.
+
+Die Dateien, die nur noch einbinden, dürfen bleiben, solange sie gebraucht werden. Unter System, „Sonos-Adressen“, steht für jede Adresse, wann Sonos sie zuletzt aufgerufen hat. Wurde eine alte Adresse einige Wochen nicht mehr aufgerufen, kann ihre Datei weg. Danach liegt außer `1radioe.net/` nichts mehr von 1radiœ im Account.
 
 ## Wenn etwas hakt
 

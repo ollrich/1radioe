@@ -66,15 +66,45 @@ function request_log(int $status, string $note): void
         if (setting('log_enabled', '0') !== '1') {
             return;
         }
-        q('INSERT INTO r1_request_log (at, ip, agent, method, item, status, note) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+        q('INSERT INTO r1_request_log (at, ip, agent, method, item, status, note, endpoint) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
             time(), client_ip(), mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 120),
             mb_substr($GLOBALS['log_method'], 0, 64), mb_substr($GLOBALS['log_item'], 0, 120), $status, mb_substr($note, 0, 255),
+            called_endpoint(),
         ]);
         if (random_int(1, 25) === 1) {   // keep the newest 500 entries
             q('DELETE FROM r1_request_log WHERE id < (SELECT id FROM (SELECT id FROM r1_request_log ORDER BY id DESC LIMIT 1 OFFSET 499) t)');
         }
     } catch (Throwable) {
         // logging must never break playback
+    }
+}
+
+/**
+ * The address Sonos called: host without port, and path, e.g. "1radioe.net/smapi.php",
+ * or "eichhof.co/1radioe/smapi.php" when an old address includes this file.
+ */
+function called_endpoint(): string
+{
+    $host = strtolower(rtrim((string) preg_replace('~:\d+$~', '', (string) ($_SERVER['HTTP_HOST'] ?? '')), '.'));
+    if (!preg_match('~^[a-z0-9.-]{1,100}$~', $host)) {
+        $host = '?';
+    }
+    $path = (string) preg_replace('#[^A-Za-z0-9._/-]#', '', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    return substr($host . $path, 0, 160);
+}
+
+/**
+ * Counts a request per called address, also with the diagnostic log off and without IP
+ * addresses. The admin shows when each address was last used (System, Sonos-Adressen).
+ */
+function endpoint_seen(): void
+{
+    try {
+        $now = time();
+        q('INSERT INTO r1_endpoints (endpoint, first_seen, last_seen, hits) VALUES (?, ?, ?, 1)
+           ON DUPLICATE KEY UPDATE last_seen = ?, hits = hits + 1', [called_endpoint(), $now, $now, $now]);
+    } catch (Throwable) {
+        // counting must never break playback
     }
 }
 
@@ -255,6 +285,7 @@ $GLOBALS['log_item']   = $param('id');
 
 try {
     db_migrate();   // after an update the database may need new columns before the admin was opened
+    endpoint_seen();
     switch ($call->localName) {
         // Lists: "root" is the top level, a category id lists its streams and playlists,
         // a playlist id its tracks. Empty playlists and categories and tracks whose MP3

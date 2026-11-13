@@ -408,6 +408,11 @@ render_page('Sender', <<<HTML
         <div class="table-wrap"><table class="log"><thead><tr><th>Sender</th><th>Zustand</th><th>Letzte Meldung</th></tr></thead><tbody id="listen"></tbody></table></div>
       </div>
       <div class="panel wide">
+        <h2>Sonos-Adressen</h2>
+        <p class="muted">Unter welcher Adresse Sonos diesen Dienst aufruft, auch über eine alte Adresse, die nur noch hierher führt. Eine alte Adresse kann weg, wenn sie einige Tage nicht mehr aufgerufen wurde. Gezählt wird auch ohne Diagnose-Log, ohne IP-Adressen.</p>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Adresse</th><th>Zuletzt</th><th>Anfragen</th><th>Seit</th></tr></thead><tbody id="endpoints"></tbody></table></div>
+      </div>
+      <div class="panel wide">
         <div class="panel-head">
           <h2>Diagnose-Log</h2>
           <label class="switch"><input type="checkbox" id="log-enabled"><span>Protokollieren</span></label>
@@ -415,7 +420,7 @@ render_page('Sender', <<<HTML
           <button class="btn ghost small" id="log-clear">Leeren</button>
         </div>
         <p class="muted">Zeichnet die letzten 500 Anfragen von Sonos auf, mit IP-Adressen. Nur zur Fehlersuche einschalten.</p>
-        <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Methode</th><th>Eintrag</th><th>Status</th><th>Hinweis</th><th>Absender</th></tr></thead><tbody id="log"></tbody></table></div>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Methode</th><th>Eintrag</th><th>Status</th><th>Hinweis</th><th>Adresse</th><th>Absender</th></tr></thead><tbody id="log"></tbody></table></div>
       </div>
     </div>
   </section>

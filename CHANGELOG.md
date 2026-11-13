@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.10.2 (13. November 2026)
+
+* Admin, System: Neuer Bereich „Sonos-Adressen“ zeigt, unter welcher Adresse Sonos den Dienst aufruft, wann zuletzt und wie oft. Er zählt auch ohne Diagnose-Log und ohne IP-Adressen. So sieht man, wann eine alte Adresse wie `eichhof.co/1radioe/smapi.php` nicht mehr gebraucht wird
+* Das Diagnose-Log hat eine Spalte „Adresse“. Einträge ohne Adresse stammen von einer älteren Version, zum Beispiel der alten Installation
+* Datenbank: Schema 8 mit der Spalte `endpoint` im Log und der Tabelle `r1_endpoints`. Die alte Installation an derselben Datenbank läuft weiter
+* `DEPLOY-SETUP.md`: Die alte `smapi.php` wird in Schritt 8 durch eine Datei ersetzt, die den neuen Code einbindet. Damit bekommen Lautsprecher an alten Adressen sofort den neuen Stand, und in Schritt 9 kann die alte Installation bis auf diese Datei weg
+
 ## 1.10.1 (13. November 2026)
 
 * Web-App: Die Leertaste ist jetzt immer Play und Pause, auch direkt nach einem Klick auf einen Knopf. Bisher blieb der Fokus nach einem Klick auf „Nächster Sender“ auf dem Knopf, und die Leertaste sprang einen Sender weiter. Wer per Tab-Taste auf einem Knopf steht, drückt ihn mit der Leertaste wie gewohnt. Gedrückt halten schaltet nicht mehr mehrfach um, und nach dem Verstellen der Lautstärke greift die Leertaste ebenfalls
