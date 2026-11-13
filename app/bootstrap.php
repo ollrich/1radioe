@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.11.2';
+const APP_VERSION = '1.12.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');

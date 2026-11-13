@@ -405,20 +405,28 @@ render_page('Sender', <<<HTML
       </div>
       <div class="panel wide">
         <h2>Hörgeräte</h2>
-        <p class="muted">Browser, die deinen Hörstatus melden dürfen. Das Cookie gilt 180 Tage und verlängert sich bei Benutzung. Es erlaubt nur Meldungen an <code>/api/listen</code>, nie den Zugang zur Verwaltung. Gespeichert ist nur eine Prüfsumme.</p>
+        <p class="muted">Browser und Dienste wie Home Assistant, die deinen Hörstatus melden dürfen. Sie dürfen nur an <code>/api/listen</code> melden, nie die Verwaltung öffnen. Gespeichert ist nur eine Prüfsumme. Das Cookie eines Browsers gilt 180 Tage und verlängert sich bei Benutzung, ein Schlüssel gilt, bis du ihn widerrufst.</p>
         <p id="listen-this"></p>
         <form class="banner-form" data-remember id="listen-remember" hidden>
           <input name="name" maxlength="80" required placeholder="Name, z. B. Firmenrechner" aria-label="Name des Geräts">
           <button class="btn primary small">Dieses Gerät merken</button>
         </form>
-        <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
+        <form class="banner-form" id="listen-key">
+          <input name="name" maxlength="80" required value="Home Assistant" aria-label="Name für den Schlüssel">
+          <button class="btn ghost small">Schlüssel erzeugen</button>
+        </form>
+        <div class="key-box" id="listen-key-box" hidden>
+          <p class="muted">Der Schlüssel für „<span id="listen-key-name"></span>“ ist nur jetzt sichtbar. In Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
+          <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" id="listen-key-copy">Kopieren</button></p>
+        </div>
+        <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Art</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
       </div>
       <div class="panel wide">
         <div class="panel-head">
           <h2>Hörstatus</h2>
           <button class="btn ghost small" id="listen-refresh">Aktualisieren</button>
         </div>
-        <p class="muted">Zum Testen: Ein Sender läuft, solange seine letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Sonos meldet beim Start und danach etwa jede Minute über den Reporting Endpoint, am Ende kommt ein „final“. Gespeichert werden nur Sender und Zeitpunkt. Die Liste aktualisiert sich alle 10 Sekunden.</p>
+        <p class="muted">Zum Testen: Ein Sender läuft, solange seine letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Sonos meldet über den Reporting Endpoint nur den Start und beim Wechsel auf einen anderen Sender ein „final“. Den laufenden Zustand meldet Home Assistant jede Minute, Pause und Stopp sofort. Gespeichert werden nur Sender und Zeitpunkt. Die Liste aktualisiert sich alle 10 Sekunden.</p>
         <div class="table-wrap"><table class="log"><thead><tr><th>Sender</th><th>Zustand</th><th>Letzte Meldung</th></tr></thead><tbody id="listen"></tbody></table></div>
       </div>
       <div class="panel wide">

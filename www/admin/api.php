@@ -163,6 +163,11 @@ try {
             listen_cookie_set($created['token']);
             json_out(['device' => listen_device_public($created['device'], (int) $created['device']['id'])]);
 
+        case 'POST listen.key':
+            // a key for Home Assistant or an app, shown only in this answer
+            $created = listen_device_create((string) ($in['name'] ?? ''), 'app');
+            json_out(['device' => listen_device_public($created['device']), 'key' => $created['token']]);
+
         case 'POST listen.revoke':
             listen_device_revoke((int) $id);
             $current = listen_current_device();
