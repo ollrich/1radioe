@@ -12,6 +12,7 @@ declare(strict_types=1);
 const DEV_ROUTES = [
     '~^/api/status$~'                  => '/api/status.php',
     '~^/api/listen$~'                  => '/api/listen.php',
+    '~^/api/nowplaying$~'              => '/api/nowplaying.php',
     '~^/api/stations\.json$~'          => '/api/stations.php',
     '~^/streams\.(m3u|pls)$~'          => '/playlist.php?format=$1',
     '~^/s/([A-Za-z0-9._-]+)\.m3u$~'    => '/playlist.php?format=m3u&id=$1',

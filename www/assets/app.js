@@ -15,6 +15,8 @@
   const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
   const STATUS_EVERY = 30000;
   const TEXT = { idle: 'Bereit', connecting: 'Verbindet', live: 'Live', paused: 'Pausiert', error: 'Keine Verbindung' };
+  const LISTENING = 'Ollie hört gerade';
+  const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
 
   /** Every station and category by id; stations know their level ('root' or a category id). */
   const items = new Map();
@@ -77,9 +79,9 @@
     else node.textContent = initials(it.name);
   }
 
-  function pillEl() {
+  function pillEl(it) {
     const p = el('span', 'pill');
-    p.title = 'Ollie hört gerade';
+    p.dataset.item = it.id;   // the info on hover or tap names the station
     p.append(el('i'), el('i'), el('i'));
     p.hidden = true;
     return p;
@@ -100,7 +102,7 @@
       : `${it.num} ${it.name}`;
     if (it.type === 'station' && state.cur && state.cur.id === it.id) text += ', ' + TEXT[state.phase];
     if (it.type === 'category' && holdsCur(it)) text += ', enthält den aktuellen Sender';
-    if (isActive(it)) text += ', Ollie hört gerade';
+    if (isActive(it)) text += ', ' + LISTENING;
     return text;
   }
 
@@ -123,7 +125,7 @@
       const tile = el('span', 'tile');
       fillTile(tile, it);
       const slot = el('span', 'pill-slot');
-      slot.append(pillEl());
+      slot.append(pillEl(it));
       const parts = [el('span', 'num', it.num), el('span', 'tick'), slot, tile, el('span', 'snm', it.name)];
       parts.forEach((p) => p.setAttribute('aria-hidden', 'true'));
       b.append(...parts);
@@ -232,7 +234,7 @@
     const sub = el('span', 'rsub');
     const rn = el('span', 'rn');
     rn.append(name, sub);
-    const pill = pillEl();
+    const pill = pillEl(it);
     const parts = [el('span', 'num', it.num), tile, rn, pill];
     if (it.type === 'category') {
       const chev = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -303,7 +305,7 @@
       const cur = Boolean(state.cur && state.cur.id === it.id && state.phase !== 'idle');
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
-      sub.textContent = it.type === 'category' ? `${it.count} Sender` : cur ? TEXT[state.phase] : (it.desc || '');
+      sub.textContent = it.type === 'category' ? `${it.count} Sender` : cur ? (trackLine(currentTrack()) || TEXT[state.phase]) : (it.desc || '');
       // an open category shows the status at the station inside, not twice
       pill.hidden = !isActive(it) || (it.type === 'category' && state.openCat === it.id);
     }
@@ -338,9 +340,11 @@
     if (phase !== 'idle') $('[data-r1="mini"]').hidden = false;
     if (phase === 'live') listenStart();
     else if (phase !== 'connecting') listenStop(false);
+    if (phase === 'live' && (now.id !== state.cur.id || !now.timer)) pollNow();
+    else if (phase !== 'live' && phase !== 'connecting') stopNow();
     document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ` : '1radiœ';
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
-    updateIndicators();
+    renderTrack();
   }
 
   /* ---------- Audio ---------- */
@@ -485,10 +489,11 @@
     const it = state.cur;
     const cat = it.level !== 'root' ? items.get(it.level) : null;
     const type = it.logo && /\.png$/i.test(it.logo) ? 'image/png' : 'image/jpeg';
+    const t = currentTrack();
     media.metadata = new MediaMetadata({
-      title: it.name,
-      artist: '1radiœ',
-      album: cat ? cat.name : '',
+      title: t ? t.title : it.name,
+      artist: t ? (t.artist || it.name) : '1radiœ',
+      album: t ? it.name : (cat ? cat.name : ''),
       artwork: it.logo ? [{ src: it.logo, sizes: '600x600', type }] : [],
     });
   }
@@ -677,6 +682,138 @@
       setView('root');
     }
   });
+
+  /* ---------- Song from the stream ----------
+   * Shoutcast and Icecast send the current title inside the stream, which a page cannot
+   * read from <audio>. The server reads it (api/nowplaying, cached there), the player
+   * asks while it plays. */
+
+  const now = { id: null, track: null, timer: 0 };
+
+  /** The song of the station in the player, only while it plays. */
+  function currentTrack() {
+    return isPlaying() && state.cur && now.id === state.cur.id ? now.track : null;
+  }
+
+  function trackLine(t) {
+    return t ? (t.artist ? `${t.artist} · ${t.title}` : t.title) : '';
+  }
+
+  function renderTrack() {
+    const t = currentTrack();
+    $$('[data-r1="track"]').forEach((n) => { n.hidden = !t; n.title = trackLine(t); });
+    $$('[data-r1="track-title"]').forEach((n) => { n.textContent = t ? t.title : ''; });
+    $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : ''; n.hidden = !(t && t.artist); });
+    // the docked player has one line: the song instead of "Live"
+    $$('.mini [data-r1="state"]').forEach((n) => { n.textContent = t && state.phase === 'live' ? trackLine(t) : TEXT[state.phase]; });
+    setMediaMetadata();
+    updateIndicators();
+  }
+
+  async function pollNow() {
+    clearTimeout(now.timer);
+    now.timer = 0;
+    const it = state.cur;
+    if (!it || state.phase !== 'live') return;
+    let track = now.id === it.id ? now.track : null;
+    try {
+      const res = await fetch('api/nowplaying?id=' + encodeURIComponent(it.id), { credentials: 'omit' });
+      if (res.ok) track = (await res.json()).track || null;
+    } catch {
+      // offline for a moment: keep what is shown
+    }
+    if (state.cur !== it || state.phase !== 'live') return;   // switched or stopped meanwhile
+    const changed = now.id !== it.id || trackLine(track) !== trackLine(now.track);
+    now.id = it.id;
+    now.track = track;
+    if (changed) renderTrack();
+    now.timer = setTimeout(pollNow, NOW_EVERY);
+  }
+
+  function stopNow() {
+    clearTimeout(now.timer);
+    now.timer = 0;
+  }
+
+  /* ---------- Info at "Ollie hört gerade" ----------
+   * Hovering the bars shows who listens to what. On touch screens a tap on the bars
+   * shows it instead of starting the station; the rest of the button still starts it.
+   * Screen readers get the same text from the buttons' labels. */
+
+  const ptip = el('div', 'ptip');
+  ptip.setAttribute('aria-hidden', 'true');
+  ptip.hidden = true;
+  document.body.append(ptip);
+  let ptipFor = null;
+  let ptipTimer = 0;
+  let pointer = 'mouse';
+
+  /** Bars of a station, a category or the player; not the switch in the header. */
+  function pillAt(target) {
+    const p = target instanceof Element ? target.closest('.pill') : null;
+    return p && !p.hidden && (p.dataset.item || p.dataset.r1 === 'pill') ? p : null;
+  }
+
+  function pillText(pill) {
+    const it = pill.dataset.item ? items.get(pill.dataset.item) : state.cur;
+    if (!it) return LISTENING;
+    if (it.type === 'category') {
+      const names = stationsOf(it.id).filter((x) => state.active.has(x.id)).map((x) => x.name);
+      return names.length ? `${LISTENING} ${names.join(' und ')}` : LISTENING;
+    }
+    return `${LISTENING} ${it.name}`;
+  }
+
+  function showTip(pill, autoHide) {
+    clearTimeout(ptipTimer);
+    ptip.textContent = pillText(pill);
+    ptip.hidden = false;
+    ptip.classList.remove('below');
+    const r = pill.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const left = Math.min(Math.max(8, cx - ptip.offsetWidth / 2), window.innerWidth - 8 - ptip.offsetWidth);
+    let top = r.top - ptip.offsetHeight - 10;
+    if (top < 8) {
+      top = r.bottom + 10;
+      ptip.classList.add('below');
+    }
+    ptip.style.left = left + 'px';
+    ptip.style.top = top + 'px';
+    ptip.style.setProperty('--ax', (cx - left) + 'px');
+    ptipFor = pill;
+    if (autoHide) ptipTimer = setTimeout(hideTip, 2500);
+  }
+
+  function hideTip() {
+    clearTimeout(ptipTimer);
+    ptip.hidden = true;
+    ptipFor = null;
+  }
+
+  document.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const p = pillAt(e.target);
+    if (p && p !== ptipFor) showTip(p, false);
+  });
+  document.addEventListener('pointerout', (e) => {
+    if (e.pointerType === 'mouse' && ptipFor && !(e.relatedTarget instanceof Node && ptipFor.contains(e.relatedTarget))) hideTip();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    pointer = e.pointerType;
+    if (ptipFor && pillAt(e.target) !== ptipFor) hideTip();
+  }, true);
+  // captured before the buttons see it: a tap on the bars only shows the info
+  document.addEventListener('click', (e) => {
+    const p = pillAt(e.target);
+    if (!p || pointer === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (ptipFor === p) hideTip();
+    else showTip(p, true);
+  }, true);
+  window.addEventListener('scroll', hideTip, { passive: true });
+  scroller.addEventListener('scroll', hideTip, { passive: true });
+  listEl.addEventListener('scroll', hideTip, { passive: true });
 
   /* ---------- Start ---------- */
 

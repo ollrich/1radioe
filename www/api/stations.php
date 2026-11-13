@@ -47,6 +47,7 @@ try {
         'generated'  => date(DATE_ATOM),
         'status_url' => $base . '/api/status',
         'ping_url'   => $base . '/api/ping',
+        'nowplaying_url' => $base . '/api/nowplaying?id={id}',
         'categories' => array_map(static fn($c) => [
             'id'   => $c['row']['smapi_id'],
             'name' => $c['row']['title'],

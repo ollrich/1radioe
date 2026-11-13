@@ -12,6 +12,7 @@ Options -Indexes
     RewriteEngine On
     RewriteRule ^api/status$ api/status.php [L]
     RewriteRule ^api/listen$ api/listen.php [L]
+    RewriteRule ^api/nowplaying$ api/nowplaying.php [L]
     RewriteRule ^api/stations\.json$ api/stations.php [L]
     RewriteRule ^streams\.(m3u|pls)$ playlist.php?format=$1 [L]
     RewriteRule ^s/([A-Za-z0-9._-]+)\.m3u$ playlist.php?format=m3u&id=$1 [L]
