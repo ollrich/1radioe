@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 5;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)
+const SCHEMA_VERSION = 6;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)
 
 function db(): PDO
 {
@@ -182,6 +182,33 @@ function db_migrate_locked(): void
             last_used_at DATETIME     NULL,
             revoked_at   DATETIME     NULL,
             UNIQUE KEY uq_token (token_hash)
+        ) $opts");
+    }
+    if ($current < 6) {
+        // 1.9: posting to Bluesky and Mastodon. Per station: may it be posted, own hashtags.
+        // Per listening session: when it began and whether it was already considered for
+        // a post. Additive as well.
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'social'")->fetch()) {
+            db()->exec("ALTER TABLE r1_stations ADD COLUMN social TINYINT(1) NOT NULL DEFAULT 1 AFTER website, ADD COLUMN hashtags VARCHAR(255) NOT NULL DEFAULT '' AFTER social");
+        }
+        if (!q("SHOW COLUMNS FROM r1_listen_status LIKE 'since'")->fetch()) {
+            db()->exec('ALTER TABLE r1_listen_status ADD COLUMN since INT UNSIGNED NOT NULL DEFAULT 0, ADD COLUMN posted_since INT UNSIGNED NOT NULL DEFAULT 0');
+        }
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_social_posts (
+            id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            station_id  INT UNSIGNED NULL,
+            title       VARCHAR(120) NOT NULL DEFAULT '',
+            kind        VARCHAR(8)   NOT NULL,
+            created_at  INT UNSIGNED NOT NULL,
+            outcome     VARCHAR(16)  NOT NULL,
+            note        VARCHAR(255) NOT NULL DEFAULT '',
+            text        TEXT         NULL,
+            bsky_url    VARCHAR(255) NULL,
+            bsky_error  VARCHAR(255) NULL,
+            masto_url   VARCHAR(255) NULL,
+            masto_error VARCHAR(255) NULL,
+            KEY k_station (station_id, created_at),
+            KEY k_at (created_at)
         ) $opts");
     }
     setting_set('schema', (string) SCHEMA_VERSION);

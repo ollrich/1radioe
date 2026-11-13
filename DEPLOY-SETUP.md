@@ -75,6 +75,18 @@ In der `config.php` während des Umzugs:
 * `base_url` leer lassen (`''`) oder die Zeile entfernen. Dann leitet jede Installation ihre Adresse aus der Anfrage ab, die alte bleibt bei `eichhof.co/1radioe`, die neue nimmt `1radioe.net`.
 * `media_dir` und `media_url` dürfen nicht gesetzt sein, sonst würden beide Installationen denselben Medienordner verwenden.
 
+Für das Posting zu Bluesky und Mastodon kommt eine Zeile dazu. Den Wert zeigt der Admin unter „Posting“ frisch erzeugt an, oder:
+
+```bash
+php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+```
+
+```php
+'secret_key' => '<der Wert>',
+```
+
+Die alte Installation ignoriert die Zeile. Wird der Schlüssel später geändert, müssen App-Passwort und Token im Admin neu eingegeben werden.
+
 Liegt die Domain in einem anderen All-Inkl-Account, braucht es dort eine neue Datenbank: In phpMyAdmin der alten Datenbank alle Tabellen mit `r1_` exportieren, in die neue importieren und die Zugangsdaten in der neuen `config.php` eintragen. Den Export danach löschen, er enthält Passwort-Hash und TOTP-Secret.
 
 ## 6. Webhook-Secret

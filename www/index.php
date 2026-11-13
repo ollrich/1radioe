@@ -11,6 +11,15 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 require dirname(__DIR__) . '/app/webapp.php';
 
+// A station page: 1radioe.net/s/<smapi_id> (the link in posts) forwards to ?s=<smapi_id>,
+// which opens the app with that station in the player and carries Open Graph tags
+// for link cards on Mastodon and elsewhere.
+$sid = isset($_GET['s']) && is_string($_GET['s']) && preg_match('~^[A-Za-z0-9._-]{1,64}$~', $_GET['s']) ? $_GET['s'] : null;
+if ($sid !== null && isset($_GET['go'])) {
+    header('Location: ../?s=' . rawurlencode($sid), true, 302);
+    exit;
+}
+
 webapp_headers();
 header('Vary: Cookie');   // Ollie's own browser gets the listening switch
 $listener = null;
@@ -24,8 +33,24 @@ try {
     $levels = null;
 }
 
+$start = null;
+foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
+    foreach ($list as $item) {
+        if ($item['type'] === 'station' && $item['id'] === $sid) {
+            $start = $item;
+            break 2;
+        }
+    }
+}
+$og = [
+    'title'       => $start !== null ? $start['name'] : APP_NAME,
+    'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : 'Ollies Radiosender: hören im Browser, auf Sonos und in VLC.',
+    'url'         => base_url() . ($start !== null ? '/s/' . rawurlencode($start['id']) : '/'),
+    'image'       => $start['logo'] ?? null,
+];
+
 $v    = h(APP_VERSION);
-$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL]) : '';
+$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL, 'start' => $start['id'] ?? null]) : '';
 
 /** The plain list for browsers without JavaScript. */
 function nojs_list(array $levels): string
@@ -57,7 +82,16 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <meta name="theme-color" content="#fcfcfd" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1328" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Ollies Radiosender: hören im Browser, auf Sonos und in VLC.">
-<title>1radiœ</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="<?= h(APP_NAME) ?>">
+<meta property="og:title" content="<?= h($og['title']) ?>">
+<meta property="og:description" content="<?= h($og['description']) ?>">
+<meta property="og:url" content="<?= h($og['url']) ?>">
+<?php if ($og['image'] !== null): ?>
+<meta property="og:image" content="<?= h($og['image']) ?>">
+<meta name="twitter:card" content="summary">
+<?php endif; ?>
+<title><?= $start !== null ? h($start['name']) . ' · ' : '' ?>1radiœ</title>
 <link rel="icon" href="assets/favicon.png?v=<?= $v ?>">
 <link rel="preload" href="assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/app.css?v=<?= $v ?>">

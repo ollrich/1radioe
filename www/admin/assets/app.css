@@ -213,7 +213,33 @@ label small { font-weight: 400; }
 }
 .toast.error { border-color: var(--danger); color: #ffd3d3; }
 
+/* Posting */
+.social-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6rem; margin-top: .6rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
+.chip { font: inherit; font-size: .85rem; padding: .2rem .65rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.chip:hover, .chip:focus-visible { border-color: var(--accent); }
+.preview { margin-inline: 0; margin-bottom: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); overflow: hidden; }
+.preview figcaption { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; font-size: .85rem; font-weight: 600; border-bottom: 1px solid var(--line); }
+.preview .count { color: var(--muted); font-weight: 400; }
+.preview .count.over { color: var(--danger); font-weight: 600; }
+.preview-text { margin: 0; padding: .7rem .8rem; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 4.5rem; }
+.brakes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: .6rem 0 1rem; }
+.brakes label { display: flex; flex-direction: column; gap: .3rem; }
+.brakes label small.muted { display: block; }
+.brakes input { margin-top: auto; }
+.form-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1rem; }
+.right { text-align: right; }
+.log-panel { margin-top: 16px; }
+.log tr.is-skipped td { color: var(--muted); }
+.log .block { display: block; }
+.text-danger { color: var(--danger); }
+.key-line code { overflow-wrap: anywhere; }
+.social-fields { margin-top: .9rem; }
+.social-fields > * + * { margin-top: .9rem; }
+
 @media (max-width: 760px) {
+  .social-grid, .brakes { grid-template-columns: 1fr; }
+  .right { text-align: left; }
   .editor-body { grid-template-columns: 1fr; padding: 1rem; }
   .editor-head, .editor-foot { padding: .8rem 1rem; }
   .editor-foot { flex-wrap: wrap; }

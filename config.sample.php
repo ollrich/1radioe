@@ -36,6 +36,13 @@ return [
     // Shown on the system page (Integration ID in the Sonos developer portal).
     'integration_id' => 'co.eichhof.radioe',
     'timezone'       => 'Europe/Berlin',
-    // Only for local testing: allow stream tests against localhost and private networks.
+    // Key for the Bluesky app password and the Mastodon token, which are stored encrypted
+    // in the database. 32 random bytes, base64. The admin page "Posting" shows a fresh one
+    // while this is empty, or generate it with:
+    //   php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+    // Changing it later means entering app password and token again.
+    'secret_key'     => '',
+    // Only for local testing: allow stream tests against localhost and private networks
+    // (and plain http for the posting test servers).
     'allow_private_urls' => false,
 ];

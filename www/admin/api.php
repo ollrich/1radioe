@@ -293,6 +293,44 @@ try {
         case 'POST import.lite':
             json_out(['imported' => import_lite()]);
 
+        /* ----- Posting to Bluesky and Mastodon ----- */
+
+        case 'GET social':
+            json_out(['settings' => social_public(social_settings()), 'stations' => social_station_choices(), 'log' => social_log_rows(50)]);
+
+        case 'GET social.log':
+            json_out(['log' => social_log_rows(100)]);
+
+        case 'POST social.save':
+            json_out(['settings' => social_public(social_save($in))]);
+
+        case 'POST social.preview':
+            // with the values from the form, saved or not
+            $s = social_settings();
+            $s['template'] = mb_substr(clean_text_multiline((string) ($in['template'] ?? $s['template'])), 0, 1000);
+            $s['hashtags'] = (string) ($in['hashtags'] ?? $s['hashtags']);
+            $s['site_url'] = rtrim(trim((string) ($in['site_url'] ?? $s['site_url'])), '/');
+            $station = station_find((int) ($in['station'] ?? 0));
+            if ($station === null || $station['kind'] !== 'stream') {
+                $station = ['id' => 0, 'smapi_id' => 'beispiel', 'title' => 'Beispielsender', 'website' => 'https://example.org', 'hashtags' => '', 'description' => ''];
+            }
+            json_out(['preview' => social_preview($s, $station)]);
+
+        case 'POST social.check':
+            $net = (string) ($in['network'] ?? '');
+            if (!in_array($net, ['bsky', 'masto'], true)) {
+                throw new InputError([], 'Unbekanntes Netzwerk.');
+            }
+            try {
+                $info = social_check($net);
+                json_out(['ok' => true, 'info' => $info, 'settings' => social_public(social_settings())]);
+            } catch (SocialError $e) {
+                json_out(['ok' => false, 'info' => $e->getMessage()]);
+            }
+
+        case 'POST social.test':
+            json_out(['entry' => social_run((int) ($in['station'] ?? 0), 'test'), 'log' => social_log_rows(50)]);
+
         default:
             json_out(['error' => 'Unbekannte Aktion.'], 404);
     }
@@ -301,6 +339,18 @@ try {
 } catch (Throwable $e) {
     error_log('1radioe admin: ' . $e);
     json_out(['error' => 'Interner Fehler. Details stehen im PHP-Fehlerlog.'], 500);
+}
+
+/** Streams for the preview and the test post in the posting view. */
+function social_station_choices(): array
+{
+    $out = [];
+    foreach (stations_all() as $s) {
+        if ($s['kind'] === 'stream') {
+            $out[] = ['id' => (int) $s['id'], 'title' => $s['title'], 'social' => (int) ($s['social'] ?? 1) === 1, 'active' => (bool) $s['active']];
+        }
+    }
+    return $out;
 }
 
 /**
