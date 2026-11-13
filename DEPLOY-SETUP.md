@@ -216,10 +216,11 @@ Jetzt einen Sender auf Sonos starten. Im Admin unter System erscheinen der Sende
 
 Im Sonos-Entwicklerportal in der Integration `co.eichhof.radioe`:
 
-* Sonos Music API: SMAPI Endpoint `https://1radioe.net/smapi.php`
+* Sonos Music API, Endpoints: SMAPI Endpoint `https://1radioe.net/smapi.php`
+* Sonos Music API, Endpoints: Reporting Endpoint `https://1radioe.net/report/v2.3`, Reporting Endpoint Version `2.3`. Darüber melden die Lautsprecher, dass ein Sender noch läuft. Ohne diesen Eintrag erlischt der Hörstatus nach zweieinhalb Minuten
 * Service Configuration: Refresh, dann Send
 
-Integration ID, Favoriten und Wecker bleiben, die Kennungen der Sender ändern sich nicht. Logo- und Track-Adressen holt Sonos bei der nächsten Abfrage neu. Unter „Sonos-Adressen“ taucht danach `1radioe.net/smapi.php` als aktuelle Adresse auf. Eilig ist das nicht mehr, beide Adressen liefern denselben Stand.
+Integration ID, Favoriten und Wecker bleiben, die Kennungen der Sender ändern sich nicht. Logo- und Track-Adressen holt Sonos bei der nächsten Abfrage neu. Unter „Sonos-Adressen“ taucht danach `1radioe.net/smapi.php` als aktuelle Adresse auf. Läuft ein Sender ein paar Minuten, stehen im Diagnose-Log etwa jede Minute Einträge `timePlayed update` mit der Adresse `1radioe.net/report/v2.3/…`. Eilig ist das nicht mehr, beide Adressen liefern denselben Stand.
 
 ## 9. Aufräumen, später
 

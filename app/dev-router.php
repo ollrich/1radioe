@@ -17,6 +17,7 @@ const DEV_ROUTES = [
     '~^/streams\.(m3u|pls)$~'          => '/playlist.php?format=$1',
     '~^/s/([A-Za-z0-9._-]+)\.m3u$~'    => '/playlist.php?format=m3u&id=$1',
     '~^/s/([A-Za-z0-9._-]+)$~'         => '/index.php?s=$1&go=1',
+    '~^/report/~'                      => '/report.php',
 ];
 
 $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);

@@ -111,6 +111,7 @@ try {
                     'Service-Name'          => APP_NAME,
                     'SMAPI Endpoint'        => base_url(1) . '/smapi.php',
                     'SMAPI Endpoint Version' => '1.1',
+                    'Reporting Endpoint'    => base_url(1) . '/report/v2.3',
                     'Authentication Method' => 'Anonymous',
                     'Integration ID'        => (string) cfg('integration_id', 'co.eichhof.radioe'),
                 ],

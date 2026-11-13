@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.11.0 (13. November 2026)
+
+**Hörstatus über die Wiedergabe-Meldungen von Sonos**
+
+* Der erste echte Test zeigte: Sonos meldet den Start über `getMediaURI`, schickt danach aber kein `reportPlaySeconds` mehr. Diese SMAPI-Meldungen sind bei Sonos abgekündigt, neue Integrationen bekommen sie nicht. Der Hörstatus erlosch deshalb nach zweieinhalb Minuten, obwohl der Sender weiterlief
+* Neu: `report.php` unter `https://1radioe.net/report/v2.3` nimmt die Meldungen an, die Sonos an den Reporting Endpoint der Integration schickt (`POST …/timePlayed`). Ein `update` hält den Sender auf „läuft“, ein `final` beendet den Status. Der Sender wird über `id`, `objectId`, `contextId` oder die Kennung in `mediaUrl` erkannt
+* Das Diagnose-Log zeigt jede Meldung mit allen Feldern, die Sonos schickt, und der Adresse. Wie Sonos Live-Streams meldet, lässt die Dokumentation offen, der erste Test zeigt es
+* Admin, System: Die Werte für das Portal nennen jetzt auch den Reporting Endpoint
+* `DEPLOY-SETUP.md` Schritt 8 und `README.md`: Reporting Endpoint mit Version 2.3 eintragen
+
 ## 1.10.3 (13. November 2026)
 
 * Posting: Bluesky und Mastodon haben je einen eigenen Text und eine eigene Sprache, zum Beispiel Englisch für Bluesky und Deutsch für Mastodon. Das Sprachkürzel geht als `langs` an Bluesky und als `language` an Mastodon. Die Platzhalter-Knöpfe fügen in den zuletzt bearbeiteten Text ein, die Hashtags bleiben gemeinsam
