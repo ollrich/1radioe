@@ -1,5 +1,21 @@
 # Änderungen
 
+## 1.7.0 (12. November 2026)
+
+**Web-App mit Player auf 1radioe.net**
+
+* Startseite mit allen aktiven Sendern. Am Desktop steht der Player in der Mitte, darunter die Sender als Skala mit Nadel. Kategorien öffnen eine eigene Skala, „Alle Sender“ führt zurück. Passen nicht alle Sender in die Breite, erscheinen Pfeile zum Blättern
+* Auf dem Handy eine Liste mit aufklappbaren Kategorien, nach dem ersten Start ein angedockter Player, der sich zur Vollansicht aufziehen lässt
+* Player: Play/Pause, Vor/Zurück mit Umlauf innerhalb der Ebene, auf der der Sender gestartet wurde, Lautstärke (bleibt im Browser gespeichert, auf iOS ausgeblendet, weil Seiten sie dort nicht ändern dürfen), „Über den Sender“ mit Beschreibung, Website und Einzel-Playlist
+* Robuste Wiedergabe: Pausieren legt auf, Abspielen verbindet neu am Live-Punkt. Bei Abbruch, Fehler oder Stillstand verbindet der Player mit wachsendem Abstand neu (1, 2, 5, dann alle 10 Sekunden, rund zwei Minuten lang) und zeigt „Verbindet“
+* Media Session: Medientasten, Mediensteuerung von Chrome und Sperrbildschirm mit Sendername und Logo
+* Tastatur am Desktop: Leertaste Play/Pause, Pfeiltasten Vor/Zurück, 1 bis 0 Direktwahl, Esc zurück zu allen Sendern. Erklärt im (?) über der Skala
+* Hörstatus: kleine Mint-Balken am Sender, den Ollie gerade hört, auch am Ordner einer Kategorie und im Player. Abfrage alle 30 Sekunden und beim Zurückkehren zum Tab
+* Pop-ups „Über 1radiœ“, Impressum und Datenschutz, Impressum und Datenschutz noch mit Platzhaltern. Direkt verlinkbar als `/#impressum`, `/#datenschutz`, `/#about`
+* Hell als Grundversion, im Dark Mode automatisch Navy. Schrift Mona Sans (SIL OFL 1.1), lokal eingebunden
+* Ohne JavaScript eine schlichte Liste mit Links zu den Streams
+* Strenge Content Security Policy, keine externen Ressourcen, `Referrer-Policy: no-referrer`, `noindex`
+
 ## 1.6.0 (12. November 2026)
 
 **Playlist-Dateien und Sender als JSON**

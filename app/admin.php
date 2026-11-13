@@ -11,7 +11,7 @@ require __DIR__ . '/auth.php';
 /** Prepares an admin request. Returns null if ready, otherwise the name of a blocking problem. */
 function admin_boot(): ?string
 {
-    $media = media_origin();
+    $media = media_origin(1);
     header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:$media; media-src 'self'$media; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
@@ -35,21 +35,6 @@ function admin_boot(): ?string
     storage_prepare();
     session_begin();
     return null;
-}
-
-/**
- * Origin of the media folder for the Content Security Policy, with a leading space,
- * if it differs from the admin's own origin (e.g. www. or a configured media_url).
- */
-function media_origin(): string
-{
-    $p = parse_url(media_url(1));
-    if (!isset($p['scheme'], $p['host'])) {
-        return '';
-    }
-    $origin = strtolower($p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : ''));
-    $self   = strtolower((is_https() ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? ''));
-    return $origin !== $self && preg_match('~^https?://[a-z0-9.-]+(:\d+)?$~', $origin) ? ' ' . $origin : '';
 }
 
 /** Rules for the public media folder: files only, never scripts, no listing. */
