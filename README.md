@@ -8,7 +8,7 @@ Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, dazu eine Web-
 * **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
 * Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
-* **Hörstatus:** zeigt, welchen Sender Ollie gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
+* **Hörstatus:** zeigt, welchen Sender Olli gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
 * **Playlist-Dateien und JSON:** alle Sender als `/streams.m3u` und `/streams.pls` für VLC und als `/api/stations.json` für eine eigene App
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
@@ -98,8 +98,8 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Tastatur:** Leertaste, Pfeiltasten, 1 bis 0, Esc. Erklärt im (?) über der Skala.
 * **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
 * **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. HLS-Streams und Streams ohne Titel zeigen nur den Sender. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
-* **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Ollie hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
-* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollies gemerkter Browser hat das Hör-Cookie.
+* **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Olli hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
+* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollis gemerkter Browser hat das Hör-Cookie.
 * **Menü auf dem Handy:** Der Burger oben rechts öffnet ein Menü mit Über, Impressum und Datenverarbeitung. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop öffnen sie als Pop-up.
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenverarbeitung als Abschnitte.
 
@@ -153,7 +153,7 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
 
 ## Hörstatus
 
-Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
+Läuft bei Olli ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
 
 * **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
 * **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft, für das Posting (`r1_listen_status`).
@@ -181,7 +181,7 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
        timeout: 10
    ```
 
-3. **Automation:** Sie meldet, was die Lautsprecher spielen. Spotify-Titel und Ähnliches schickt sie gar nicht erst, andere Streams beantwortet der Server mit `{"station": null}`. Puffern zählt nicht als Pause, und spielt ein zweiter Lautsprecher denselben Sender weiter, geht er nicht auf „aus“. Die Liste der Lautsprecher in den Auslösern sind Ollies Sonos-Geräte.
+3. **Automation:** Sie meldet, was die Lautsprecher spielen. Spotify-Titel und Ähnliches schickt sie gar nicht erst, andere Streams beantwortet der Server mit `{"station": null}`. Puffern zählt nicht als Pause, und spielt ein zweiter Lautsprecher denselben Sender weiter, geht er nicht auf „aus“. Die Liste der Lautsprecher in den Auslösern sind Ollis Sonos-Geräte.
 
    ```yaml
    alias: 1radiœ Hörstatus
@@ -254,7 +254,7 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
 
 ## Posting zu Bluesky und Mastodon
 
-Startet Ollie einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Eingerichtet im Admin unter „Posting“.
+Startet Olli einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Eingerichtet im Admin unter „Posting“.
 
 * **Auslöser:** der Hörstatus. Eine Hörsitzung beginnt, wenn ein Sender von „läuft nicht“ auf „läuft“ wechselt. Die erste Meldung nach Ablauf der Wartezeit (Standard 3 Minuten) übernimmt die Sitzung, auch bei mehreren gleichzeitigen Meldungen genau einmal. Durchzappen und Fehlstarts lösen so nichts aus. Kein Cron nötig.
 * **Bremsen:** Schalter „Automatisch posten“, pro Sender ein Schalter „Posten“ im Editor, Sperrfrist je Sender (Standard 6 Stunden), Höchstzahl pro Tag (Standard 4). Wer in der Web-App das Erfassen aussetzt, postet auch nicht.
