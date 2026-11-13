@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.13.0 (13. November 2026)
+
+* Nur noch eine Playlist: `/streams.m3u`. M3U mit Namen verstehen VLC, Apple Music, foobar2000 und praktisch alle Player. `/streams.pls` entfällt, manche Apps lasen eine PLS mit mehreren Einträgen ohnehin als einen Sender mit Ersatz-Streams. Ebenso entfällt `/s/<id>.m3u`, die Playlist eines einzelnen Senders, seit 1.12.3 nirgends mehr verlinkt. Beide Adressen antworten mit 410
+* „Über 1radiœ“, Admin unter „Öffentliche Adressen“ und `README.md` nennen nur noch `streams.m3u`
+
 ## 1.12.3 (13. November 2026)
 
 * In der deutschen Web-App heißt es jetzt „Olli“ statt „Ollie“: „Olli hört gerade“ an den Balken und in der Info dazu, „Ollis Radiosender“ in Titel und Beschreibung, „Ein Projekt von Olli.“ unter Über und „nur für Olli selbst“ unter Datenverarbeitung. Die englische Fassung wird „Ollie“ schreiben
