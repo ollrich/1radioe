@@ -2,13 +2,13 @@
 /**
  * 1radiœ configuration.
  *
- * Copy this file to config.php inside a folder "1radioe-private" NEXT TO the git
- * checkout, never inside it:
+ * Copy this file to config.php inside the folder "1radioe-private" in the checkout,
+ * next to www/ (gitignored, outside the web root):
  *
- *   /www/htdocs/w0123456/1radioe-private/config.php   <- here
- *   /www/htdocs/w0123456/1radioe.net/                 <- the checkout, the domain points at www/
+ *   /www/htdocs/w0123456/1radioe.net/                  <- the checkout, the domain points at www/
+ *   /www/htdocs/w0123456/1radioe.net/1radioe-private/config.php   <- here
  *
- * The app searches upwards from the checkout for 1radioe-private/config.php.
+ * The app looks for 1radioe-private/config.php in the checkout first, then above it.
  * Leave password_hash and totp_secret empty: the setup wizard in the admin
  * generates both and shows you the lines to paste here.
  */

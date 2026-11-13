@@ -16,6 +16,7 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 ## Aufbau
 
 ```
+1radioe-private/      Config, Secrets, Deploy-Log, FTP-Eingang (nur auf dem Server und lokal, nicht in Git)
 app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
 www/                  Web-Verzeichnis der Domain https://1radioe.net
   index.php           Web-App mit Player
@@ -29,7 +30,7 @@ config.sample.php     Vorlage für 1radioe-private/config.php
 DEPLOY-SETUP.md       Einrichtung auf All-Inkl Schritt für Schritt
 ```
 
-Neben dem Checkout liegt auf dem Server der Ordner `1radioe-private` mit `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Er ist nie Teil des Repositorys. Die App sucht ihn in den Ordnern oberhalb des Checkouts.
+Im Checkout neben `www/` liegt der Ordner `1radioe-private` mit `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Er liegt außerhalb des Web-Verzeichnisses und ist von Git ausgeschlossen, das Ausrollen lässt ihn unberührt. So bleibt alles für 1radiœ in einem Ordner. Die App sucht ihn zuerst im Checkout, dann in den Ordnern darüber.
 
 `www/media/` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen. Die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Der Ordner ist nicht in Git, deshalb lässt ihn das Ausrollen unberührt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
 

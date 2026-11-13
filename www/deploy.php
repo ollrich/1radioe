@@ -7,14 +7,14 @@
  *
  *   git fetch origin && git reset --hard origin/main
  *
- * IMPORTANT: uploads live in www/media/, which is untracked (.gitignore). A hard
- * reset leaves untracked files alone, that is what keeps them safe. Never add
- * "git clean" here and never commit anything into www/media/.
+ * IMPORTANT: uploads live in www/media/, config and secrets in 1radioe-private/, both
+ * untracked (.gitignore). A hard reset leaves untracked files alone, that is what keeps
+ * them safe. Never add "git clean" here and never commit anything into either folder.
  *
  * This file is deliberately self-contained and does not load the app: a commit that
  * breaks the app must not break the deploy that fixes it.
  *
- * Secret and log live in 1radioe-private/ next to the checkout:
+ * Secret and log live in 1radioe-private/ in the checkout, next to www/:
  *   webhook-secret   the shared secret from the GitHub webhook (fail-closed: no secret, no deploy)
  *   deploy.log       last 100 entries
  */
