@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.12.2 (13. November 2026)
+
+* Fehler behoben: Die Web-App zeigte auf 1radioe.net nie, dass Ollie einen Sender hört. Ihre Abfrage `GET /api/status` mit `Accept: application/json` bekam von Apache 406, weil MultiViews die Adresse ohne Endung selbst `status.php` zuordnete und den Dateityp mit dem `Accept`-Header verglich, bevor die Weiterleitung griff. `www/.htaccess` schaltet MultiViews jetzt ab. Lokal fiel das nicht auf, weil der eingebaute PHP-Server MultiViews nicht kennt
+
 ## 1.12.1 (13. November 2026)
 
 * Hörstatus über Home Assistant: Der Server erkennt einen Sender jetzt auch am Titel. Der erste echte Test lief ins Leere, weil FluxFM von `channels.fluxfm.de` auf wechselnde Streaming-Server umleitet und der Lautsprecher die neue Adresse meldet. Sonos zeigt Sender aus 1radiœ als „<Titel> • <Beschreibung>“, Home Assistant liefert das als `media_channel`. `POST /api/listen` nimmt dafür `title` an, die Adresse hat weiter Vorrang
