@@ -627,17 +627,67 @@
     d.showModal();
   }
 
+  /* Menu on phones: a dialog that slides in from the right (class is-open moves it in). */
+  const menu = $('#menu');
+  const menuBtn = $('[data-menu]');
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function openMenu() {
+    if (!menu || menu.open || typeof menu.showModal !== 'function') return;
+    menu.showModal();
+    menuBtn.setAttribute('aria-expanded', 'true');
+    // two frames, so the browser draws it outside first and then slides it in
+    requestAnimationFrame(() => requestAnimationFrame(() => menu.classList.add('is-open')));
+  }
+
+  // the menu slides out before it closes, every other dialog closes at once
+  function closeDialog(d, after) {
+    if (!d.open) return;
+    if (!d.classList.contains('drawer') || reducedMotion()) {
+      d.close();
+      if (after) after();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      d.close();
+      if (after) after();
+    };
+    d.addEventListener('transitionend', finish, { once: true });
+    setTimeout(finish, 400);
+    d.classList.remove('is-open');
+  }
+
+  if (menu && menuBtn) {
+    menuBtn.addEventListener('click', openMenu);
+    menu.addEventListener('cancel', (e) => {   // Escape: slide out as well
+      e.preventDefault();
+      closeDialog(menu);
+    });
+    menu.addEventListener('close', () => {
+      menu.classList.remove('is-open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    });
+    // turned to a wide screen while the menu is open: it has no button there
+    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches && menu.open) menu.close(); });
+  }
+
   $$('[data-dialog]').forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault();
-    openDialog(a.dataset.dialog);
+    // from the menu: it slides out first, then the dialog opens (to be decided with Ollie)
+    const from = a.closest('dialog.drawer');
+    if (from) closeDialog(from, () => openDialog(a.dataset.dialog));
+    else openDialog(a.dataset.dialog);
   }));
   $$('dialog').forEach((d) => {
-    $$('[data-close]', d).forEach((b) => b.addEventListener('click', () => d.close()));
+    $$('[data-close]', d).forEach((b) => b.addEventListener('click', () => closeDialog(d)));
     // a click on the dark area around a dialog closes it
     d.addEventListener('click', (e) => {
       if (e.target !== d || d.classList.contains('sheet')) return;
       const r = d.getBoundingClientRect();
-      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDialog(d);
     });
     d.addEventListener('close', () => {
       if (location.hash === '#' + d.id) history.replaceState(null, '', location.pathname + location.search);
@@ -854,10 +904,11 @@
   renderScale();
   setPhase('idle');
   pollStatus();
-  // links like 1radioe.net/#impressum open the dialog, also when only the anchor changes
+  // links like 1radioe.net/#impressum open the dialog, also when only the anchor changes;
+  // #datenschutz is the old name of #datenverarbeitung
   const openFromHash = () => {
-    const id = location.hash.slice(1);
-    if (['about', 'impressum', 'datenschutz'].includes(id)) openDialog(id);
+    const id = location.hash.slice(1) === 'datenschutz' ? 'datenverarbeitung' : location.hash.slice(1);
+    if (['about', 'impressum', 'datenverarbeitung'].includes(id)) openDialog(id);
   };
   window.addEventListener('hashchange', openFromHash);
   openFromHash();

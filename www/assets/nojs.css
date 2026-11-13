@@ -5,4 +5,4 @@
 .nojs-list ul { padding-left: 1.2rem; }
 dialog { display: block; position: static; margin: 32px 0 0; max-width: 640px; }
 dialog .close { display: none; }
-#info, #sheet { display: none; }
+#info, #sheet, #menu { display: none; }

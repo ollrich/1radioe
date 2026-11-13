@@ -86,7 +86,12 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .foot { display: flex; justify-content: flex-end; gap: 20px; font-size: 13px; }
 .foot a { color: var(--muted); text-underline-offset: 3px; padding: 12px 0; }
 .notice { text-align: center; color: var(--muted); }
-.narrow-only { display: none; }
+.menu-btn {
+  display: none; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px;
+  border: 1.5px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; padding: 0;
+}
+.menu-btn:hover { background: var(--hl); }
+.menu-btn line { stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
 /* ---------- Shared pieces ---------- */
 
@@ -301,6 +306,25 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .with-pill { display: flex; align-items: flex-start; gap: 10px; }
 .with-pill .pill { margin-top: 4px; }
 
+/* menu on phones: slides in from the right, closed with the same turning X as the dialogs */
+.drawer {
+  position: fixed; inset: 0 0 0 auto; width: min(340px, 86vw); height: 100%; max-width: none; max-height: none; margin: 0;
+  border: 0; border-radius: 24px 0 0 24px; padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  background: var(--panel); color: var(--panelfg); overflow-y: auto;
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.drawer.is-open { transform: none; }
+.drawer::backdrop { background: rgb(5 9 20 / 0); transition: background .3s ease; }
+.drawer.is-open::backdrop { background: rgb(5 9 20 / .62); }
+.drawer .close { top: calc(16px + env(safe-area-inset-top)); }
+.drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 56px; }
+.drawer-nav a {
+  color: var(--panelfg); text-decoration: none; padding: 10px 0;
+  font-size: clamp(24px, 7vw, 30px); line-height: 1.15; font-weight: 820; overflow-wrap: anywhere; font-stretch: var(--stretch); letter-spacing: -.015em;
+}
+.drawer-nav a:hover, .drawer-nav a:focus-visible { color: var(--mint); }
+.drawer-nav a:focus-visible { outline: 2px solid rgb(255 255 255 / .5); outline-offset: 4px; border-radius: 6px; }
+
 /* close button as on eichhof.me: turns a quarter on hover and focus */
 .close {
   position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%;
@@ -331,15 +355,14 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .page { padding: 20px 16px 128px; gap: 16px; }
   .wm { font-size: 30px; }
   .wide-only { display: none; }
-  .narrow-only { display: inline; }
-  .top .pillbtn { font-size: 14px; padding: 0 14px; }
+  .menu-btn { display: inline-flex; }
   .listen-switch { padding: 0 10px; }
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { justify-content: flex-start; gap: 0; }
   .stage, .picker-head, .scale-row { display: none; }
   .list-title { display: block; }
   .list { display: flex; }
-  .foot { justify-content: flex-start; padding: 0 10px; }
+  .foot { display: none; }
 }
 @media (min-width: 761px) {
   .mini { display: none !important; }
@@ -348,7 +371,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 @media (prefers-reduced-motion: reduce) {
   .pill i { animation: none; transform: scaleY(.7); }
   .dot.live, .dot.connecting { animation: none; }
-  .needle, .st .tile, .chev, .play, .qbtn, .tip, .close { transition: none; }
+  .needle, .st .tile, .chev, .play, .qbtn, .tip, .close, .drawer, .drawer::backdrop { transition: none; }
   .scroller { scroll-behavior: auto; }
   .close:hover, .close:focus-visible, .qbtn:hover, .qbtn:focus-visible { transform: none; }
 }

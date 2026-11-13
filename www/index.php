@@ -111,7 +111,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
         <span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span data-listen-label>Hören wird erfasst</span>
       </button>
 <?php endif; ?>
-      <a class="pillbtn" href="#about" data-dialog="about"><span class="wide-only">Über 1radiœ</span><span class="narrow-only">Über</span></a>
+      <a class="pillbtn wide-only" href="#about" data-dialog="about">Über 1radiœ</a>
+      <button type="button" class="menu-btn" data-menu aria-controls="menu" aria-expanded="false" aria-label="Menü öffnen" data-js><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
     </span>
   </header>
 
@@ -175,7 +176,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 
   <footer class="foot">
     <a href="#impressum" data-dialog="impressum">Impressum</a>
-    <a href="#datenschutz" data-dialog="datenschutz">Datenschutz</a>
+    <a href="#datenverarbeitung" data-dialog="datenverarbeitung">Datenverarbeitung</a>
   </footer>
 </div>
 
@@ -226,6 +227,15 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   </p>
 </dialog>
 
+<dialog class="drawer" id="menu" aria-label="Menü">
+  <?= $close ?>
+  <nav class="drawer-nav" aria-label="Seiten">
+    <a href="#about" data-dialog="about">Über</a>
+    <a href="#impressum" data-dialog="impressum">Impressum</a>
+    <a href="#datenverarbeitung" data-dialog="datenverarbeitung">Datenverarbeitung</a>
+  </nav>
+</dialog>
+
 <dialog class="dialog" id="about" aria-labelledby="about-title">
   <?= $close ?>
   <h2 class="disp dh" id="about-title">Über 1radiœ</h2>
@@ -249,13 +259,13 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   <p class="dp">[Name, Anschrift wie oben]</p>
 </dialog>
 
-<dialog class="dialog" id="datenschutz" aria-labelledby="datenschutz-title">
+<dialog class="dialog" id="datenverarbeitung" aria-labelledby="datenverarbeitung-title">
   <?= $close ?>
-  <h2 class="disp dh" id="datenschutz-title">Datenschutz</h2>
+  <h2 class="disp dh" id="datenverarbeitung-title">Datenverarbeitung</h2>
   <h3 class="d3">Kein Tracking</h3>
   <p class="dp">Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server.</p>
   <h3 class="d3">Beim Abspielen</h3>
-  <p class="dp">Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Datenschutzhinweise des Senders.</p>
+  <p class="dp">Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
   <h3 class="d3">Lautstärke</h3>
   <p class="dp">Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
   <h3 class="d3">Cookies</h3>
