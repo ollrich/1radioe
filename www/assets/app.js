@@ -627,17 +627,78 @@
     d.showModal();
   }
 
-  /* Menu on phones: a dialog that slides in from the right (class is-open moves it in). */
+  /* Menu on phones: a dialog that slides in from the right (class is-open moves it in).
+     Its links show the text of a page in the menu itself, the arrow leads back to the links.
+     The texts stay in the dialogs, which wide screens show as before. */
   const menu = $('#menu');
   const menuBtn = $('[data-menu]');
+  const menuNav = $('.drawer-nav');
+  const menuPage = $('[data-page]');
+  const menuBack = $('[data-back]');
+  const PAGES = ['about', 'impressum', 'datenverarbeitung'];
+  // the page in links like 1radioe.net/#impressum; #datenschutz is the old name of #datenverarbeitung
+  const pageFromHash = () => {
+    const id = location.hash.slice(1) === 'datenschutz' ? 'datenverarbeitung' : location.hash.slice(1);
+    return PAGES.includes(id) ? id : null;
+  };
+  const clearHash = () => history.replaceState(null, '', location.pathname + location.search);
+  const narrow = window.matchMedia('(max-width: 760px)');
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // copy the text of a dialog into the menu, without its close button and ids
+  function showPage(id) {
+    const src = document.getElementById(id);
+    if (!menu || !src) return;
+    const nodes = [...src.children].filter((n) => !n.matches('[data-close]')).map((n) => {
+      const c = n.cloneNode(true);
+      c.removeAttribute('id');
+      $$('[id]', c).forEach((x) => x.removeAttribute('id'));
+      return c;
+    });
+    menuPage.replaceChildren(...nodes);
+    const h = $('h2', menuPage);
+    if (h) {
+      h.id = 'menu-page-title';
+      h.tabIndex = -1;
+    }
+    menu.dataset.page = id;
+    menuNav.hidden = true;
+    menuNav.classList.remove('from-page');
+    menuPage.hidden = false;
+    menuBack.hidden = false;
+    menu.scrollTop = 0;
+    if (h) h.focus({ preventScroll: true });
+  }
+
+  function showLinks() {
+    const from = menu.dataset.page;
+    if (!from) return;
+    delete menu.dataset.page;
+    menuPage.hidden = true;
+    menuPage.replaceChildren();
+    menuBack.hidden = true;
+    menuNav.hidden = false;
+    menuNav.classList.add('from-page');
+    menu.scrollTop = 0;
+    const link = $(`[data-dialog="${from}"]`, menuNav);
+    if (link) link.focus();
+  }
+
+  // a page from a link like 1radioe.net/#impressum: in the menu on phones, as a dialog otherwise
+  function openPage(id) {
+    if (menu && menuBtn && narrow.matches && typeof menu.showModal === 'function') {
+      openMenu();
+      showPage(id);
+    } else openDialog(id);
+  }
 
   function openMenu() {
     if (!menu || menu.open || typeof menu.showModal !== 'function') return;
     menu.showModal();
     menuBtn.setAttribute('aria-expanded', 'true');
-    // two frames, so the browser draws it outside first and then slides it in
-    requestAnimationFrame(() => requestAnimationFrame(() => menu.classList.add('is-open')));
+    // read its size, so the browser places it outside first and then slides it in
+    void menu.offsetWidth;
+    menu.classList.add('is-open');
   }
 
   // the menu slides out before it closes, every other dialog closes at once
@@ -662,23 +723,37 @@
 
   if (menu && menuBtn) {
     menuBtn.addEventListener('click', openMenu);
-    menu.addEventListener('cancel', (e) => {   // Escape: slide out as well
+    // Escape and the back gesture on Android: from a page back to the links, then the menu slides out
+    menu.addEventListener('cancel', (e) => {
       e.preventDefault();
-      closeDialog(menu);
+      if (menu.dataset.page) showLinks();
+      else closeDialog(menu);
     });
     menu.addEventListener('close', () => {
       menu.classList.remove('is-open');
       menuBtn.setAttribute('aria-expanded', 'false');
+      if (pageFromHash()) clearHash();
+      // the next time it opens with the links
+      delete menu.dataset.page;
+      menuPage.hidden = true;
+      menuPage.replaceChildren();
+      menuBack.hidden = true;
+      menuNav.hidden = false;
+      menuNav.classList.remove('from-page');
     });
-    // turned to a wide screen while the menu is open: it has no button there
-    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => { if (e.matches && menu.open) menu.close(); });
+    menuBack.addEventListener('click', showLinks);
+    // turned to a wide screen while the menu is open: it has no button there, a page moves to its dialog
+    narrow.addEventListener('change', (e) => {
+      if (e.matches || !menu.open) return;
+      const page = menu.dataset.page;
+      menu.close();
+      if (page) openDialog(page);
+    });
   }
 
   $$('[data-dialog]').forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault();
-    // from the menu: it slides out first, then the dialog opens (to be decided with Ollie)
-    const from = a.closest('dialog.drawer');
-    if (from) closeDialog(from, () => openDialog(a.dataset.dialog));
+    if (a.closest('dialog.drawer')) showPage(a.dataset.dialog);
     else openDialog(a.dataset.dialog);
   }));
   $$('dialog').forEach((d) => {
@@ -690,7 +765,7 @@
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDialog(d);
     });
     d.addEventListener('close', () => {
-      if (location.hash === '#' + d.id) history.replaceState(null, '', location.pathname + location.search);
+      if (pageFromHash() === d.id) clearHash();
     });
   });
 
@@ -904,11 +979,10 @@
   renderScale();
   setPhase('idle');
   pollStatus();
-  // links like 1radioe.net/#impressum open the dialog, also when only the anchor changes;
-  // #datenschutz is the old name of #datenverarbeitung
+  // links like 1radioe.net/#impressum open the page, also when only the anchor changes
   const openFromHash = () => {
-    const id = location.hash.slice(1) === 'datenschutz' ? 'datenverarbeitung' : location.hash.slice(1);
-    if (['about', 'impressum', 'datenverarbeitung'].includes(id)) openDialog(id);
+    const id = pageFromHash();
+    if (id) openPage(id);
   };
   window.addEventListener('hashchange', openFromHash);
   openFromHash();

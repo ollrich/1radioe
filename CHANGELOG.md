@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.11.2 (13. November 2026)
+
+* Menü auf dem Handy: Über, Impressum und Datenverarbeitung öffnen sich jetzt im Menü selbst statt als Pop-up. Der Pfeil oben links führt zurück zur Übersicht, das X schließt das Menü. Die Leiste mit Pfeil und X bleibt beim Scrollen stehen
+* Escape und die Zurück-Geste unter Android führen von einem Text erst zur Übersicht, dann schließt das Menü
+* Links wie `/#impressum` öffnen auf dem Handy das Menü mit diesem Text, am Desktop wie bisher das Pop-up. Wird das Fenster breiter, während ein Text im Menü offen ist, wechselt er ins Pop-up
+* Das Menü ist etwas breiter (bis 420 px), damit sich die Texte gut lesen
+* Die Texte stehen weiter nur einmal in `www/index.php`, das Menü übernimmt sie aus den Pop-ups
+
 ## 1.11.1 (13. November 2026)
 
 * Web-App auf dem Handy: Oben rechts sitzt statt „Über“ ein Burger-Menü. Es fährt von rechts herein und enthält Über, Impressum und Datenverarbeitung. Geschlossen wird es mit dem drehenden X wie bei den Pop-ups, mit Escape oder einem Tipp daneben

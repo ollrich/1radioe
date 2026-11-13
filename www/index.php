@@ -228,12 +228,17 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 </dialog>
 
 <dialog class="drawer" id="menu" aria-label="Menü">
-  <?= $close ?>
+  <div class="drawer-bar">
+    <button type="button" class="back" data-back aria-label="Zurück zur Übersicht" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><polyline points="11 5 4 12 11 19"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
+    <?= $close ?>
+  </div>
   <nav class="drawer-nav" aria-label="Seiten">
     <a href="#about" data-dialog="about">Über</a>
     <a href="#impressum" data-dialog="impressum">Impressum</a>
     <a href="#datenverarbeitung" data-dialog="datenverarbeitung">Datenverarbeitung</a>
   </nav>
+  <!-- filled by app.js with the text of the dialog of the same name -->
+  <section class="drawer-page" data-page aria-labelledby="menu-page-title" hidden></section>
 </dialog>
 
 <dialog class="dialog" id="about" aria-labelledby="about-title">

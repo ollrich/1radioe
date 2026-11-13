@@ -100,6 +100,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. HLS-Streams und Streams ohne Titel zeigen nur den Sender. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
 * **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Ollie hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
 * **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollies gemerkter Browser hat das Hör-Cookie.
+* **Menü auf dem Handy:** Der Burger oben rechts öffnet ein Menü mit Über, Impressum und Datenverarbeitung. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop öffnen sie als Pop-up.
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenverarbeitung als Abschnitte.
 
 Die Texte von Impressum und Datenverarbeitung in `www/index.php` sind Platzhalter.
