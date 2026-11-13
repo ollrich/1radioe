@@ -306,6 +306,13 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .dialog a { color: var(--mint); }
 .dh { margin: 0 0 16px; padding-right: 44px; font-size: 28px; line-height: 1.1; }
 .dp { margin: 0 0 14px; font-size: 15px; line-height: 1.6; }
+/* texts from the admin (Über, Impressum, Datenverarbeitung): same look as .dp and .d3 */
+.rich p, .rich ul, .rich ol { margin: 0 0 14px; font-size: 15px; line-height: 1.6; }
+.rich h3 { margin: 20px 0 4px; font-size: 15px; font-weight: 700; }
+.rich h3:first-child { margin-top: 0; }
+.rich ul, .rich ol { padding-left: 1.3em; }
+.rich li + li { margin-top: 4px; }
+.rich > :last-child { margin-bottom: 0; }
 .d3 { margin: 20px 0 4px; font-size: 15px; font-weight: 700; }
 .dnote { margin: 20px 0 0; font-size: 13px; color: var(--panelmuted); }
 .dkicker { margin: 0; font-size: 13px; color: var(--panelmuted); }

@@ -237,6 +237,26 @@ label small { font-weight: 400; }
 .log .block { display: block; }
 .text-danger { color: var(--danger); }
 .key-line code { overflow-wrap: anywhere; }
+
+/* Texte: pick a text and a language, then a small editor */
+.text-pick { display: flex; flex-wrap: wrap; gap: .6rem 1rem; justify-content: space-between; }
+.choice { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; }
+.choice button { border: 0; background: transparent; color: var(--text); font: inherit; font-size: .9rem; padding: .35rem .85rem; border-radius: 999px; cursor: pointer; }
+.choice button:hover { background: var(--surface-2); }
+.choice button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.choice button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
+.rte-bar { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1.1rem 0 .5rem; }
+.rte {
+  min-height: 16rem; max-height: 60vh; overflow-y: auto; padding: .9rem 1.1rem; line-height: 1.6;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+}
+.rte:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rte p, .rte ul, .rte ol { margin: 0 0 .8rem; }
+.rte ul, .rte ol { padding-left: 1.3em; }
+.rte h3 { margin: 1.2rem 0 .3rem; font-size: 1rem; }
+.rte h3:first-child { margin-top: 0; }
+.rte a { color: var(--accent-text); }
+#text-state { margin: .6rem 0 0; }
 .key-box { margin: .6rem 0 .9rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: 10px; }
 .key-box p { margin: .3rem 0; }
 .social-fields { margin-top: .9rem; }

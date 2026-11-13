@@ -160,6 +160,7 @@ render_page('Sender', <<<HTML
     <a href="#stations" data-view="stations" class="tab">Sender</a>
     <a href="#tracks" data-view="tracks" class="tab">Tracks</a>
     <a href="#posting" data-view="posting" class="tab">Posting</a>
+    <a href="#texts" data-view="texts" class="tab">Texte</a>
     <a href="#system" data-view="system" class="tab">System</a>
   </nav>
   {$logout}
@@ -384,6 +385,46 @@ render_page('Sender', <<<HTML
       </div>
       <p class="muted">Die letzten Beiträge, auch übersprungene und fehlgeschlagene. Nur hier sichtbar.</p>
       <div class="table-wrap"><table class="log"><thead><tr><th>Zeit</th><th>Sender</th><th>Ergebnis</th><th>Bluesky</th><th>Mastodon</th></tr></thead><tbody id="social-log"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="view-texts" class="view" hidden>
+    <div class="toolbar">
+      <div>
+        <h1>Texte</h1>
+        <p class="muted">Über 1radiœ, Impressum und Datenverarbeitung auf 1radioe.net</p>
+      </div>
+    </div>
+    <p class="hint">Was du speicherst, steht sofort auf 1radioe.net, im Pop-up am Desktop und im Menü auf dem Handy. Erlaubt sind Absätze, Zwischenüberschriften, fett, kursiv, Listen und Links. Alles andere entfernt der Server beim Speichern, auch Formatierungen aus eingefügtem Text. Englische Texte gelten erst, wenn es die Web-App auf Englisch gibt.</p>
+    <div class="panel wide">
+      <div class="text-pick">
+        <div class="choice" role="group" aria-label="Text">
+          <button type="button" data-text="about" aria-pressed="true">Über 1radiœ</button>
+          <button type="button" data-text="impressum" aria-pressed="false">Impressum</button>
+          <button type="button" data-text="datenverarbeitung" aria-pressed="false">Datenverarbeitung</button>
+        </div>
+        <div class="choice" role="group" aria-label="Sprache">
+          <button type="button" data-text-lang="de" aria-pressed="true">Deutsch</button>
+          <button type="button" data-text-lang="en" aria-pressed="false">Englisch</button>
+        </div>
+      </div>
+      <div class="rte-bar" role="toolbar" aria-label="Format" aria-controls="text-editor">
+        <button type="button" class="btn ghost small" data-cmd="p">Absatz</button>
+        <button type="button" class="btn ghost small" data-cmd="h3">Zwischenüberschrift</button>
+        <button type="button" class="btn ghost small" data-cmd="bold" aria-label="Fett"><strong>Fett</strong></button>
+        <button type="button" class="btn ghost small" data-cmd="italic" aria-label="Kursiv"><em>Kursiv</em></button>
+        <button type="button" class="btn ghost small" data-cmd="insertUnorderedList">• Liste</button>
+        <button type="button" class="btn ghost small" data-cmd="insertOrderedList">1. Liste</button>
+        <button type="button" class="btn ghost small" data-cmd="link">Link</button>
+        <button type="button" class="btn ghost small" data-cmd="unlink">Link entfernen</button>
+      </div>
+      <div class="rte" id="text-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Text" spellcheck="true"></div>
+      <p class="muted" id="text-state"></p>
+      <div class="toolbar-actions">
+        <button type="button" class="btn primary" id="text-save">Speichern</button>
+        <button type="button" class="btn ghost" id="text-reset">Auf Standard zurücksetzen</button>
+        <a class="btn ghost" id="text-view" href="../#about" target="_blank" rel="noopener">Auf 1radioe.net ansehen</a>
+      </div>
     </div>
   </section>
 
