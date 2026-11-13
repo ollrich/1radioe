@@ -1,7 +1,7 @@
 <?php
 /**
  * 1radiœ: Sonos Music API (SMAPI) endpoint, anonymous authentication.
- * Endpoint in the Sonos developer portal: https://eichhof.co/1radioe/smapi.php
+ * Endpoint in the Sonos developer portal: https://1radioe.net/smapi.php
  *
  * Sonos calls this file over HTTPS: it lists the active stations, playlists and
  * categories (getMetadata), the content of a category or the tracks of a playlist
@@ -12,7 +12,7 @@
  */
 declare(strict_types=1);
 
-require __DIR__ . '/lib/bootstrap.php';
+require dirname(__DIR__) . '/app/bootstrap.php';
 
 const MAX_BODY = 65536;
 const SONOS_NS = 'http://www.sonos.com/Services/1.1';

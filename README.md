@@ -5,56 +5,52 @@ Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über
 * **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern, Playlists und Kategorien, Logos, Beschreibungen, Tracks und Abspieladressen
 * **Admin** (`admin/`): Sender anlegen, Stream testen mit automatischer Formaterkennung, Logo hochladen und zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Diagnose-Log
 * **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
-* PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt: per FTP hochladen und fertig
+* PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
+* Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 
 ## Aufbau
 
 ```
-1radioe/              → in den Domain-Ordner laden, ergibt https://eichhof.co/1radioe/
+app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
+www/                  Web-Verzeichnis der Domain https://1radioe.net
   smapi.php           SMAPI-Endpoint für Sonos
   admin/              Verwaltung (Login mit Passwort und TOTP)
-  lib/                Programmcode, per .htaccess gesperrt
-1radioe-private/      → AUSSERHALB des Domain-Ordners ablegen
-  config.sample.php   Vorlage, als config.php kopieren
-  inbox/              FTP-Eingang für MP3s (wird angelegt)
-  tmp/                Zwischenablage für Uploads (wird angelegt)
-1radioe-media/        → legt die App selbst neben 1radioe an: Logos, Cover, tracks/
+  deploy.php          Ziel des GitHub-Webhooks
+  robots.txt          sperrt Suchmaschinen
+  media/              Logos, Cover, tracks/ (legt die App an, nicht in Git)
+config.sample.php     Vorlage für 1radioe-private/config.php
+DEPLOY-SETUP.md       Einrichtung auf All-Inkl Schritt für Schritt
 ```
 
-Der Ordner `1radioe` enthält nur Programmcode. Alles, was du hochlädst, liegt in `1radioe-media` und `1radioe-private`. Ein Update darf `1radioe` deshalb komplett ersetzen, ohne dass Logos oder Tracks verloren gehen.
+Neben dem Checkout liegt auf dem Server der Ordner `1radioe-private` mit `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Er ist nie Teil des Repositorys. Die App sucht ihn in den Ordnern oberhalb des Checkouts.
 
-Die App sucht `1radioe-private/config.php` in den Ordnern oberhalb ihres eigenen Ordners. Liegt die Config versehentlich im Web-Verzeichnis, warnt die Systemseite, und die mitgelieferte `.htaccess` sperrt den Ordner trotzdem. `1radioe-media` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen; die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
+`www/media/` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen. Die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Der Ordner ist nicht in Git, deshalb lässt ihn das Ausrollen unberührt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
 
-## Installation auf All-Inkl
+## Installation und Update
 
-1. **Datenbank:** Im KAS eine MySQL-Datenbank anlegen und Name, Benutzer und Passwort notieren.
-2. **Config:** Den Ordner `1radioe-private` per FTP ins Hauptverzeichnis des Webspace laden, also neben den Ordner `eichhof.co`, nicht hinein. Darin `config.sample.php` nach `config.php` kopieren und die Datenbankdaten eintragen. `password_hash` und `totp_secret` bleiben leer.
-3. **App:** Den Ordner `1radioe` in den Ordner `eichhof.co` laden. Im KAS PHP 8.1 oder neuer für die Domain einstellen.
-4. **Einrichtung:** `https://eichhof.co/1radioe/admin/` öffnen. Der Assistent fragt ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block für die `config.php`. Diesen einfügen und die Datei wieder hochladen. Der QR-Code wird im Browser erzeugt, das Geheimnis verlässt den Server nicht.
-5. **Anmelden** mit Benutzer, Passwort und dem 6-stelligen Code.
-6. **Sender:** Bei leerer Liste übernimmt „Die drei Sender aus RADIOE Lite übernehmen“ die bisherigen Sender mit ihren alten IDs, damit Favoriten und Wecker in Sonos weiter funktionieren.
+Die Einrichtung auf All-Inkl mit Deploy-Key, Webhook und Umzug von `eichhof.co/1radioe` beschreibt [DEPLOY-SETUP.md](DEPLOY-SETUP.md).
 
-## Update
+Danach ist jedes Update ein Push auf `main`. Gearbeitet wird auf Branches, ein Merge nach `main` ist sofort live. Neue Spalten und Tabellen legt die App beim nächsten Aufruf von Admin oder Sonos selbst an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
 
-Den Ordner `1radioe` per FTP hochladen und dabei ruhig komplett ersetzen. Beim nächsten Öffnen des Admins erweitert die App bei Bedarf die Datenbank und legt fehlende Ordner an. Die Systemseite zeigt unter Medien, Track-Ordner, FTP-Eingang und Upload-Puffer, ob alles beschreibbar ist.
+Beim ersten Öffnen von `/admin/` fragt ein Assistent ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block für die `config.php`. Der QR-Code wird im Browser erzeugt, das Geheimnis verlässt den Server nicht.
 
-**Von 1.0 oder 1.1.0:** Diese Versionen speicherten Logos und Tracks noch in `1radioe/media/`. Ab 1.1.1 zieht die App sie beim ersten Aufruf automatisch nach `1radioe-media/` um, aber nur, wenn sie beim Update noch da sind. Also beim Wechsel von diesen Versionen einmalig nur Dateien überschreiben und den alten Ordner nicht löschen.
+## Lokal entwickeln
 
-**Auf 1.2 oder 1.3:** Den Ordner `1radioe` ersetzen. Neue Spalten in der Datenbank (doppelte MP3s in 1.2, Kategorien in 1.3) legt der erste Aufruf des Admins oder die nächste Anfrage von Sonos an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
+```bash
+cp config.sample.php 1radioe-private/config.php   # Ordner vorher anlegen, Datenbank eintragen
+php -S 127.0.0.1:8080 -t www
+```
 
-## Umstellung im Sonos-Entwicklerportal
+`1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main`: `php -l` über alle PHP-Dateien.
 
-Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der bestehenden Integration:
+## Sonos-Entwicklerportal
 
-* **General Information:** Service Name `1radiœ`
-* **Sonos Music API:** SMAPI Endpoint `https://eichhof.co/1radioe/smapi.php` (Integration ID bleibt `co.eichhof.radioe`)
-* **Brand Assets:** neues Icon und Logo von 1radiœ hochladen
-* **Localization Resources:** Texte an den neuen Namen anpassen
-* **Service Configuration:** Refresh, dann Send
+Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `co.eichhof.radioe`:
 
-Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu starten. Erst wenn alles läuft, den alten Ordner `/radioe` (Lite) löschen.
+* **Sonos Music API:** SMAPI Endpoint `https://1radioe.net/smapi.php`
+* **Service Configuration:** nach jeder Änderung Refresh, dann Send
 
 ## Bedienung
 
@@ -90,15 +86,21 @@ Danach in der Sonos-App prüfen. Zeigt sie noch den alten Namen, die App neu sta
 * Sperre nach 5 Fehlversuchen pro IP für 15 Minuten, zusätzlich eine globale Bremse
 * Sitzungen nur über HTTPS, `SameSite=Strict`, Ablauf nach 2 Stunden Inaktivität
 * CSRF-Schutz für alle Änderungen, strenge Content Security Policy ohne Inline-Skripte
-* Logos und Cover werden mit GD neu kodiert, `1radioe-media/` führt keine Skripte aus und zeigt keine Verzeichnisliste
+* Logos und Cover werden mit GD neu kodiert, `www/media/` führt keine Skripte aus und zeigt keine Verzeichnisliste
+* Programmcode, Git-Verzeichnis und Config liegen außerhalb des Web-Verzeichnisses
+* Deploy nur mit gültiger Webhook-Signatur (HMAC-SHA256), ohne Secret wird nichts ausgerollt
 * MP3s werden vor dem Import geprüft (echte MPEG-Frames), getarnte Dateien abgelehnt, Texte aus Tags und Dateinamen von ungültigen Zeichen befreit
 * Stream-Test und Logo-Download erreichen keine internen Netze
 * SMAPI-Antworten gegen das offizielle Sonos-Schema geprüft, XML mit DTD wird abgelehnt
 
 ## Voraussetzungen
 
-PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. PHP muss neben dem App-Ordner einen Ordner anlegen dürfen (bei All-Inkl gegeben). Die Systemseite zeigt, ob alles vorhanden ist.
+PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. PHP muss in `www/media/` und `1radioe-private/` schreiben dürfen. Für das automatische Ausrollen braucht der Server SSH, Git und die PHP-Funktion `exec()` (bei All-Inkl gegeben). Die Systemseite zeigt, ob alles vorhanden ist.
 
 ## Mitgelieferte Bibliotheken
 
 [SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden.
+
+## Lizenz
+
+[MIT](LICENSE)

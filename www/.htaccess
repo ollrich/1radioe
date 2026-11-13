@@ -1,0 +1,12 @@
+# 1radiœ: document root of the domain (www/ of the git checkout)
+Options -Indexes
+
+# No hidden files (.htaccess, .user.ini, editor leftovers)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Personal project, not meant for search engines (see robots.txt)
+<IfModule mod_headers.c>
+    Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>

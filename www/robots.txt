@@ -1,0 +1,3 @@
+# Personal project, not meant to be indexed.
+User-agent: *
+Disallow: /
