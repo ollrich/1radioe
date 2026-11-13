@@ -237,6 +237,8 @@ label small { font-weight: 400; }
 .log .block { display: block; }
 .text-danger { color: var(--danger); }
 .key-line code { overflow-wrap: anywhere; }
+.key-box { margin: .6rem 0 .9rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: 10px; }
+.key-box p { margin: .3rem 0; }
 .social-fields { margin-top: .9rem; }
 .social-fields > * + * { margin-top: .9rem; }
 

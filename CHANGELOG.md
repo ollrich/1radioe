@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.12.0 (13. November 2026)
+
+**Hörstatus über Home Assistant**
+
+* Der Test mit echten Lautsprechern zeigte: Sonos meldet über den Reporting Endpoint bei Live-Streams nur ein `update` kurz nach dem Start und ein `final` beim Senderwechsel. Die Meldung jede Minute bleibt aus, Pause und Stopp meldet Sonos gar nicht. Einstellen lässt sich das weder im Portal noch in `getMediaURI`
+* Neu: Home Assistant meldet den Hörstatus. `POST /api/listen` nimmt dafür einen Schlüssel im Header `X-1radioe-Token` an und statt der Senderkennung auch eine `url`, wie sie ein Sonos-Lautsprecher spielt. Der Server findet den Sender über die Sonos-Adresse oder die Stream-Adresse, auch mit Vorsätzen wie `aac://` und bei Playlist-Stationen über den aufgelösten Stream. Eine Adresse, die zu keinem Sender gehört, wird mit `{"station": null}` beantwortet
+* Admin, System, Hörgeräte: „Schlüssel erzeugen“ legt einen Schlüssel für Home Assistant an. Er erscheint nur einmal, fertig als Zeile für `secrets.yaml`. Die Tabelle zeigt, ob ein Gerät ein Browser ist oder einen Schlüssel hat
+* Mit eingeschaltetem Diagnose-Log steht jede Meldung von Home Assistant im Log, mit Gerät, Adresse und erkanntem Sender
+* `README.md`: Einrichtung in Home Assistant mit `rest_command` und Automation, der Abschnitt zu Sonos beschreibt, was Sonos wirklich meldet
+
 ## 1.11.2 (13. November 2026)
 
 * Menü auf dem Handy: Über, Impressum und Datenverarbeitung öffnen sich jetzt im Menü selbst statt als Pop-up. Der Pfeil oben links führt zurück zur Übersicht, das X schließt das Menü. Die Leiste mit Pfeil und X bleibt beim Scrollen stehen

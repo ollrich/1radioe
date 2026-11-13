@@ -36,6 +36,69 @@ function station_by_smapi(string $smapiId): ?array
     return q('SELECT * FROM r1_stations WHERE smapi_id = ?', [$smapiId])->fetch() ?: null;
 }
 
+/**
+ * The stream station a player is playing, found by what the player names as its source:
+ * "x-sonosapi-stream:<smapi_id>?sid=…" when Sonos plays it through 1radiœ, otherwise the
+ * stream address, also behind a Sonos prefix such as "aac://" or "x-rincon-mp3radio://".
+ * A playlist station (.pls, .m3u) also matches the stream it was resolved to. Home
+ * Assistant reports Sonos speakers this way. Same address with the same query wins,
+ * the same address with another query counts too.
+ */
+function station_by_play_uri(string $uri): ?array
+{
+    $uri = trim($uri);
+    if (preg_match('~^x-sonosapi-[a-z]+:([^?]+)~i', $uri, $m)) {
+        $s = station_by_smapi(rawurldecode($m[1]));
+        return $s !== null && $s['kind'] === 'stream' ? $s : null;
+    }
+    $want = play_uri_key($uri);
+    if ($want === null) {
+        return null;
+    }
+    $loose = null;
+    foreach (q("SELECT * FROM r1_stations WHERE kind = 'stream' AND active = 1 ORDER BY sort, id")->fetchAll() as $s) {
+        $urls = [$s['stream_url']];
+        if ($s['is_playlist']) {
+            $hit = q('SELECT stream FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $s['stream_url'])])->fetchColumn();
+            if (is_string($hit) && $hit !== '') {
+                $urls[] = $hit;
+            }
+        }
+        foreach ($urls as $u) {
+            $key = play_uri_key($u);
+            if ($key === null) {
+                continue;
+            }
+            if ($key[0] === $want[0]) {
+                return $s;
+            }
+            if ($loose === null && $key[1] === $want[1]) {
+                $loose = $s;
+            }
+        }
+    }
+    return $loose;
+}
+
+/**
+ * A stream address in comparable form: [with query, without query], without scheme
+ * (http and https count the same), host in lower case, no slash at the end.
+ */
+function play_uri_key(string $uri): ?array
+{
+    if (preg_match('~^[a-z][a-z0-9+.-]*://(https?://.+)$~i', $uri, $m)) {
+        $uri = $m[1];   // aac://https://…, x-rincon-mp3radio://https://…
+    } elseif (preg_match('~^x-rincon-mp3radio://(.+)$~i', $uri, $m)) {
+        $uri = 'http://' . $m[1];   // older Sonos form without a scheme
+    }
+    $p = parse_url($uri);
+    if (!is_array($p) || !isset($p['host']) || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true)) {
+        return null;
+    }
+    $base = strtolower($p['host']) . (isset($p['port']) ? ':' . $p['port'] : '') . rtrim($p['path'] ?? '', '/');
+    return [$base . (($p['query'] ?? '') !== '' ? '?' . $p['query'] : ''), $base];
+}
+
 /** Public URL of a logo or cover file, or null if there is none or the file is missing. */
 function logo_url(?string $file, int $levels = 0): ?string
 {

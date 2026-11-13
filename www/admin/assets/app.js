@@ -1178,14 +1178,15 @@
     if (!data.devices.length) {
       const tr = el('tr');
       const td = el('td', 'muted', 'Noch kein Gerät.');
-      td.colSpan = 5;
+      td.colSpan = 6;
       tr.append(td);
       body.append(tr);
     }
     for (const d of data.devices) {
       const tr = el('tr', d.revoked ? 'is-revoked' : '');
       const status = d.revoked ? `widerrufen am ${d.revoked}` : d.this ? 'aktiv, dieser Browser' : 'aktiv';
-      tr.append(el('td', '', d.name), el('td', '', d.created), el('td', '', d.last_used || 'noch nie'), el('td', '', status));
+      tr.append(el('td', '', d.name), el('td', '', d.kind === 'app' ? 'Schlüssel' : 'Browser'), el('td', '', d.created),
+        el('td', '', d.last_used || 'noch nie'), el('td', '', status));
       const cell = el('td');
       if (!d.revoked) {
         const b = el('button', 'btn ghost small danger-text', 'Widerrufen');
@@ -1219,6 +1220,25 @@
       toast((err.fields && err.fields.name) || err.message, 'error');
     }
   }));
+  // a key for Home Assistant: shown once, as the line for secrets.yaml
+  $('#listen-key').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    const name = f.elements.namedItem('name').value.trim();
+    try {
+      const { device, key } = await api('listen.key', { name });
+      $('#listen-key-name').textContent = device.name;
+      $('#listen-key-line').textContent = `radioe_listen_token: ${key}`;
+      $('#listen-key-box').hidden = false;
+      toast(`Schlüssel für „${device.name}“ erzeugt`);
+      loadDevices();
+    } catch (err) {
+      toast((err.fields && err.fields.name) || err.message, 'error');
+    }
+  });
+  $('#listen-key-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('#listen-key-line').textContent); toast('Kopiert'); } catch { toast('Kopieren nicht möglich', 'error'); }
+  });
   $('#listen-banner-dismiss').addEventListener('click', () => {
     $('#listen-banner').hidden = true;
     try { sessionStorage.setItem('r1.listen.banner', 'no'); } catch { /* not remembered */ }

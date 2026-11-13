@@ -117,7 +117,7 @@ Alle aktiven Sender, nie MP3-Playlists oder Tracks. Die Reihenfolge ist die des 
 | `/api/stations.json` | alles für eine eigene App |
 | `/api/status` | laufende Sender |
 | `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
-| `/api/listen` | Meldungen des eigenen Browsers, nur mit Hör-Cookie |
+| `/api/listen` | Meldungen des eigenen Browsers (Hör-Cookie) oder von Home Assistant (Schlüssel) |
 
 Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
 
@@ -157,11 +157,80 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
 
 * **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
 * **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft, für das Posting (`r1_listen_status`).
-* **Sonos:** `getMediaURI` für einen Sender startet. Danach melden die Lautsprecher über den Reporting Endpoint (`report.php`, Sonos schickt `POST …/timePlayed`): `update` etwa jede Minute hält am Leben, `final` beendet. Die alten SMAPI-Meldungen `reportPlaySeconds` und `reportPlayStatus` werden weiter verstanden, Sonos schickt sie neuen Integrationen aber nicht mehr. Tracks und Playlists zählen nicht.
+* **Sonos:** `getMediaURI` für einen Sender startet. Über den Reporting Endpoint (`report.php`, Sonos schickt `POST …/timePlayed`) kommt kurz nach dem Start ein `update` und beim Wechsel auf einen anderen Sender ein `final`. Mehr meldet Sonos bei Live-Streams nicht: keine Meldung jede Minute, nichts bei Pause oder Stopp (getestet im November 2026, einstellen lässt sich das nicht). Den laufenden Zustand meldet deshalb Home Assistant. Die alten SMAPI-Meldungen `reportPlaySeconds` und `reportPlayStatus` werden weiter verstanden, Sonos schickt sie neuen Integrationen aber nicht mehr. Tracks und Playlists zählen nicht.
+* **Home Assistant:** kennt den Zustand jedes Sonos-Lautsprechers. Eine Automation meldet jede Minute „läuft“ für jeden Stream, den ein Lautsprecher spielt, und bei Pause, Stopp oder Senderwechsel sofort „aus“. Gemeldet wird die Adresse, die der Lautsprecher spielt (`media_content_id`), der Server sucht den Sender dazu. So zählt ein Sender auch, wenn er nicht über 1radiœ gestartet wurde, etwa als Sonos-Favorit. Einrichtung siehe unten.
 * **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
 * **Browser:** Nach dem Login im Admin lässt sich ein Browser zum Hören merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `POST /api/listen` erlaubt und nie den Admin öffnet. Der Player in der Web-App meldet dann „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. In diesem Browser zeigt die Web-App oben „Hören wird erfasst“, ein Klick pausiert das für die Sitzung. Geräte verwalten und widerrufen: System → Hörgeräte.
-* **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}`. Verlangt das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`.
-* **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt.
+* **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}` oder `{"url": "<Adresse>", "state": …}`. Ein Browser braucht das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`. Home Assistant oder eine App schickt stattdessen den Header `X-1radioe-Token: <Schlüssel>`. Eine `url` darf eine Sonos-Adresse sein (`x-sonosapi-stream:<smapi_id>?sid=…`) oder die Stream-Adresse, auch mit Sonos-Vorsatz wie `aac://` oder `x-rincon-mp3radio://`. Bei `http` und `https` und bei einer anderen Abfrage hinter dem `?` passt sie trotzdem, eine Playlist-Station auch über ihren aufgelösten Stream. Die Antwort auf eine `url` ist `{"station": "<smapi_id>"}` oder `{"station": null}`, wenn es kein Sender von 1radiœ ist.
+* **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt, auch jede Meldung von Home Assistant (`listen on`, `listen off`).
+
+### Home Assistant einrichten
+
+1. **Schlüssel:** Admin → System → Hörgeräte → „Schlüssel erzeugen“. Die angezeigte Zeile `radioe_listen_token: …` gehört in `secrets.yaml` von Home Assistant. Sie ist nur einmal sichtbar, bei Verlust einfach widerrufen und neu erzeugen.
+2. **Befehl:** in `configuration.yaml` unter `rest_command:` (bei einem vorhandenen Block nur den Eintrag darunter), danach unter Tools → YAML die REST-Befehle neu laden (vor Home Assistant 2026.8 hieß Tools noch Entwicklerwerkzeuge):
+
+   ```yaml
+   rest_command:
+     radioe_listen:
+       url: https://1radioe.net/api/listen
+       method: post
+       headers:
+         X-1radioe-Token: !secret radioe_listen_token
+       content_type: application/json
+       payload: '{"url": {{ url | to_json }}, "state": {{ state | to_json }}}'
+       timeout: 10
+   ```
+
+3. **Automation:** Sie meldet, was die Lautsprecher spielen. Spotify-Titel und Ähnliches schickt sie gar nicht erst, andere Streams beantwortet der Server mit `{"station": null}`. Puffern zählt nicht als Pause, und spielt ein zweiter Lautsprecher denselben Sender weiter, geht er nicht auf „aus“. Die Liste der Lautsprecher in den Auslösern sind Ollies Sonos-Geräte.
+
+   ```yaml
+   alias: 1radiœ Hörstatus
+   description: Meldet 1radioe.net, welchen Sender ein Sonos-Lautsprecher spielt.
+   mode: queued
+   max: 10
+   triggers:
+     - trigger: state            # Start, Pause, Stopp (nur der Zustand, nicht jeder Songtitel)
+       entity_id: [media_player.buro, media_player.kuche, media_player.wohnzimmer,
+                   media_player.schrankzimmer, media_player.era_on_the_shelf, media_player.roamy]
+       to: null
+     - trigger: state            # Senderwechsel während der Wiedergabe
+       entity_id: [media_player.buro, media_player.kuche, media_player.wohnzimmer,
+                   media_player.schrankzimmer, media_player.era_on_the_shelf, media_player.roamy]
+       attribute: media_content_id
+     - trigger: time_pattern     # Heartbeat, der Server hält „läuft“ 150 Sekunden
+       minutes: /1
+   variables:
+     playing: >-
+       {{ integration_entities('sonos') | select('match', 'media_player\.')
+          | select('is_state', 'playing') | map('state_attr', 'media_content_id')
+          | select('string') | select('match', '(x-sonosapi-|[a-z0-9.+-]+://)')
+          | unique | list }}
+     stopped: >-
+       {%- set f = trigger.from_state if trigger.platform == 'state' else none -%}
+       {%- set t = trigger.to_state if trigger.platform == 'state' else none -%}
+       {%- if f is not none and f.state == 'playing' -%}
+         {%- set u = f.attributes.media_content_id -%}
+         {%- set gone = t is none or t.state not in ['playing', 'buffering']
+                        or t.attributes.media_content_id != u -%}
+         {{- u if gone and u is string and u not in playing
+                and u is match('(x-sonosapi-|[a-z0-9.+-]+://)') else '' -}}
+       {%- endif -%}
+   conditions:
+     - "{{ playing | count > 0 or stopped != '' }}"
+   actions:
+     - repeat:
+         for_each: "{{ playing }}"
+         sequence:
+           - action: rest_command.radioe_listen
+             data: {url: "{{ repeat.item }}", state: "on"}
+             continue_on_error: true
+     - if:
+         - "{{ stopped != '' }}"
+       then:
+         - action: rest_command.radioe_listen
+           data: {url: "{{ stopped }}", state: "off"}
+           continue_on_error: true
+   ```
 
 ## Posting zu Bluesky und Mastodon
 
