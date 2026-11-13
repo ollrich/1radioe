@@ -13,6 +13,10 @@ Options -Indexes -MultiViews
 # for PHP's built-in server, keep both in sync.
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # German under /de/: every address works there as well, the page reads the language
+    # from REQUEST_URI (which keeps /de/). /de gets its slash, so relative links stay right.
+    RewriteRule ^de$ /de/ [R=301,L]
+    RewriteRule ^de/(.*)$ /$1 [L]
     RewriteRule ^api/status$ api/status.php [L]
     RewriteRule ^api/listen$ api/listen.php [L]
     RewriteRule ^api/nowplaying$ api/nowplaying.php [L]

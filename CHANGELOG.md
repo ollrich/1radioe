@@ -1,5 +1,18 @@
 # Änderungen
 
+## 1.16.0 (13. November 2026)
+
+**Englisch und Deutsch, Menü auch am Desktop**
+
+* `1radioe.net` ist Englisch, `1radioe.net/de/` Deutsch. `.htaccess` reicht jede Adresse unter `/de/` ohne `/de` weiter, die Seite liest die Sprache aus der Adresse. So funktionieren dort auch Senderseiten, Playlist und Abfragen. `/de` bekommt seinen Schrägstrich
+* Ist Deutsch die erste Sprache des Browsers, leitet `1radioe.net` auf `/de/` um. Englisch im Menü führt auf `/?lang=en`, dort gibt es keine Umleitung. Kein Cookie
+* Übersetzt sind Menü, Titel, Beschreibung, die Info an den Balken („Ollie is listening to …“) und die Texte aus dem Admin. Status, Knöpfe und Senderbeschreibungen bleiben vorerst, wie sie sind
+* Das Menü gibt es jetzt auch am Desktop, 520 px breit, mit Über, Impressum, Datenverarbeitung und dem Sprachumschalter. Er nimmt den Sender im Player mit. „Über 1radiœ“ oben und die Links unten entfallen, die Links gibt es nur noch ohne JavaScript
+* Englische Standardtexte für Über, Impressum (Legal notice) und Datenverarbeitung (Data processing). Ohne eigenen englischen Text zeigt die englische Seite den eigenen deutschen
+* Posting: `{link}` zeigt bei Mastodon (Sprache `de`) auf `/de/s/<id>`, bei Bluesky (`en`) auf `/s/<id>`
+* Senderseiten leiten mit vollständigem Pfad weiter (`/de/s/<id>` auf `/de/?s=<id>`)
+* Kategorien: Das Stapel-Symbol ist größer, ragt über die Ecke und steht in Logo-Blau mit Rand, damit es auch auf dunklen Bildern auffällt
+
 ## 1.15.1 (13. November 2026)
 
 * Web-App: Kategorien zeigen ihr eigenes Bild aus dem Admin statt eines Rasters aus den Logos darin. Ohne eigenes Bild zeigen sie die Collage, die der Server aus den ersten Logos baut, wie in Sonos. Ein kleines Stapel-Symbol oben rechts kennzeichnet sie als Kategorie, auf der Skala und in der Liste

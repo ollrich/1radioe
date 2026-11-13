@@ -327,7 +327,7 @@ try {
         case 'GET texts':
             $out = [];
             foreach (TEXT_NAMES as $name => $title) {
-                $out[$name] = ['title' => $title, 'default' => text_clean(text_defaults()[$name])];
+                $out[$name] = ['title' => $title, 'default' => array_map('text_clean', text_defaults()[$name])];
                 foreach (array_keys(TEXT_LANGS) as $lang) {
                     $out[$name][$lang] = text_stored($name, $lang);   // null: nothing stored
                 }

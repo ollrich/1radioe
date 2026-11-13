@@ -318,9 +318,10 @@ function social_tags_text(string $input): string
 }
 
 /** Address of the station page that posts link to: 1radioe.net/s/<smapi_id>. */
-function social_link(array $s, array $station, int $levels = 0): string
+/** German posts link to the German page (/de/s/…), all others to the English one. */
+function social_link(array $s, array $station, int $levels = 0, string $lang = 'en'): string
 {
-    return social_site_url($s, $levels) . '/s/' . rawurlencode((string) $station['smapi_id']);
+    return social_site_url($s, $levels) . ($lang === 'de' ? '/de' : '') . '/s/' . rawurlencode((string) $station['smapi_id']);
 }
 
 /** Fills the template; empty placeholders leave no gaps or empty lines behind. */
@@ -356,7 +357,7 @@ function masto_length(string $text, int $urlChars): int
 function social_compose(array $station, array $s, string $net, int $levels = 0): array
 {
     $tags = social_tags($s['hashtags'] . ' ' . ($station['hashtags'] ?? ''));
-    $link = social_link($s, $station, $levels);
+    $link = social_link($s, $station, $levels, (string) ($s[$net]['lang'] ?? 'en'));
     $max  = $net === 'bsky' ? SOCIAL_BSKY_MAX : max(1, (int) $s['masto']['max']);
     for ($n = count($tags); $n >= 0; $n--) {
         $text = social_fill((string) $s[$net]['template'], $station, $link, array_slice($tags, 0, $n));

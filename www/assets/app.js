@@ -15,7 +15,9 @@
   const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
   const STATUS_EVERY = 30000;
   const TEXT = { idle: 'Bereit', connecting: 'Verbindet', live: 'Live', paused: 'Pausiert', error: 'Keine Verbindung' };
-  const LISTENING = 'Olli hört gerade';
+  // the frame speaks the page's language; status and buttons stay as they are for now
+  const T = Object.assign({ listening: 'Olli hört gerade', listeningTo: 'Olli hört gerade', and: 'und' }, data.text || {});
+  const LISTENING = T.listening;
   const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
 
   /** Every station and category by id; stations know their level ('root' or a category id). */
@@ -63,9 +65,9 @@
   }
 
   /* small stack in the top right corner: this tile is a category, not a station */
-  const STACK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" '
-    + 'stroke-linecap="round" aria-hidden="true"><rect x="2" y="5.5" width="8.5" height="8.5" rx="2"/>'
-    + '<path d="M5.5 2.5h6a2 2 0 0 1 2 2v6"/></svg>';
+  const STACK = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+    + '<rect x="5.2" y="1.8" width="9" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>'
+    + '<rect x="1.8" y="5.2" width="9" height="9" rx="2.2" fill="currentColor"/></svg>';
 
   /**
    * Fills a tile with the logo, or the initials if there is none (or it fails to load).
@@ -721,7 +723,6 @@
     return PAGES.includes(id) ? id : null;
   };
   const clearHash = () => history.replaceState(null, '', location.pathname + location.search);
-  const narrow = window.matchMedia('(max-width: 760px)');
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // copy the text of a dialog into the menu, without its close button and ids
@@ -763,9 +764,9 @@
     if (link) link.focus();
   }
 
-  // a page from a link like 1radioe.net/#impressum: in the menu on phones, as a dialog otherwise
+  // a page from a link like 1radioe.net/#impressum: in the menu, on phones and on the desktop
   function openPage(id) {
-    if (menu && menuBtn && narrow.matches && typeof menu.showModal === 'function') {
+    if (menu && menuBtn && typeof menu.showModal === 'function') {
       openMenu();
       showPage(id);
     } else openDialog(id);
@@ -821,13 +822,13 @@
       menuNav.classList.remove('from-page');
     });
     menuBack.addEventListener('click', showLinks);
-    // turned to a wide screen while the menu is open: it has no button there, a page moves to its dialog
-    narrow.addEventListener('change', (e) => {
-      if (e.matches || !menu.open) return;
-      const page = menu.dataset.page;
-      menu.close();
-      if (page) openDialog(page);
-    });
+    // the other language: keeps the station that is in the player
+    $$('[data-lang-link]', menu).forEach((a) => a.addEventListener('click', () => {
+      if (!state.cur || a.getAttribute('aria-current') === 'true') return;
+      const url = new URL(a.href);
+      url.searchParams.set('s', state.cur.id);
+      a.href = url.href;
+    }));
   }
 
   $$('[data-dialog]').forEach((a) => a.addEventListener('click', (e) => {
@@ -979,12 +980,12 @@
 
   function pillText(pill) {
     const it = pill.dataset.item ? items.get(pill.dataset.item) : state.cur;
-    if (!it) return LISTENING;
+    if (!it) return T.listening;
     if (it.type === 'category') {
       const names = stationsOf(it.id).filter((x) => state.active.has(x.id)).map((x) => x.name);
-      return names.length ? `${LISTENING} ${names.join(' und ')}` : LISTENING;
+      return names.length ? `${T.listeningTo} ${names.join(` ${T.and} `)}` : T.listening;
     }
-    return `${LISTENING} ${it.name}`;
+    return `${T.listeningTo} ${it.name}`;
   }
 
   function showTip(pill, autoHide) {

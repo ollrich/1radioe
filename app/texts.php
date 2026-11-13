@@ -4,7 +4,9 @@
  * edited in the admin (Texte), in German and English.
  *
  * Stored as cleaned HTML in r1_settings under text.<name>.<lang>. Nothing stored means
- * the default below. English falls back to German until the web app speaks English.
+ * the default below. English shows on 1radioe.net, German on 1radioe.net/de/. Without an
+ * own English text the English page shows the own German one (real legal details beat
+ * an English text with placeholders), and only then the English default.
  * Only a few tags survive text_clean(): p, h3, strong, em, a, ul, ol, li, br. A link
  * may point to http, https, mailto or a relative address on this site, external links
  * open in a new tab. Everything else is dropped or reduced to its text.
@@ -15,38 +17,72 @@ const TEXT_NAMES = ['about' => 'Über 1radiœ', 'impressum' => 'Impressum', 'dat
 const TEXT_LANGS = ['de' => 'Deutsch', 'en' => 'Englisch'];
 const TEXT_MAX   = 30000;   // characters of cleaned HTML, far more than the dialogs need
 
-/** The texts as the page shipped them before they became editable. German only. */
+/** The texts as long as nothing is stored, German and English. */
 function text_defaults(): array
 {
     return [
-        'about' => <<<'HTML'
-            <p>1radiœ ist meine persönliche Auswahl an Internetradios. Gepflegt wird sie an einer Stelle und läuft überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App.</p>
-            <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste.</p>
-            <h3>Mitnehmen</h3>
-            <p>Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
-            <h3>Quellcode</h3>
-            <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
-            <p>Ein Projekt von Olli.</p>
-            HTML,
-        'impressum' => <<<'HTML'
-            <p>[Name]<br>[Anschrift]<br>[Postleitzahl, Ort]</p>
-            <h3>Kontakt</h3>
-            <p>[E-Mail-Adresse]</p>
-            <h3>Verantwortlich für den Inhalt</h3>
-            <p>[Name, Anschrift wie oben]</p>
-            HTML,
-        'datenverarbeitung' => <<<'HTML'
-            <h3>Kein Tracking</h3>
-            <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server.</p>
-            <h3>Beim Abspielen</h3>
-            <p>Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
-            <h3>Lautstärke</h3>
-            <p>Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
-            <h3>Cookies</h3>
-            <p>Besucher bekommen keine Cookies. Ein Cookie gibt es nur für Olli selbst, damit sein Hörstatus erfasst werden kann.</p>
-            <h3>Hosting und Verantwortlicher</h3>
-            <p>[Hoster, Server-Logfiles, Speicherdauer]<br>[Name, Kontakt]</p>
-            HTML,
+        'about' => [
+            'de' => <<<'HTML'
+                <p>1radiœ ist meine persönliche Auswahl an Internetradios. Gepflegt wird sie an einer Stelle und läuft überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App.</p>
+                <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste.</p>
+                <h3>Mitnehmen</h3>
+                <p>Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
+                <h3>Quellcode</h3>
+                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
+                <p>Ein Projekt von Olli.</p>
+                HTML,
+            'en' => <<<'HTML'
+                <p>1radiœ is my personal selection of internet radio stations. It is kept in one place and plays everywhere: here in the browser, on Sonos, as a playlist in VLC and later in an app of its own.</p>
+                <p>The stations play straight from the original stream. No sound runs through this server. There is no tracking and there are no external services.</p>
+                <h3>Take it with you</h3>
+                <p>All stations as a playlist for VLC and other players: <a href="streams.m3u">streams.m3u</a></p>
+                <h3>Source code</h3>
+                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT licence</p>
+                <p>A project by Ollie.</p>
+                HTML,
+        ],
+        'impressum' => [
+            'de' => <<<'HTML'
+                <p>[Name]<br>[Anschrift]<br>[Postleitzahl, Ort]</p>
+                <h3>Kontakt</h3>
+                <p>[E-Mail-Adresse]</p>
+                <h3>Verantwortlich für den Inhalt</h3>
+                <p>[Name, Anschrift wie oben]</p>
+                HTML,
+            'en' => <<<'HTML'
+                <p>[Name]<br>[Address]<br>[Postcode, town]</p>
+                <h3>Contact</h3>
+                <p>[Email address]</p>
+                <h3>Responsible for the content</h3>
+                <p>[Name, address as above]</p>
+                HTML,
+        ],
+        'datenverarbeitung' => [
+            'de' => <<<'HTML'
+                <h3>Kein Tracking</h3>
+                <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server.</p>
+                <h3>Beim Abspielen</h3>
+                <p>Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
+                <h3>Lautstärke</h3>
+                <p>Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
+                <h3>Cookies</h3>
+                <p>Besucher bekommen keine Cookies. Ein Cookie gibt es nur für Olli selbst, damit sein Hörstatus erfasst werden kann.</p>
+                <h3>Hosting und Verantwortlicher</h3>
+                <p>[Hoster, Server-Logfiles, Speicherdauer]<br>[Name, Kontakt]</p>
+                HTML,
+            'en' => <<<'HTML'
+                <h3>No tracking</h3>
+                <p>This site uses no analytics and no advertising and loads nothing from other servers. Fonts and scripts are on this server.</p>
+                <h3>When a station plays</h3>
+                <p>Your browser connects directly to the server of the station. That server receives your IP address. The station's own notes on data processing apply.</p>
+                <h3>Volume</h3>
+                <p>The volume you choose stays in your browser's local storage and does not leave your device.</p>
+                <h3>Cookies</h3>
+                <p>Visitors get no cookies. Only Ollie's own browser has one, so that the listening status can be recorded.</p>
+                <h3>Hosting and controller</h3>
+                <p>[Host, server log files, retention period]<br>[Name, contact]</p>
+                HTML,
+        ],
     ];
 }
 
@@ -62,12 +98,12 @@ function text_stored(string $name, string $lang): ?string
     return $v === null || $v === '' ? null : $v;
 }
 
-/** The HTML for the page: stored, for English otherwise the German one, otherwise the default. */
+/** The HTML for the page: stored, for English otherwise the stored German one, otherwise the default. */
 function text_html(string $name, string $lang = 'de'): string
 {
     return text_stored($name, $lang)
         ?? ($lang !== 'de' ? text_stored($name, 'de') : null)
-        ?? text_clean(text_defaults()[$name] ?? '');
+        ?? text_clean(text_defaults()[$name][$lang] ?? text_defaults()[$name]['de'] ?? '');
 }
 
 /** Saves a text after cleaning it. Empty means back to the default. Returns the stored HTML or ''. */

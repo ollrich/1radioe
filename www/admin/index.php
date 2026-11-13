@@ -395,7 +395,7 @@ render_page('Sender', <<<HTML
         <p class="muted">Über 1radiœ, Impressum und Datenverarbeitung auf 1radioe.net</p>
       </div>
     </div>
-    <p class="hint">Was du speicherst, steht sofort auf 1radioe.net, im Pop-up am Desktop und im Menü auf dem Handy. Erlaubt sind Absätze, Zwischenüberschriften, fett, kursiv, Listen und Links. Alles andere entfernt der Server beim Speichern, auch Formatierungen aus eingefügtem Text. Englische Texte gelten erst, wenn es die Web-App auf Englisch gibt.</p>
+    <p class="hint">Was du speicherst, steht sofort auf 1radioe.net, im Pop-up am Desktop und im Menü auf dem Handy. Erlaubt sind Absätze, Zwischenüberschriften, fett, kursiv, Listen und Links. Alles andere entfernt der Server beim Speichern, auch Formatierungen aus eingefügtem Text. Deutsch steht auf 1radioe.net/de, Englisch auf 1radioe.net. Ohne eigenen englischen Text zeigt die englische Seite deinen deutschen.</p>
     <div class="panel wide">
       <div class="text-pick">
         <div class="choice" role="group" aria-label="Text">
