@@ -14,10 +14,18 @@
   const SLOT = 88;                                         // width of a place on the scale, as in CSS
   const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
   const STATUS_EVERY = 30000;
-  const TEXT = { idle: 'Bereit', connecting: 'Verbindet', live: 'Live', paused: 'Pausiert', error: 'Keine Verbindung' };
-  // the frame speaks the page's language; status and buttons stay as they are for now
-  const T = Object.assign({ listening: 'Olli hört gerade', listeningTo: 'Olli hört gerade', and: 'und' }, data.text || {});
+  // texts in the page's language (index.php, webapp_script_strings); German if missing
+  const T = Object.assign({
+    listening: 'Olli hört gerade', listeningTo: 'Olli hört gerade', and: 'und',
+    phase: { idle: 'Bereit', connecting: 'Verbindet', live: 'Live', paused: 'Pausiert', error: 'Keine Verbindung' },
+    all: 'Alle Sender', category: 'Kategorie {name}', count1: '1 Sender', countN: '{n} Sender',
+    holdsCur: 'enthält den aktuellen Sender', play: 'Abspielen', pause: 'Pause',
+    noDesc: 'Keine Beschreibung.', website: 'Website: {host}', listenOn: 'Hören wird erfasst', listenOff: 'Erfassung pausiert',
+  }, data.text || {});
+  const TEXT = T.phase;
   const LISTENING = T.listening;
+  const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+  const countText = (n) => (n === 1 ? T.count1 : fill(T.countN, { n }));
   const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
 
   /** Every station and category by id; stations know their level ('root' or a category id). */
@@ -112,10 +120,10 @@
 
   function label(it) {
     let text = it.type === 'category'
-      ? `${it.num} Kategorie ${it.name}, ${it.count} Sender`
+      ? `${it.num} ${fill(T.category, { name: it.name })}, ${countText(it.count)}`
       : `${it.num} ${it.name}`;
     if (it.type === 'station' && state.cur && state.cur.id === it.id) text += ', ' + TEXT[state.phase];
-    if (it.type === 'category' && holdsCur(it)) text += ', enthält den aktuellen Sender';
+    if (it.type === 'category' && holdsCur(it)) text += ', ' + T.holdsCur;
     if (isActive(it)) text += ', ' + LISTENING;
     return text;
   }
@@ -159,13 +167,13 @@
 
   function renderCrumbs() {
     if (state.view === 'root') {
-      crumbs.replaceChildren(el('span', '', 'Alle Sender'));
+      crumbs.replaceChildren(el('span', '', T.all));
       return;
     }
     const back = el('button', 'pillbtn');
     back.type = 'button';
     back.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.7 4.3 8 12l7.7 7.7-1.4 1.4L5.2 12l9.1-9.1z"/></svg>';
-    back.append('Alle Sender');
+    back.append(T.all);
     back.addEventListener('click', () => setView('root'));
     const sep = el('span', 'sep', '/');
     sep.setAttribute('aria-hidden', 'true');
@@ -319,7 +327,7 @@
       const cur = Boolean(state.cur && state.cur.id === it.id && state.phase !== 'idle');
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
-      sub.textContent = it.type === 'category' ? `${it.count} Sender` : cur ? (trackLine(currentTrack()) || TEXT[state.phase]) : (it.desc || '');
+      sub.textContent = it.type === 'category' ? countText(it.count) : cur ? (trackLine(currentTrack()) || TEXT[state.phase]) : (it.desc || '');
       // an open category shows the status at the station inside, not twice
       pill.hidden = !isActive(it) || (it.type === 'category' && state.openCat === it.id);
     }
@@ -339,7 +347,7 @@
       n.classList.toggle('is-long', it.name.length > 16);
     });
     $$('[data-r1="kicker"]').forEach((n) => { n.textContent = cat ? cat.name : ''; n.hidden = !cat; });
-    $$('[data-r1="level"]').forEach((n) => { n.textContent = cat ? cat.name : 'Alle Sender'; });
+    $$('[data-r1="level"]').forEach((n) => { n.textContent = cat ? cat.name : T.all; });
     setMediaMetadata();
   }
 
@@ -349,7 +357,7 @@
     $$('[data-r1="dot"]').forEach((n) => { n.className = 'dot ' + phase; });
     $$('[data-act="toggle"]').forEach((b) => {
       b.classList.toggle('is-playing', isPlaying());
-      b.setAttribute('aria-label', isPlaying() ? 'Pause' : 'Abspielen');
+      b.setAttribute('aria-label', isPlaying() ? T.pause : T.play);
     });
     if (phase !== 'idle') $('[data-r1="mini"]').hidden = false;
     if (phase === 'live') listenStart();
@@ -667,7 +675,7 @@
     const sync = () => {
       const on = recording();
       listenSwitch.setAttribute('aria-pressed', String(on));
-      $('[data-listen-label]', listenSwitch).textContent = on ? 'Hören wird erfasst' : 'Erfassung pausiert';
+      $('[data-listen-label]', listenSwitch).textContent = on ? T.listenOn : T.listenOff;
     };
     listenSwitch.addEventListener('click', () => {
       const on = !recording();
@@ -689,14 +697,14 @@
     fillTile($('[data-info="art"]'), it);
     $('[data-info="name"]').textContent = it.name;
     const desc = $('[data-info="desc"]');
-    desc.textContent = it.desc || 'Keine Beschreibung.';
+    desc.textContent = it.desc || T.noDesc;
     const site = $('[data-info="website"]');
     site.parentElement.hidden = !it.website;   // the line holds only the website
     if (it.website) {
       site.href = it.website;
       let host = it.website;
       try { host = new URL(it.website).host.replace(/^www\./, ''); } catch { /* keep the address */ }
-      site.textContent = 'Website: ' + host;
+      site.textContent = fill(T.website, { host });
     }
     return true;
   }

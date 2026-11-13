@@ -62,8 +62,8 @@ function webapp_station(array $e): array
 
 /**
  * Language of the page: German under /de/, English otherwise (1radioe.net).
- * Only the frame is translated: menu, titles, the texts from the admin and the info at
- * the bars. Status, buttons and station descriptions stay as they are for now.
+ * Everything of the page is translated, the texts from the admin per language;
+ * only the station descriptions exist once and stay as they are.
  */
 function webapp_lang(): string
 {
@@ -115,6 +115,26 @@ function webapp_strings(string $lang): array
         'listening'   => 'Olli hört gerade',
         'listening_to' => 'Olli hört gerade',
         'and'         => 'und',
+        'listen_on'   => 'Hören wird erfasst',
+        'listen_title' => 'Nur für dich sichtbar: Dein Hören in diesem Browser wird als Hörstatus erfasst (%s).',
+        'unreachable' => 'Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.',
+        'no_stations' => 'Noch keine Sender.',
+        'idle'        => 'Bereit',
+        'prev'        => 'Vorheriger Sender',
+        'play'        => 'Abspielen',
+        'next'        => 'Nächster Sender',
+        'volume'      => 'Lautstärke',
+        'station_info' => 'Über den Sender',
+        'picker'      => 'Senderauswahl',
+        'keys'        => 'Tastaturkürzel',
+        'key_arrows'  => 'Sender zurück und vor',
+        'key_digits'  => '<kbd>1</kbd>bis <kbd>0</kbd>Sender direkt wählen',
+        'key_space'   => '<kbd>Leertaste</kbd>Play und Pause',
+        'key_esc'     => 'zurück zu allen Sendern',
+        'more_left'   => 'Weitere Sender links',
+        'more_right'  => 'Weitere Sender rechts',
+        'all'         => 'Alle Sender',
+        'close_player' => 'Player schließen',
     ];
     $en = [
         'description' => "Ollie's radio stations: listen in the browser, on Sonos and in VLC.",
@@ -133,8 +153,63 @@ function webapp_strings(string $lang): array
         'listening'   => 'Ollie is listening',
         'listening_to' => 'Ollie is listening to',
         'and'         => 'and',
+        'listen_on'   => 'Listening is recorded',
+        'listen_title' => 'Only visible to you: listening in this browser counts as the listening status (%s).',
+        'unreachable' => 'The stations cannot be reached right now. Please try again later.',
+        'no_stations' => 'No stations yet.',
+        'idle'        => 'Ready',
+        'prev'        => 'Previous station',
+        'play'        => 'Play',
+        'next'        => 'Next station',
+        'volume'      => 'Volume',
+        'station_info' => 'About the station',
+        'picker'      => 'Choose a station',
+        'keys'        => 'Keyboard shortcuts',
+        'key_arrows'  => 'Previous and next station',
+        'key_digits'  => '<kbd>1</kbd>to <kbd>0</kbd>Pick a station directly',
+        'key_space'   => '<kbd>Space</kbd>Play and pause',
+        'key_esc'     => 'Back to all stations',
+        'more_left'   => 'More stations to the left',
+        'more_right'  => 'More stations to the right',
+        'all'         => 'All stations',
+        'close_player' => 'Close player',
     ];
     return $lang === 'de' ? $de : $en;
+}
+
+/** Texts the script builds itself, in the page's language. {name} and {n} are filled in there. */
+function webapp_script_strings(string $lang): array
+{
+    if ($lang === 'de') {
+        return [
+            'phase'    => ['idle' => 'Bereit', 'connecting' => 'Verbindet', 'live' => 'Live', 'paused' => 'Pausiert', 'error' => 'Keine Verbindung'],
+            'all'      => 'Alle Sender',
+            'category' => 'Kategorie {name}',
+            'count1'   => '1 Sender',
+            'countN'   => '{n} Sender',
+            'holdsCur' => 'enthält den aktuellen Sender',
+            'play'     => 'Abspielen',
+            'pause'    => 'Pause',
+            'noDesc'   => 'Keine Beschreibung.',
+            'website'  => 'Website: {host}',
+            'listenOn' => 'Hören wird erfasst',
+            'listenOff' => 'Erfassung pausiert',
+        ];
+    }
+    return [
+        'phase'    => ['idle' => 'Ready', 'connecting' => 'Connecting', 'live' => 'Live', 'paused' => 'Paused', 'error' => 'No connection'],
+        'all'      => 'All stations',
+        'category' => 'Category {name}',
+        'count1'   => '1 station',
+        'countN'   => '{n} stations',
+        'holdsCur' => 'contains the current station',
+        'play'     => 'Play',
+        'pause'    => 'Pause',
+        'noDesc'   => 'No description.',
+        'website'  => 'Website: {host}',
+        'listenOn' => 'Listening is recorded',
+        'listenOff' => 'Recording paused',
+    ];
 }
 
 /** JSON that is safe inside a <script type="application/json"> block. */
