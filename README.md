@@ -36,7 +36,7 @@ Im Checkout neben `www/` liegt der Ordner `1radioe-private` mit `config.php`, We
 
 ## Installation und Update
 
-Die Einrichtung auf All-Inkl mit Deploy-Key, Webhook und Umzug von `eichhof.co/1radioe` beschreibt [DEPLOY-SETUP.md](DEPLOY-SETUP.md).
+Die Einrichtung auf All-Inkl mit Webhook und Umzug von `eichhof.co/1radioe` beschreibt [DEPLOY-SETUP.md](DEPLOY-SETUP.md).
 
 Danach ist jedes Update ein Push auf `main`. Gearbeitet wird auf Branches, ein Merge nach `main` ist sofort live. Neue Spalten und Tabellen legt die App beim nächsten Aufruf von Admin oder Sonos selbst an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
 
