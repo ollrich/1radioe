@@ -110,6 +110,9 @@ try {
                 'log_enabled' => setting('log_enabled', '0') === '1',
             ]);
 
+        case 'GET listen':
+            json_out(['active' => listen_active(), 'rows' => listen_overview(), 'ttl' => LISTEN_TTL]);
+
         case 'GET log':
             $rows = q('SELECT at, ip, agent, method, item, status, note FROM r1_request_log ORDER BY id DESC LIMIT 200')->fetchAll();
             foreach ($rows as &$r) {

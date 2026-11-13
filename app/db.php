@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 4;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)
+const SCHEMA_VERSION = 5;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)
 
 function db(): PDO
 {
@@ -156,6 +156,33 @@ function db_migrate_locked(): void
         if (!q("SHOW COLUMNS FROM r1_stations LIKE 'category_id'")->fetch()) {
             db()->exec('ALTER TABLE r1_stations ADD COLUMN category_id INT UNSIGNED NULL AFTER kind, ADD KEY k_category (category_id, sort)');
         }
+    }
+    if ($current < 5) {
+        // 1.5: website of a station, HTTPS check of its stream, listening status and the
+        // devices allowed to report it. All additive: an older installation sharing this
+        // database keeps working.
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'website'")->fetch()) {
+            db()->exec("ALTER TABLE r1_stations ADD COLUMN website VARCHAR(500) NOT NULL DEFAULT '' AFTER description");
+        }
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'https_ok'")->fetch()) {
+            db()->exec('ALTER TABLE r1_stations ADD COLUMN https_ok TINYINT(1) NULL AFTER check_info');
+        }
+        // one row per station, deliberately without source, device or IP
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_listen_status (
+            station_id INT UNSIGNED NOT NULL PRIMARY KEY,
+            last_seen  INT UNSIGNED NOT NULL,
+            stopped    TINYINT(1)   NOT NULL DEFAULT 0
+        ) $opts");
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_listen_devices (
+            id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            name         VARCHAR(80)  NOT NULL,
+            kind         VARCHAR(16)  NOT NULL,
+            token_hash   CHAR(64)     NOT NULL,
+            created_at   DATETIME     NOT NULL,
+            last_used_at DATETIME     NULL,
+            revoked_at   DATETIME     NULL,
+            UNIQUE KEY uq_token (token_hash)
+        ) $opts");
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {

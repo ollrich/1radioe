@@ -37,13 +37,13 @@ function send(string $body, int $status = 200): never
 
 function respond(string $method, string $inner): never
 {
-    request_log(200, '');
+    request_log(200, $GLOBALS['log_note']);
     send("<{$method}Response xmlns=\"" . SONOS_NS . "\"><{$method}Result>{$inner}</{$method}Result></{$method}Response>");
 }
 
 function respond_empty(string $method): never
 {
-    request_log(200, '');
+    request_log(200, $GLOBALS['log_note']);
     send("<{$method}Response xmlns=\"" . SONOS_NS . '"/>');
 }
 
@@ -58,6 +58,7 @@ function fault(string $code, string $message): never
 
 $GLOBALS['log_method'] = '-';
 $GLOBALS['log_item']   = '';
+$GLOBALS['log_note']   = '';
 
 function request_log(int $status, string $note): void
 {
@@ -102,6 +103,25 @@ function track(string $smapiId): array
 function is_track_id(string $id): bool
 {
     return str_starts_with($id, 'track:');
+}
+
+/**
+ * Listening status from Sonos: "läuft" or "aus" for a stream id. Never reads or
+ * stores anything about the household or device in the SOAP header, and never lets
+ * a status problem get in the way of playback. Adds the outcome to the diagnostic log.
+ */
+function smapi_listen(string $id, bool $playing): bool
+{
+    try {
+        $s  = is_track_id($id) ? null : station_by_smapi($id);
+        $ok = $s !== null && listen_report($s, $playing);
+    } catch (Throwable) {
+        $ok = false;
+    }
+    if ($ok) {
+        $GLOBALS['log_note'] = trim($GLOBALS['log_note'] . ' Status: ' . ($playing ? 'läuft' : 'aus'));
+    }
+    return $ok;
 }
 
 /** Stream metadata in the order required by the SMAPI schema. */
@@ -267,22 +287,41 @@ try {
             respond('getExtendedMetadata', $item['kind'] === 'stream' ? item_xml($item) : item_xml($item, playlist_stats(), null, stations_all(true)));
 
         // Playback: the stream address (.pls/.m3u are resolved) or the MP3 file of a track.
+        // For a stream this is also the start of the listening status.
         case 'getMediaURI':
             $id = $param('id');
-            respond('getMediaURI', esc(is_track_id($id) ? track_url(track($id)) : station_playback_url(station($id, 'stream'))));
+            if (is_track_id($id)) {
+                respond('getMediaURI', esc(track_url(track($id))));
+            }
+            $url = station_playback_url(station($id, 'stream'));
+            smapi_listen($id, true);
+            respond('getMediaURI', esc($url));
 
         // Sonos polls this; a new catalog value makes it reload the list.
         case 'getLastUpdate':
             respond('getLastUpdate', '<catalog>' . esc(catalog_token()) . '</catalog><favorites>0</favorites><pollInterval>3600</pollInterval>');
 
-        // Playback reports: interval 0 means no further reports.
+        // Heartbeat while a stream plays: the answer asks for the next report in
+        // LISTEN_INTERVAL seconds. Tracks get 0, which means no further reports.
         case 'reportPlaySeconds':
-            respond('reportPlaySeconds', '<interval>0</interval>');
+            $id = $param('id');
+            $GLOBALS['log_note'] = 'seconds=' . $param('seconds');
+            $stream = smapi_listen($id, true);
+            respond('reportPlaySeconds', '<interval>' . ($stream ? LISTEN_INTERVAL : 0) . '</interval>');
 
-        // Notifications without a result, e.g. "account added".
-        case 'reportAccountAction':
+        // End of playback for the listening status. Whether and when Sonos sends this
+        // for live streams is checked with the diagnostic log (see CHANGELOG 1.5.0).
         case 'reportPlayStatus':
+            $GLOBALS['log_note'] = 'status=' . $param('status');
+            smapi_listen($param('id'), false);
+            respond_empty('reportPlayStatus');
+
+        // Notifications without a result. Logged with their values for diagnosis.
         case 'setPlayedSeconds':
+            $GLOBALS['log_note'] = 'seconds=' . $param('seconds');
+            respond_empty('setPlayedSeconds');
+
+        case 'reportAccountAction':
             respond_empty($call->localName);
 
         default:

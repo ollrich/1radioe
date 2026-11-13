@@ -7,6 +7,7 @@ Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über
 * **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
 * Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
+* **Hörstatus:** zeigt, welchen Sender Ollie gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 
@@ -40,10 +41,10 @@ Beim ersten Öffnen von `/admin/` fragt ein Assistent ein Passwort ab (mindesten
 
 ```bash
 cp config.sample.php 1radioe-private/config.php   # Ordner vorher anlegen, Datenbank eintragen
-php -S 127.0.0.1:8080 -t www
+php -S 127.0.0.1:8080 -t www app/dev-router.php
 ```
 
-`1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main`: `php -l` über alle PHP-Dateien.
+`app/dev-router.php` bildet die Adressen ohne Dateiendung aus `www/.htaccess` nach. `1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main`: `php -l` über alle PHP-Dateien.
 
 ## Sonos-Entwicklerportal
 
@@ -79,6 +80,16 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
 * **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App. Leere Playlists und Tracks, deren Datei fehlt, zeigt Sonos nicht an.
 * Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
+
+## Hörstatus
+
+Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
+
+* **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
+* **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung und ob „aus“ kam (`r1_listen_status`).
+* **Sonos:** `getMediaURI` für einen Sender startet, `reportPlaySeconds` hält am Leben (Antwort `interval` 60), `reportPlayStatus` beendet. Tracks und Playlists zählen nicht.
+* **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
+* **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt.
 
 ## Sicherheit
 

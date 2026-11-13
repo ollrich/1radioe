@@ -1,5 +1,25 @@
 # Änderungen
 
+## 1.5.0 (12. November 2026)
+
+**Hörstatus, Kern und Sonos**
+
+* Die App merkt sich, welche Sender gerade laufen: je Sender nur der Zeitpunkt der letzten Meldung und ob danach „aus“ kam. Kein Gerät, keine Quelle, keine IP-Adresse, keine Haushaltskennung von Sonos
+* Ein Sender gilt als laufend, solange seine letzte Meldung jünger als 150 Sekunden ist. Fehlt das „aus“, erlischt der Status von selbst
+* Sonos meldet über SMAPI: `getMediaURI` für einen Sender startet den Status, `reportPlaySeconds` wird jetzt mit `interval` 60 beantwortet und hält ihn am Leben, `reportPlayStatus` beendet ihn. Tracks und Playlists lösen nichts aus
+* `GET /api/status` liefert die laufenden Sender als JSON, ungecacht
+* Admin, System: Tabelle „Hörstatus“ zum Testen, aktualisiert sich alle 10 Sekunden
+* Das Diagnose-Log zeigt bei Wiedergabe-Meldungen die übergebenen Werte (`seconds`, `status`) und ob der Status gesetzt wurde
+* Datenbank Version 5: Spalten `website` und `https_ok` für Sender, Tabellen `r1_listen_status` und `r1_listen_devices`. Alles additiv, die alte Installation läuft mit derselben Datenbank weiter
+* Lokale Entwicklung: `app/dev-router.php` bildet die Adressen ohne Dateiendung für den eingebauten PHP-Server nach
+
+**Noch mit echtem Sonos zu prüfen** (Diagnose-Log einschalten, einen Sender starten, ein paar Minuten laufen lassen, stoppen):
+
+1. Kommt `reportPlaySeconds` bei Live-Streams überhaupt, und etwa jede Minute?
+2. Muss dafür im Sonos-Entwicklerportal unter Service Configuration eine Reporting-Fähigkeit eingeschaltet werden?
+3. Ruft Sonos `getMediaURI` auch ohne Wiedergabe auf, etwa beim Vorladen?
+4. Was kommt beim Stoppen: `reportPlayStatus`, `setPlayedSeconds` oder nichts?
+
 ## 1.4.0 (12. November 2026)
 
 **Umzug nach 1radioe.net, ohne neue Funktionen**
