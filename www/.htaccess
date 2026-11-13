@@ -17,8 +17,10 @@ Options -Indexes -MultiViews
     RewriteRule ^api/listen$ api/listen.php [L]
     RewriteRule ^api/nowplaying$ api/nowplaying.php [L]
     RewriteRule ^api/stations\.json$ api/stations.php [L]
-    RewriteRule ^streams\.(m3u|pls)$ playlist.php?format=$1 [L]
-    RewriteRule ^s/([A-Za-z0-9._-]+)\.m3u$ playlist.php?format=m3u&id=$1 [L]
+    RewriteRule ^streams\.m3u$ playlist.php [L]
+    # gone since 1.13.0: the PLS list and the playlist of a single station
+    RewriteRule ^streams\.pls$ - [G]
+    RewriteRule ^s/[A-Za-z0-9._-]+\.m3u$ - [G]
     RewriteRule ^s/([A-Za-z0-9._-]+)$ index.php?s=$1&go=1 [L]
     # Sonos playback reports: Reporting Endpoint …/report/v2.3, Sonos appends /timePlayed
     RewriteRule ^report/ report.php [L]

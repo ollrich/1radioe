@@ -247,7 +247,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   <p class="dp">Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste.</p>
   <p class="dp with-pill"><span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span>Die kleinen Balken an einem Sender zeigen, dass ich ihn gerade höre. Mehr wird dabei nicht erfasst.</span></p>
   <h3 class="d3">Mitnehmen</h3>
-  <p class="dp">Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a> oder <a href="streams.pls">streams.pls</a></p>
+  <p class="dp">Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
   <h3 class="d3">Quellcode</h3>
   <p class="dp"><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
   <p class="dnote">Ein Projekt von Olli.</p>
