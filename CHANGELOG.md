@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.11.1 (13. November 2026)
+
+* Web-App auf dem Handy: Oben rechts sitzt statt „Über“ ein Burger-Menü. Es fährt von rechts herein und enthält Über, Impressum und Datenverarbeitung. Geschlossen wird es mit dem drehenden X wie bei den Pop-ups, mit Escape oder einem Tipp daneben
+* Ein Link im Menü schiebt das Menü hinaus und öffnet dann das Pop-up. Dieses Verhalten ist vorläufig
+* Die Links unten auf der Seite entfallen auf dem Handy, am Desktop bleiben sie
+* „Datenschutz“ heißt jetzt überall „Datenverarbeitung“. Das Pop-up ist unter `/#datenverarbeitung` erreichbar, alte Links auf `/#datenschutz` öffnen es weiterhin
+
 ## 1.11.0 (13. November 2026)
 
 **Hörstatus über die Wiedergabe-Meldungen von Sonos**
