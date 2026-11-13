@@ -1042,6 +1042,7 @@
       $('#log-enabled').checked = data.log_enabled;
       loadLog();
       loadListen();
+      loadDevices();
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -1106,6 +1107,92 @@
       body.append(tr);
     }
   }
+
+  /* ---------- Listening devices ---------- */
+
+  // After login the admin offers to remember this browser for the listening status,
+  // unless it already is or the offer was dismissed in this session.
+  async function loadDevices() {
+    let data;
+    try {
+      data = await api('listen.devices');
+    } catch {
+      return;
+    }
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem('r1.listen.banner') === 'no'; } catch { /* not remembered */ }
+    $('#listen-banner').hidden = Boolean(data.this) || dismissed;
+    $('#listen-remember').hidden = Boolean(data.this);
+    const here = $('#listen-this');
+    here.replaceChildren();
+    if (data.this) {
+      here.append(`Dieser Browser ist gemerkt als „${data.this.name}“. `);
+      const b = el('button', 'btn ghost small', 'Hier nicht mehr merken');
+      b.type = 'button';
+      b.addEventListener('click', async () => {
+        if (!confirmButton(b, 'Hier nicht mehr merken')) return;
+        try {
+          await api('listen.forget', {});
+          toast('Dieser Browser meldet nicht mehr');
+          loadDevices();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      });
+      here.append(b);
+    } else {
+      here.textContent = 'Dieser Browser ist nicht gemerkt.';
+    }
+    const body = $('#listen-devices');
+    body.replaceChildren();
+    if (!data.devices.length) {
+      const tr = el('tr');
+      const td = el('td', 'muted', 'Noch kein Gerät.');
+      td.colSpan = 5;
+      tr.append(td);
+      body.append(tr);
+    }
+    for (const d of data.devices) {
+      const tr = el('tr', d.revoked ? 'is-revoked' : '');
+      const status = d.revoked ? `widerrufen am ${d.revoked}` : d.this ? 'aktiv, dieser Browser' : 'aktiv';
+      tr.append(el('td', '', d.name), el('td', '', d.created), el('td', '', d.last_used || 'noch nie'), el('td', '', status));
+      const cell = el('td');
+      if (!d.revoked) {
+        const b = el('button', 'btn ghost small danger-text', 'Widerrufen');
+        b.type = 'button';
+        b.addEventListener('click', async () => {
+          if (!confirmButton(b, 'Widerrufen')) return;
+          try {
+            await api('listen.revoke', { id: d.id });
+            toast(`„${d.name}“ widerrufen`);
+            loadDevices();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
+        });
+        cell.append(b);
+      }
+      tr.append(cell);
+      body.append(tr);
+    }
+  }
+
+  $$('form[data-remember]').forEach((f) => f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = f.elements.namedItem('name').value.trim();
+    try {
+      const { device } = await api('listen.remember', { name });
+      f.reset();
+      toast(`Gemerkt als „${device.name}“. Hören auf 1radioe.net wird jetzt erfasst.`);
+      loadDevices();
+    } catch (err) {
+      toast((err.fields && err.fields.name) || err.message, 'error');
+    }
+  }));
+  $('#listen-banner-dismiss').addEventListener('click', () => {
+    $('#listen-banner').hidden = true;
+    try { sessionStorage.setItem('r1.listen.banner', 'no'); } catch { /* not remembered */ }
+  });
 
   /* ---------- Wire up ---------- */
 
@@ -1191,4 +1278,5 @@
   initGridSort($('#cat-grid'));
   initPlaylistSort();
   route();
+  if (location.hash !== '#system') loadDevices();   // the system page loads them itself
 })();

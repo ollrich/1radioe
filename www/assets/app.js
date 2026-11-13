@@ -8,7 +8,8 @@
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
   const dataEl = $('#r1-data');
   if (!dataEl) return;
-  const { levels } = JSON.parse(dataEl.textContent);
+  const data = JSON.parse(dataEl.textContent);
+  const { levels } = data;
 
   const SLOT = 88;                                         // width of a place on the scale, as in CSS
   const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
@@ -328,6 +329,8 @@
       b.setAttribute('aria-label', isPlaying() ? 'Pause' : 'Abspielen');
     });
     if (phase !== 'idle') $('[data-r1="mini"]').hidden = false;
+    if (phase === 'live') listenStart();
+    else if (phase !== 'connecting') listenStop(false);
     document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ` : '1radiœ';
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
     updateIndicators();
@@ -342,6 +345,7 @@
   let lastProgress = 0;
 
   function play(it, level) {
+    if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
     state.cur = it;
     state.curLevel = level;
     renderPlayer();
@@ -507,6 +511,81 @@
     statusTimer = setTimeout(pollStatus, STATUS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pollStatus(); });
+
+  /* ---------- Reporting Ollie's own listening ----------
+   * Only in a browser with the listening cookie (the page says so in data.listen).
+   * "on" when playback starts and then every data.interval seconds while it plays,
+   * "off" on pause, error, another station or when the page goes away. Visitors
+   * never report anything. */
+
+  const listen = { id: null, timer: 0, paused: false };
+  const listenSwitch = $('[data-listen-switch]');
+
+  function recording() {
+    if (data.listen !== true) return false;
+    try {
+      return sessionStorage.getItem('r1.listen.paused') !== '1';
+    } catch {
+      return !listen.paused;
+    }
+  }
+
+  function report(id, on, beacon) {
+    const body = JSON.stringify({ station: id, state: on ? 'on' : 'off' });
+    if (beacon && navigator.sendBeacon) {
+      navigator.sendBeacon('api/listen', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch('api/listen', {
+        method: 'POST',
+        credentials: 'same-origin',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'X-1radioe': '1' },
+        body,
+      }).catch(() => { /* the status expires by itself */ });
+    }
+    // show it here right away instead of waiting for the next status poll
+    if (on) state.active.add(id);
+    else state.active.delete(id);
+    updateIndicators();
+  }
+
+  function listenStart() {
+    if (!recording() || !state.cur) return;
+    if (listen.id !== state.cur.id) {
+      listenStop(false);
+      listen.id = state.cur.id;
+    }
+    report(listen.id, true);
+    clearInterval(listen.timer);
+    listen.timer = setInterval(() => { if (listen.id && isPlaying()) report(listen.id, true); }, (data.interval || 60) * 1000);
+  }
+
+  function listenStop(beacon) {
+    clearInterval(listen.timer);
+    listen.timer = 0;
+    if (listen.id) {
+      report(listen.id, false, beacon);
+      listen.id = null;
+    }
+  }
+
+  if (listenSwitch) {
+    const sync = () => {
+      const on = recording();
+      listenSwitch.setAttribute('aria-pressed', String(on));
+      $('[data-listen-label]', listenSwitch).textContent = on ? 'Hören wird erfasst' : 'Erfassung pausiert';
+    };
+    listenSwitch.addEventListener('click', () => {
+      const on = !recording();
+      listen.paused = !on;
+      try { sessionStorage.setItem('r1.listen.paused', on ? '0' : '1'); } catch { /* kept in memory */ }
+      if (!on) listenStop(false);
+      else if (state.phase === 'live') listenStart();
+      sync();
+    });
+    sync();
+  }
+  window.addEventListener('pagehide', () => listenStop(true));
 
   /* ---------- Dialogs ---------- */
 

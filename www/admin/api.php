@@ -119,6 +119,41 @@ try {
         case 'GET listen':
             json_out(['active' => listen_active(), 'rows' => listen_overview(), 'ttl' => LISTEN_TTL]);
 
+        /* ----- Devices that may report the listening status ----- */
+
+        case 'GET listen.devices':
+            $current = listen_current_device();
+            $currentId = $current !== null ? (int) $current['id'] : null;
+            json_out([
+                'devices' => array_map(static fn($d) => listen_device_public($d, $currentId), listen_devices()),
+                'this'    => $current !== null ? listen_device_public($current, $currentId) : null,
+            ]);
+
+        case 'POST listen.remember':
+            $created = listen_device_create((string) ($in['name'] ?? ''), 'browser');
+            $old     = listen_current_device();
+            if ($old !== null) {
+                listen_device_revoke((int) $old['id']);   // one device entry per browser
+            }
+            listen_cookie_set($created['token']);
+            json_out(['device' => listen_device_public($created['device'], (int) $created['device']['id'])]);
+
+        case 'POST listen.revoke':
+            listen_device_revoke((int) $id);
+            $current = listen_current_device();
+            if ($current === null && isset($_COOKIE[LISTEN_COOKIE])) {
+                listen_cookie_clear();   // it was this browser
+            }
+            json_out(['ok' => true]);
+
+        case 'POST listen.forget':
+            $current = listen_current_device();
+            if ($current !== null) {
+                listen_device_revoke((int) $current['id']);
+            }
+            listen_cookie_clear();
+            json_out(['ok' => true]);
+
         case 'GET log':
             $rows = q('SELECT at, ip, agent, method, item, status, note FROM r1_request_log ORDER BY id DESC LIMIT 200')->fetchAll();
             foreach ($rows as &$r) {
