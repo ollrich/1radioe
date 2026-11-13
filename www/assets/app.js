@@ -979,18 +979,26 @@
     clearTimeout(ptipTimer);
     ptip.textContent = pillText(pill);
     ptip.hidden = false;
-    ptip.classList.remove('below');
+    ptip.classList.remove('below', 'right');
     const r = pill.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const left = Math.min(Math.max(8, cx - ptip.offsetWidth / 2), window.innerWidth - 8 - ptip.offsetWidth);
-    let top = r.top - ptip.offsetHeight - 10;
-    if (top < 8) {
-      top = r.bottom + 10;
-      ptip.classList.add('below');
+    let left = r.right + 10;
+    let top = Math.round(r.top + r.height / 2 - ptip.offsetHeight / 2);
+    // the player's bars sit in a line of text: the info goes beside them on the right,
+    // so it covers neither the station name above nor the buttons below
+    if (pill.dataset.r1 === 'pill' && left + ptip.offsetWidth <= window.innerWidth - 8) {
+      ptip.classList.add('right');
+    } else {
+      const cx = r.left + r.width / 2;
+      left = Math.min(Math.max(8, cx - ptip.offsetWidth / 2), window.innerWidth - 8 - ptip.offsetWidth);
+      top = r.top - ptip.offsetHeight - 10;
+      if (top < 8) {
+        top = r.bottom + 10;
+        ptip.classList.add('below');
+      }
+      ptip.style.setProperty('--ax', (cx - left) + 'px');
     }
     ptip.style.left = left + 'px';
     ptip.style.top = top + 'px';
-    ptip.style.setProperty('--ax', (cx - left) + 'px');
     ptipFor = pill;
     if (autoHide) ptipTimer = setTimeout(hideTip, 2500);
   }

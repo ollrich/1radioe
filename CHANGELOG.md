@@ -2,6 +2,7 @@
 
 ## 1.14.1 (13. November 2026)
 
+* Web-App: Die Info „Olli hört gerade …“ an den Balken im Player steht jetzt rechts daneben statt darüber und verdeckt den Sendernamen nicht mehr. Ist rechts kein Platz, erscheint sie wie bisher oben. An der Skala und in der Liste bleibt sie oben
 * Korrektur zu 1.12.0: Sonos meldet eine Pause doch, mit einem `final` wenige Sekunden danach (getestet am Büro-Lautsprecher). Der frühere Test lief an einem Lautsprecher, der schon vor dem Reporting Endpoint pausiert war. Es fehlt nur die Meldung jede Minute. `README.md` und der Hilfetext unter Hörstatus im Admin sagen das jetzt richtig
 
 ## 1.14.0 (13. November 2026)
