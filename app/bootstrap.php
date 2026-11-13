@@ -4,14 +4,15 @@
  *
  * Layout on the server, the domain points at www/:
  *
- *   /www/htdocs/w0123456/1radioe-private/config.php   <- config and secrets, never in git
  *   /www/htdocs/w0123456/1radioe.net/                 <- git checkout (APP_ROOT)
+ *     1radioe-private/config.php                      <- config and secrets, gitignored
  *     app/                                            <- this code, outside the web root
  *     www/                                            <- document root (WEB_ROOT)
  *     www/media/                                      <- uploads, untracked
  *
- * The folder "1radioe-private" is searched upwards from the checkout, so it can sit
- * right next to it. It must never be inside the checkout on the server.
+ * The folder "1radioe-private" is looked for in the checkout first, then in the
+ * folders above it. It is gitignored and outside the web root, and the deploy's
+ * "git reset --hard" leaves it alone. Never run "git clean -x" on the server.
  */
 declare(strict_types=1);
 

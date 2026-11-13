@@ -1,9 +1,9 @@
 # Secrets and server data: never commit
 #
-# On the server, config and secrets live in 1radioe-private/ next to the
-# checkout. A local copy inside the checkout (for development) stays out
-# of git with everything in it: config.php, webhook-secret, deploy log,
-# inbox/, tmp/. The template is config.sample.php in the repo root.
+# Config and secrets live in 1radioe-private/ inside the checkout, next to
+# www/ (on the server and locally). It stays out of git with everything in
+# it: config.php, webhook-secret, deploy log, inbox/, tmp/. The deploy's
+# "git reset --hard" leaves it alone. The template is config.sample.php.
 1radioe-private/
 
 # Generic secret material, wherever it ends up
