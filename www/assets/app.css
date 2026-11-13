@@ -306,18 +306,39 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .with-pill { display: flex; align-items: flex-start; gap: 10px; }
 .with-pill .pill { margin-top: 4px; }
 
-/* menu on phones: slides in from the right, closed with the same turning X as the dialogs */
+/* menu on phones: slides in from the right, closed with the same turning X as the dialogs.
+   A link in it shows the text of that page in the menu itself, the arrow leads back. */
 .drawer {
-  position: fixed; inset: 0 0 0 auto; width: min(340px, 86vw); height: 100%; max-width: none; max-height: none; margin: 0;
-  border: 0; border-radius: 24px 0 0 24px; padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  position: fixed; inset: 0 0 0 auto; width: min(420px, 92vw); height: 100%; max-width: none; max-height: none; margin: 0;
+  border: 0; border-radius: 24px 0 0 24px; padding: 0 24px calc(24px + env(safe-area-inset-bottom));
   background: var(--panel); color: var(--panelfg); overflow-y: auto;
   transform: translateX(100%); transition: transform .3s cubic-bezier(.2, .8, .2, 1);
 }
 .drawer.is-open { transform: none; }
 .drawer::backdrop { background: rgb(5 9 20 / 0); transition: background .3s ease; }
 .drawer.is-open::backdrop { background: rgb(5 9 20 / .62); }
-.drawer .close { top: calc(16px + env(safe-area-inset-top)); }
-.drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 56px; }
+.drawer-bar {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-end;
+  margin: 0 -24px; padding: calc(16px + env(safe-area-inset-top)) 16px 12px; background: var(--panel);
+}
+.drawer-bar .close { position: relative; top: auto; right: auto; }
+.back {
+  position: relative; margin-right: auto; width: 32px; height: 32px; border: 0; border-radius: 50%;
+  background: rgb(255 255 255 / .1); color: #fcfcfd; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; transition: background .3s ease, transform .3s ease;
+}
+.back::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
+.back:hover, .back:focus-visible { background: rgb(255 255 255 / .2); transform: translateX(-3px); }
+.back:focus-visible { outline: 2px solid rgb(255 255 255 / .5); outline-offset: 2px; }
+.back polyline, .back line { stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 20px; }
+.drawer-nav.from-page { animation: r1from-left .28s cubic-bezier(.2, .8, .2, 1); }
+.drawer-page { padding-top: 8px; animation: r1from-right .28s cubic-bezier(.2, .8, .2, 1); }
+.drawer-page .dh { padding-right: 0; }
+.drawer-page .dh:focus { outline: none; }
+.drawer-page a { color: var(--mint); }
+@keyframes r1from-right { from { opacity: 0; transform: translateX(32px); } }
+@keyframes r1from-left { from { opacity: 0; transform: translateX(-32px); } }
 .drawer-nav a {
   color: var(--panelfg); text-decoration: none; padding: 10px 0;
   font-size: clamp(24px, 7vw, 30px); line-height: 1.15; font-weight: 820; overflow-wrap: anywhere; font-stretch: var(--stretch); letter-spacing: -.015em;
@@ -371,7 +392,8 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 @media (prefers-reduced-motion: reduce) {
   .pill i { animation: none; transform: scaleY(.7); }
   .dot.live, .dot.connecting { animation: none; }
-  .needle, .st .tile, .chev, .play, .qbtn, .tip, .close, .drawer, .drawer::backdrop { transition: none; }
+  .needle, .st .tile, .chev, .play, .qbtn, .tip, .close, .back, .drawer, .drawer::backdrop { transition: none; }
+  .drawer-nav.from-page, .drawer-page { animation: none; }
   .scroller { scroll-behavior: auto; }
-  .close:hover, .close:focus-visible, .qbtn:hover, .qbtn:focus-visible { transform: none; }
+  .close:hover, .close:focus-visible, .back:hover, .back:focus-visible, .qbtn:hover, .qbtn:focus-visible { transform: none; }
 }
