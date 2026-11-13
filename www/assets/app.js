@@ -355,6 +355,74 @@
   let lastTime = 0;
   let lastProgress = 0;
 
+  /* HLS (.m3u8) in browsers that cannot play it in <audio>, Firefox above all: hls.js,
+     stored on this server (assets/vendor) and loaded only then. It fetches the playlist
+     and its pieces from the station and hands them to <audio>. Every other stream and
+     every other browser plays straight from <audio> as before. */
+  const HLS_LIB = 'assets/vendor/hls.light.min.js?v=1.7.4';
+  let hls = null;
+  let hlsLoading = null;
+  let hlsRun = 0;   // a newer connect or a stop cancels a start that is still loading
+
+  function needsHlsJs(url) {
+    let path = '';
+    try { path = new URL(url, location.href).pathname; } catch { return false; }
+    return /\.m3u8$/i.test(path) && !audio.canPlayType('application/vnd.apple.mpegurl') && 'MediaSource' in window;
+  }
+
+  function loadHlsJs() {
+    hlsLoading ??= new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = HLS_LIB;
+      s.onload = () => resolve(window.Hls);
+      s.onerror = () => { hlsLoading = null; reject(new Error('hls.js')); };
+      document.head.append(s);
+    });
+    return hlsLoading;
+  }
+
+  function dropHls() {
+    hlsRun++;
+    if (hls) {
+      hls.destroy();
+      hls = null;
+    }
+  }
+
+  async function connectHls(url) {
+    const run = hlsRun;
+    let Hls;
+    try {
+      Hls = await loadHlsJs();
+    } catch {
+      if (run === hlsRun) failed(0);   // file not loaded, maybe offline: retry
+      return;
+    }
+    if (run !== hlsRun) return;
+    if (!Hls || !Hls.isSupported()) {
+      failed(4);
+      return;
+    }
+    // no worker: it would need blob: scripts, which the page's CSP does not allow
+    hls = new Hls({ enableWorker: false });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { if (run === hlsRun) startPlayback(); });
+    hls.on(Hls.Events.ERROR, (_e, data) => {
+      if (data.fatal && run === hlsRun) failed(data.type === Hls.ErrorTypes.NETWORK_ERROR ? 0 : 4);
+    });
+    hls.loadSource(url);
+    hls.attachMedia(audio);
+  }
+
+  function startPlayback() {
+    const started = audio.play();
+    if (started && started.catch) {
+      started.catch((err) => {
+        if (err && err.name === 'NotAllowedError') setPhase('paused');   // autoplay blocked, needs a tap
+        else if (!err || err.name !== 'AbortError') failed(0);            // AbortError: replaced by a newer connect
+      });
+    }
+  }
+
   function play(it, level) {
     if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
     state.cur = it;
@@ -371,14 +439,13 @@
     if (fresh) state.retry = 0;
     setPhase('connecting');
     lastProgress = Date.now();
-    audio.src = state.cur.url;
-    const started = audio.play();
-    if (started && started.catch) {
-      started.catch((err) => {
-        if (err && err.name === 'NotAllowedError') setPhase('paused');   // autoplay blocked, needs a tap
-        else if (!err || err.name !== 'AbortError') failed(0);            // AbortError: replaced by a newer connect
-      });
+    dropHls();
+    if (needsHlsJs(state.cur.url)) {
+      connectHls(state.cur.url);
+      return;
     }
+    audio.src = state.cur.url;
+    startPlayback();
   }
 
   /** Pausing live radio means hanging up; playing again starts fresh at the live point. */
@@ -386,6 +453,7 @@
     clearTimeout(retryTimer);
     retryTimer = 0;
     setPhase(state.cur ? 'paused' : 'idle');
+    dropHls();
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
