@@ -1,5 +1,8 @@
 # 1radiœ: document root of the domain (www/ of the git checkout)
-Options -Indexes
+# No MultiViews: otherwise Apache maps api/status to api/status.php by itself, before the
+# rewrite rules below, compares the file type with the Accept header and answers 406 to
+# "Accept: application/json" (the web app asks for the listening status that way).
+Options -Indexes -MultiViews
 
 # No hidden files (.htaccess, .user.ini, editor leftovers)
 <FilesMatch "^\.">
