@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.10.1 (13. November 2026)
+
+* Web-App: Die Leertaste ist jetzt immer Play und Pause, auch direkt nach einem Klick auf einen Knopf. Bisher blieb der Fokus nach einem Klick auf „Nächster Sender“ auf dem Knopf, und die Leertaste sprang einen Sender weiter. Wer per Tab-Taste auf einem Knopf steht, drückt ihn mit der Leertaste wie gewohnt. Gedrückt halten schaltet nicht mehr mehrfach um, und nach dem Verstellen der Lautstärke greift die Leertaste ebenfalls
+
 ## 1.10.0 (12. November 2026)
 
 **Song im Player, Info am Hörstatus**
