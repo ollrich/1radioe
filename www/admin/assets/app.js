@@ -1267,12 +1267,15 @@
     social.settings = s;
     clearErrors(socialForm);
     SF('enabled').checked = s.enabled;
-    SF('template').value = s.template;
+    for (const net of ['bsky', 'masto']) {
+      SF(net + '.template').value = s[net].template;
+      SF(net + '.lang').value = s[net].lang;
+    }
     SF('hashtags').value = s.hashtags;
     SF('site_url').value = s.site_url || '';
     SF('site_url').placeholder = s.site_url_default;
     $('#site-hint').textContent = `Links zeigen auf ${s.site_url || s.site_url_default}/s/…`;
-    ['delay', 'cooldown', 'daily', 'lang'].forEach((k) => { SF(k).value = s[k]; });
+    ['delay', 'cooldown', 'daily'].forEach((k) => { SF(k).value = s[k]; });
     SF('card').checked = s.card;
     SF('bsky.handle').value = s.bsky.handle;
     SF('bsky.pds').value = s.bsky.pds;
@@ -1308,16 +1311,16 @@
   function collectSocial() {
     return {
       enabled: SF('enabled').checked,
-      template: SF('template').value,
       hashtags: SF('hashtags').value,
       site_url: SF('site_url').value.trim(),
       delay: SF('delay').value,
       cooldown: SF('cooldown').value,
       daily: SF('daily').value,
-      lang: SF('lang').value.trim(),
       card: SF('card').checked,
       bsky: {
         enabled: SF('bsky.enabled').checked,
+        template: SF('bsky.template').value,
+        lang: SF('bsky.lang').value.trim(),
         handle: SF('bsky.handle').value,
         password: SF('bsky.password').value,
         pds: SF('bsky.pds').value,
@@ -1325,6 +1328,8 @@
       },
       masto: {
         enabled: SF('masto.enabled').checked,
+        template: SF('masto.template').value,
+        lang: SF('masto.lang').value.trim(),
         instance: SF('masto.instance').value,
         token: SF('masto.token').value,
         visibility: SF('masto.visibility').value,
@@ -1360,7 +1365,8 @@
     let preview;
     try {
       ({ preview } = await api('social.preview', {
-        template: SF('template').value,
+        bsky: { template: SF('bsky.template').value },
+        masto: { template: SF('masto.template').value },
         hashtags: SF('hashtags').value,
         site_url: SF('site_url').value.trim(),
         station: Number($('#social-station').value) || 0,
@@ -1447,10 +1453,13 @@
     e.preventDefault();
     saveSocial();
   });
-  ['template', 'hashtags', 'site_url'].forEach((n) => SF(n).addEventListener('input', schedulePreview));
+  ['bsky.template', 'masto.template', 'hashtags', 'site_url'].forEach((n) => SF(n).addEventListener('input', schedulePreview));
   $('#social-station').addEventListener('change', previewSocial);
+  // the placeholder chips insert into the text that was edited last
+  let lastTemplate = SF('bsky.template');
+  $$('[data-template]').forEach((ta) => ta.addEventListener('focus', () => { lastTemplate = ta; }));
   $$('[data-insert]').forEach((b) => b.addEventListener('click', () => {
-    const ta = SF('template');
+    const ta = lastTemplate;
     ta.setRangeText(b.dataset.insert, ta.selectionStart, ta.selectionEnd, 'end');
     ta.focus();
     schedulePreview();

@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.10.3 (13. November 2026)
+
+* Posting: Bluesky und Mastodon haben je einen eigenen Text und eine eigene Sprache, zum Beispiel Englisch für Bluesky und Deutsch für Mastodon. Das Sprachkürzel geht als `langs` an Bluesky und als `language` an Mastodon. Die Platzhalter-Knöpfe fügen in den zuletzt bearbeiteten Text ein, die Hashtags bleiben gemeinsam
+* Bisher gespeicherter Text und Sprache gelten nach dem Update für beide Netze, bis sie geändert werden. Neu eingerichtet beginnt Bluesky mit einem englischen Text
+* Ohne Beschreibung am Sender heißt die Link-Karte bei Bluesky in anderen Sprachen als Deutsch „Listen live on 1radiœ“
+* Ein falsches Sprachkürzel wird jetzt gemeldet, statt still durch `de` ersetzt zu werden
+
 ## 1.10.2 (13. November 2026)
 
 * Admin, System: Neuer Bereich „Sonos-Adressen“ zeigt, unter welcher Adresse Sonos den Dienst aufruft, wann zuletzt und wie oft. Er zählt auch ohne Diagnose-Log und ohne IP-Adressen. So sieht man, wann eine alte Adresse wie `eichhof.co/1radioe/smapi.php` nicht mehr gebraucht wird

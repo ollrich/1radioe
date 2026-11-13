@@ -284,14 +284,29 @@ render_page('Sender', <<<HTML
           <small class="err" data-err="enabled"></small>
           <div class="social-grid">
             <div class="field-col">
-              <label>Textvorlage<textarea name="template" rows="5" maxlength="1000"></textarea><small class="err" data-err="template"></small></label>
-              <p class="chips" aria-label="Platzhalter einfügen">
+              <div class="tpl">
+                <div class="tpl-head">
+                  <label for="tpl-bsky">Text für Bluesky</label>
+                  <label class="tpl-lang">Sprache<input name="bsky.lang" maxlength="2" pattern="[a-z]{2}" spellcheck="false" autocomplete="off" placeholder="en"></label>
+                </div>
+                <textarea id="tpl-bsky" name="bsky.template" rows="4" maxlength="1000" data-template></textarea>
+                <small class="err" data-err="bsky.template"></small><small class="err" data-err="bsky.lang"></small>
+              </div>
+              <div class="tpl">
+                <div class="tpl-head">
+                  <label for="tpl-masto">Text für Mastodon</label>
+                  <label class="tpl-lang">Sprache<input name="masto.lang" maxlength="2" pattern="[a-z]{2}" spellcheck="false" autocomplete="off" placeholder="de"></label>
+                </div>
+                <textarea id="tpl-masto" name="masto.template" rows="4" maxlength="1000" data-template></textarea>
+                <small class="err" data-err="masto.template"></small><small class="err" data-err="masto.lang"></small>
+              </div>
+              <p class="chips" aria-label="Platzhalter in den zuletzt bearbeiteten Text einfügen">
                 <button type="button" class="chip" data-insert="{sender}">{sender}</button>
                 <button type="button" class="chip" data-insert="{link}">{link}</button>
                 <button type="button" class="chip" data-insert="{website}">{website}</button>
                 <button type="button" class="chip" data-insert="{hashtags}">{hashtags}</button>
               </p>
-              <p class="muted small">{sender}: Name des Senders. {link}: seine Seite auf 1radioe.net, dort steht er gleich im Player. {website}: Website des Senders, entfällt, wenn keine eingetragen ist. {hashtags}: die Hashtags unten plus die am Sender. Wird ein Beitrag zu lang, fallen Hashtags von hinten weg.</p>
+              <p class="muted small">{sender}: Name des Senders. {link}: seine Seite auf 1radioe.net, dort steht er gleich im Player. {website}: Website des Senders, entfällt, wenn keine eingetragen ist. {hashtags}: die Hashtags unten plus die am Sender. Wird ein Beitrag zu lang, fallen Hashtags von hinten weg. Die Sprache ist das Kürzel, das das Netz am Beitrag speichert, zum Beispiel en oder de.</p>
               <label>Hashtags für alle Sender<input name="hashtags" maxlength="255" placeholder="#Radio #NowPlaying"><small class="err" data-err="hashtags"></small></label>
               <label>Adresse der Web-App <small class="muted" id="site-hint"></small><input name="site_url" type="url" maxlength="200"><small class="err" data-err="site_url"></small></label>
             </div>
@@ -348,7 +363,6 @@ render_page('Sender', <<<HTML
             <label>Wartezeit <small class="muted">Minuten, die ein Sender laufen muss</small><input name="delay" type="number" min="0" max="60" step="1"><small class="err" data-err="delay"></small></label>
             <label>Sperrfrist <small class="muted">Stunden bis zum nächsten Beitrag über denselben Sender</small><input name="cooldown" type="number" min="0" max="168" step="1"><small class="err" data-err="cooldown"></small></label>
             <label>Höchstens <small class="muted">Beiträge pro Tag</small><input name="daily" type="number" min="1" max="50" step="1"><small class="err" data-err="daily"></small></label>
-            <label>Sprache <small class="muted">Kürzel für die Netzwerke</small><input name="lang" maxlength="2" pattern="[a-z]{2}" spellcheck="false"></label>
           </div>
           <label class="switch"><input type="checkbox" name="card"><span>Link-Karte mit Senderlogo bei Bluesky</span></label>
           <p class="muted small">Die Wartezeit filtert Durchzappen und Fehlstarts. Einzelne Sender schließt du im Sender-Editor aus, dort gibt es auch eigene Hashtags.</p>

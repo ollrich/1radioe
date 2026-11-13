@@ -331,7 +331,12 @@ try {
         case 'POST social.preview':
             // with the values from the form, saved or not
             $s = social_settings();
-            $s['template'] = mb_substr(clean_text_multiline((string) ($in['template'] ?? $s['template'])), 0, 1000);
+            foreach (['bsky', 'masto'] as $net) {
+                $t = $in[$net]['template'] ?? null;
+                if (is_string($t)) {
+                    $s[$net]['template'] = mb_substr(clean_text_multiline($t), 0, 1000);
+                }
+            }
             $s['hashtags'] = (string) ($in['hashtags'] ?? $s['hashtags']);
             $s['site_url'] = rtrim(trim((string) ($in['site_url'] ?? $s['site_url'])), '/');
             $station = station_find((int) ($in['station'] ?? 0));
