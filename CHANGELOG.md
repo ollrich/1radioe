@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.15.0 (13. November 2026)
+
+**Texte im Admin**
+
+* Neuer Reiter „Texte“: Über 1radiœ, Impressum und Datenverarbeitung lassen sich im Admin bearbeiten, je auf Deutsch und Englisch. Ein schlichter Editor ohne fremde Bibliothek mit Absatz, Zwischenüberschrift, fett, kursiv, Listen und Links. Eingefügter Text kommt ohne Formatierung an
+* Der Server bereinigt jeden Text (`app/texts.php`): erlaubt sind `p`, `h3`, `strong`, `em`, `a`, `ul`, `ol`, `li` und `br`. Links nur zu `http`, `https`, `mailto` oder relativ auf dieser Seite, externe öffnen in einem neuen Tab. Skripte, Bilder, Stile und Ereignis-Attribute fallen weg
+* Gespeichert in `r1_settings`, ohne Änderung an der Datenbank. Ohne eigenen Text gilt der bisherige als Standard, „Auf Standard zurücksetzen“ stellt ihn wieder her. Englisch ist vorbereitet und gilt, sobald es die Web-App auf Englisch gibt
+* Die Web-App zeigt die Texte in den Pop-ups am Desktop und im Menü auf dem Handy. Der Hinweis zu den Balken unter „Über“ steht jetzt am Ende und bleibt fest im Code, weil er das Symbol selbst zeigt
+
 ## 1.14.1 (13. November 2026)
 
 * Web-App: Die Info „Olli hört gerade …“ an den Balken im Player steht jetzt rechts daneben statt darüber und verdeckt den Sendernamen nicht mehr. Ist rechts kein Platz, erscheint sie wie bisher oben. An der Skala und in der Liste bleibt sie oben

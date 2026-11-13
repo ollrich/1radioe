@@ -32,6 +32,15 @@ try {
     http_response_code(503);
     $levels = null;
 }
+// texts of the dialogs, edited in the admin (Texte); the defaults if the database is away
+$texts = [];
+foreach (array_keys(TEXT_NAMES) as $name) {
+    try {
+        $texts[$name] = text_html($name);
+    } catch (Throwable) {
+        $texts[$name] = text_clean(text_defaults()[$name]);
+    }
+}
 
 $start = null;
 foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
@@ -243,39 +252,21 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <dialog class="dialog" id="about" aria-labelledby="about-title">
   <?= $close ?>
   <h2 class="disp dh" id="about-title">Über 1radiœ</h2>
-  <p class="dp">1radiœ ist meine persönliche Auswahl an Internetradios. Gepflegt wird sie an einer Stelle und läuft überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App.</p>
-  <p class="dp">Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste.</p>
-  <p class="dp with-pill"><span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span>Die kleinen Balken an einem Sender zeigen, dass ich ihn gerade höre. Mehr wird dabei nicht erfasst.</span></p>
-  <h3 class="d3">Mitnehmen</h3>
-  <p class="dp">Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
-  <h3 class="d3">Quellcode</h3>
-  <p class="dp"><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
-  <p class="dnote">Ein Projekt von Olli.</p>
+  <div class="rich"><?= $texts['about'] ?></div>
+  <!-- not editable: explains the bars, with the icon itself -->
+  <p class="dnote with-pill"><span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span>Die kleinen Balken an einem Sender zeigen, dass ich ihn gerade höre. Mehr wird dabei nicht erfasst.</span></p>
 </dialog>
 
 <dialog class="dialog" id="impressum" aria-labelledby="impressum-title">
   <?= $close ?>
   <h2 class="disp dh" id="impressum-title">Impressum</h2>
-  <p class="dp">[Name]<br>[Anschrift]<br>[Postleitzahl, Ort]</p>
-  <h3 class="d3">Kontakt</h3>
-  <p class="dp">[E-Mail-Adresse]</p>
-  <h3 class="d3">Verantwortlich für den Inhalt</h3>
-  <p class="dp">[Name, Anschrift wie oben]</p>
+  <div class="rich"><?= $texts['impressum'] ?></div>
 </dialog>
 
 <dialog class="dialog" id="datenverarbeitung" aria-labelledby="datenverarbeitung-title">
   <?= $close ?>
   <h2 class="disp dh" id="datenverarbeitung-title">Datenverarbeitung</h2>
-  <h3 class="d3">Kein Tracking</h3>
-  <p class="dp">Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server.</p>
-  <h3 class="d3">Beim Abspielen</h3>
-  <p class="dp">Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
-  <h3 class="d3">Lautstärke</h3>
-  <p class="dp">Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
-  <h3 class="d3">Cookies</h3>
-  <p class="dp">Besucher bekommen keine Cookies. Ein Cookie gibt es nur für Olli selbst, damit sein Hörstatus erfasst werden kann.</p>
-  <h3 class="d3">Hosting und Verantwortlicher</h3>
-  <p class="dp">[Hoster, Server-Logfiles, Speicherdauer]<br>[Name, Kontakt]</p>
+  <div class="rich"><?= $texts['datenverarbeitung'] ?></div>
 </dialog>
 </body>
 </html>

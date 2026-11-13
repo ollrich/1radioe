@@ -67,6 +67,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
 * **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen.
 * **Website:** Link zur Seite des Senders, erscheint in der Web-App unter „Über den Sender“.
+* **Texte:** Über 1radiœ, Impressum und Datenverarbeitung im Reiter „Texte“ bearbeiten, je auf Deutsch und Englisch. Ein schlichter Editor ohne Bibliothek: Absätze, Zwischenüberschriften, fett, kursiv, Listen, Links. Der Server lässt nur diese Auszeichnungen durch (`app/texts.php`), Links nur zu `http`, `https`, `mailto` oder relativ auf dieser Seite, externe öffnen in einem neuen Tab. Gespeichert wird in `r1_settings` (`text.<name>.<sprache>`). Ohne eigenen Text gilt der Standardtext, „Auf Standard zurücksetzen“ löscht den eigenen. Englisch zeigt die Web-App erst, wenn es sie auf Englisch gibt, bis dahin gilt dort der deutsche. Der Hinweis zu den Balken unter „Über“ bleibt fest im Code, weil er das Symbol selbst zeigt.
 * Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
 
 ### Kategorien
@@ -101,10 +102,10 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. HLS-Streams und Streams ohne Titel zeigen nur den Sender. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
 * **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Olli hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
 * **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollis gemerkter Browser hat das Hör-Cookie.
-* **Menü auf dem Handy:** Der Burger oben rechts öffnet ein Menü mit Über, Impressum und Datenverarbeitung. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop öffnen sie als Pop-up.
+* **Menü auf dem Handy:** Der Burger oben rechts öffnet ein Menü mit Über, Impressum und Datenverarbeitung. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop öffnen sie als Pop-up. Die Texte kommen aus dem Admin (Reiter „Texte“).
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenverarbeitung als Abschnitte.
 
-Die Texte von Impressum und Datenverarbeitung in `www/index.php` sind Platzhalter.
+Impressum und Datenverarbeitung haben als Standard Platzhalter in eckigen Klammern. Die echten Angaben gehören in den Admin, Reiter „Texte“.
 
 ## Playlist-Dateien und App-Schnittstelle
 
@@ -272,6 +273,7 @@ Startet Olli einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geh
 * Sperre nach 5 Fehlversuchen pro IP für 15 Minuten, zusätzlich eine globale Bremse
 * Sitzungen nur über HTTPS, `SameSite=Strict`, Ablauf nach 2 Stunden Inaktivität
 * CSRF-Schutz für alle Änderungen, strenge Content Security Policy ohne Inline-Skripte
+* Texte aus dem Admin gehen durch eine Positivliste weniger Tags, ohne Attribute außer geprüften Link-Zielen
 * Logos und Cover werden mit GD neu kodiert, `www/media/` führt keine Skripte aus und zeigt keine Verzeichnisliste
 * Programmcode, Git-Verzeichnis und Config liegen außerhalb des Web-Verzeichnisses
 * Deploy nur mit gültiger Webhook-Signatur (HMAC-SHA256), ohne Secret wird nichts ausgerollt

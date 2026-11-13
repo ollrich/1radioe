@@ -322,6 +322,23 @@ try {
         case 'POST import.lite':
             json_out(['imported' => import_lite()]);
 
+        /* ----- Texts of the public dialogs: Über, Impressum, Datenverarbeitung ----- */
+
+        case 'GET texts':
+            $out = [];
+            foreach (TEXT_NAMES as $name => $title) {
+                $out[$name] = ['title' => $title, 'default' => text_clean(text_defaults()[$name])];
+                foreach (array_keys(TEXT_LANGS) as $lang) {
+                    $out[$name][$lang] = text_stored($name, $lang);   // null: nothing stored
+                }
+            }
+            json_out(['texts' => $out]);
+
+        case 'POST texts.save':
+            // cleaned on the server; empty means back to the default
+            $html = text_save((string) ($in['name'] ?? ''), (string) ($in['lang'] ?? ''), (string) ($in['html'] ?? ''));
+            json_out(['html' => $html === '' ? null : $html]);
+
         /* ----- Posting to Bluesky and Mastodon ----- */
 
         case 'GET social':
