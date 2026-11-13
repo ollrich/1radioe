@@ -16,12 +16,23 @@ require dirname(__DIR__) . '/app/webapp.php';
 // for link cards on Mastodon and elsewhere.
 $sid = isset($_GET['s']) && is_string($_GET['s']) && preg_match('~^[A-Za-z0-9._-]{1,64}$~', $_GET['s']) ? $_GET['s'] : null;
 if ($sid !== null && isset($_GET['go'])) {
-    header('Location: ../?s=' . rawurlencode($sid), true, 302);
+    // back to the page the station page belongs to: /s/<id> to /, /de/s/<id> to /de/
+    $page = (string) preg_replace('~s/[^/]*$~', '', (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH));
+    header('Location: ' . ($page !== '' ? $page : '/') . '?s=' . rawurlencode($sid), true, 302);
     exit;
 }
 
+$lang = webapp_lang();
+// 1radioe.net is English; a browser whose first language is German goes to /de/,
+// unless it chose English in the menu (?lang=en). No cookie needed for that.
+header('Vary: Cookie, Accept-Language');   // Ollie's own browser gets the listening switch
+if ($lang === 'en' && !isset($_GET['lang']) && webapp_prefers_german()) {
+    $qs = (string) ($_SERVER['QUERY_STRING'] ?? '');
+    header('Location: de/' . ($qs !== '' ? '?' . $qs : ''), true, 302);
+    exit;
+}
+$L = webapp_strings($lang);
 webapp_headers();
-header('Vary: Cookie');   // Ollie's own browser gets the listening switch
 $listener = null;
 try {
     db_migrate();
@@ -36,9 +47,9 @@ try {
 $texts = [];
 foreach (array_keys(TEXT_NAMES) as $name) {
     try {
-        $texts[$name] = text_html($name);
+        $texts[$name] = text_html($name, $lang);
     } catch (Throwable) {
-        $texts[$name] = text_clean(text_defaults()[$name]);
+        $texts[$name] = text_clean(text_defaults()[$name][$lang]);
     }
 }
 
@@ -53,13 +64,20 @@ foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
 }
 $og = [
     'title'       => $start !== null ? $start['name'] : APP_NAME,
-    'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : 'Ollis Radiosender: hören im Browser, auf Sonos und in VLC.',
-    'url'         => base_url() . ($start !== null ? '/s/' . rawurlencode($start['id']) : '/'),
+    'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : $L['description'],
+    'url'         => base_url() . ($lang === 'de' ? '/de' : '') . ($start !== null ? '/s/' . rawurlencode($start['id']) : '/'),
     'image'       => $start['logo'] ?? null,
 ];
 
 $v    = h(APP_VERSION);
-$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL, 'start' => $start['id'] ?? null]) : '';
+$data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL,
+    'start' => $start['id'] ?? null, 'lang' => $lang,
+    'text' => ['listening' => $L['listening'], 'listeningTo' => $L['listening_to'], 'and' => $L['and']]]) : '';
+// the other language, with the station of a station page
+$langLinks = [
+    'en' => ($lang === 'de' ? '../' : './') . '?lang=en',
+    'de' => ($lang === 'de' ? './' : 'de/'),
+];
 
 /** The plain list for browsers without JavaScript. */
 function nojs_list(array $levels): string
@@ -79,10 +97,10 @@ function nojs_list(array $levels): string
     return '<ul class="nojs-list">' . $html . '</ul>';
 }
 
-$close = '<button type="button" class="close" data-close aria-label="Schließen"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg></button>';
+$close = '<button type="button" class="close" data-close aria-label="' . h($L['close']) . '"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg></button>';
 ?>
 <!doctype html>
-<html lang="de">
+<html lang="<?= $lang ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -90,7 +108,9 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fcfcfd" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1328" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Ollis Radiosender: hören im Browser, auf Sonos und in VLC.">
+<meta name="description" content="<?= h($L['description']) ?>">
+<link rel="alternate" hreflang="en" href="<?= h(base_url()) ?>/">
+<link rel="alternate" hreflang="de" href="<?= h(base_url()) ?>/de/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="<?= h(APP_NAME) ?>">
 <meta property="og:title" content="<?= h($og['title']) ?>">
@@ -120,13 +140,12 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
         <span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span data-listen-label>Hören wird erfasst</span>
       </button>
 <?php endif; ?>
-      <a class="pillbtn wide-only" href="#about" data-dialog="about">Über 1radiœ</a>
-      <button type="button" class="menu-btn" data-menu aria-controls="menu" aria-expanded="false" aria-label="Menü öffnen" data-js><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+      <button type="button" class="menu-btn" data-menu aria-controls="menu" aria-expanded="false" aria-label="<?= h($L['menu_open']) ?>" data-js><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
     </span>
   </header>
 
   <main id="main">
-    <h1 class="sr">1radiœ: Ollis Radiosender</h1>
+    <h1 class="sr"><?= h($L['h1']) ?></h1>
 <?php if ($levels === null): ?>
     <p class="notice">Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.</p>
 <?php elseif (!$levels['root']): ?>
@@ -141,7 +160,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
         <p class="kicker" data-r1="kicker" hidden></p>
         <h2 class="disp stage-name" data-r1="name"></h2>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Olli hört gerade" hidden><i></i><i></i><i></i></span></p>
+        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
           <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
           <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
@@ -183,9 +202,11 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <?php endif; ?>
   </main>
 
+  <!-- only without JavaScript, the menu has these -->
   <footer class="foot">
-    <a href="#impressum" data-dialog="impressum">Impressum</a>
-    <a href="#datenverarbeitung" data-dialog="datenverarbeitung">Datenverarbeitung</a>
+    <a href="#impressum"><?= h($L['impressum']) ?></a>
+    <a href="#datenverarbeitung"><?= h($L['datenverarbeitung']) ?></a>
+    <a href="<?= h($langLinks[$lang === 'de' ? 'en' : 'de']) ?>"><?= $lang === 'de' ? 'English' : 'Deutsch' ?></a>
   </footer>
 </div>
 
@@ -211,7 +232,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
     <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Olli hört gerade" hidden><i></i><i></i><i></i></span></p>
+    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
       <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
       <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
@@ -235,15 +256,19 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   </p>
 </dialog>
 
-<dialog class="drawer" id="menu" aria-label="Menü">
+<dialog class="drawer" id="menu" aria-label="<?= h($L['menu']) ?>">
   <div class="drawer-bar">
-    <button type="button" class="back" data-back aria-label="Zurück zur Übersicht" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><polyline points="11 5 4 12 11 19"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
+    <button type="button" class="back" data-back aria-label="<?= h($L['back']) ?>" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><polyline points="11 5 4 12 11 19"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
     <?= $close ?>
   </div>
-  <nav class="drawer-nav" aria-label="Seiten">
-    <a href="#about" data-dialog="about">Über</a>
-    <a href="#impressum" data-dialog="impressum">Impressum</a>
-    <a href="#datenverarbeitung" data-dialog="datenverarbeitung">Datenverarbeitung</a>
+  <nav class="drawer-nav" aria-label="<?= h($L['pages']) ?>">
+    <a href="#about" data-dialog="about"><?= h($L['about']) ?></a>
+    <a href="#impressum" data-dialog="impressum"><?= h($L['impressum']) ?></a>
+    <a href="#datenverarbeitung" data-dialog="datenverarbeitung"><?= h($L['datenverarbeitung']) ?></a>
+    <div class="drawer-lang" role="group" aria-label="<?= h($L['language']) ?>">
+      <a href="<?= h($langLinks['en']) ?>" hreflang="en" lang="en" data-lang-link<?= $lang === 'en' ? ' aria-current="true"' : '' ?>>English</a>
+      <a href="<?= h($langLinks['de']) ?>" hreflang="de" lang="de" data-lang-link<?= $lang === 'de' ? ' aria-current="true"' : '' ?>>Deutsch</a>
+    </div>
   </nav>
   <!-- filled by app.js with the text of the dialog of the same name -->
   <section class="drawer-page" data-page aria-labelledby="menu-page-title" hidden></section>
@@ -251,21 +276,21 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 
 <dialog class="dialog" id="about" aria-labelledby="about-title">
   <?= $close ?>
-  <h2 class="disp dh" id="about-title">Über 1radiœ</h2>
+  <h2 class="disp dh" id="about-title"><?= h($L['about_title']) ?></h2>
   <div class="rich"><?= $texts['about'] ?></div>
   <!-- not editable: explains the bars, with the icon itself -->
-  <p class="dnote with-pill"><span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span>Die kleinen Balken an einem Sender zeigen, dass ich ihn gerade höre. Mehr wird dabei nicht erfasst.</span></p>
+  <p class="dnote with-pill"><span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span><?= h($L['pill_note']) ?></span></p>
 </dialog>
 
 <dialog class="dialog" id="impressum" aria-labelledby="impressum-title">
   <?= $close ?>
-  <h2 class="disp dh" id="impressum-title">Impressum</h2>
+  <h2 class="disp dh" id="impressum-title"><?= h($L['impressum']) ?></h2>
   <div class="rich"><?= $texts['impressum'] ?></div>
 </dialog>
 
 <dialog class="dialog" id="datenverarbeitung" aria-labelledby="datenverarbeitung-title">
   <?= $close ?>
-  <h2 class="disp dh" id="datenverarbeitung-title">Datenverarbeitung</h2>
+  <h2 class="disp dh" id="datenverarbeitung-title"><?= h($L['datenverarbeitung']) ?></h2>
   <div class="rich"><?= $texts['datenverarbeitung'] ?></div>
 </dialog>
 </body>

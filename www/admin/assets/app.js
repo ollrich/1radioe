@@ -1275,18 +1275,19 @@
   function showText() {
     const t = texts.data[texts.name];
     const stored = t[texts.lang];
-    // German without an own text shows the default; English starts from the German one
-    editor.innerHTML = stored ?? (texts.lang === 'de' ? t.default : (t.de ?? t.default));
+    // without an own text: German shows its default; English what the English page
+    // shows then, the own German text or else the English default
+    editor.innerHTML = stored ?? (texts.lang === 'de' ? t.default.de : (t.de ?? t.default.en));
     texts.dirty = false;
     let note;
     if (texts.lang === 'de') {
       note = stored ? 'Eigener Text.' : 'Standardtext. Mit „Speichern“ wird er zu deinem eigenen.';
     } else {
-      note = stored ? 'Eigener englischer Text.' : 'Noch kein englischer Text. Zum Start steht hier der deutsche.';
+      note = stored ? 'Eigener englischer Text.' : t.de ? 'Noch kein englischer Text. Die englische Seite zeigt deinen deutschen, er steht hier zum Übersetzen.' : 'Englischer Standardtext. Mit „Speichern“ wird er zu deinem eigenen.';
     }
     $('#text-state').textContent = note;
     $('#text-reset').disabled = !stored;
-    $('#text-view').href = '../#' + texts.name;
+    $('#text-view').href = (texts.lang === 'de' ? '../de/' : '../?lang=en') + '#' + texts.name;
     $$('[data-text]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.text === texts.name)));
     $$('[data-text-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.textLang === texts.lang)));
   }

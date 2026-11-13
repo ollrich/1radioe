@@ -60,6 +60,83 @@ function webapp_station(array $e): array
     ];
 }
 
+/**
+ * Language of the page: German under /de/, English otherwise (1radioe.net).
+ * Only the frame is translated: menu, titles, the texts from the admin and the info at
+ * the bars. Status, buttons and station descriptions stay as they are for now.
+ */
+function webapp_lang(): string
+{
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+    return $path === '/de' || str_starts_with($path, '/de/') ? 'de' : 'en';
+}
+
+/** True if the browser's first language is German (Accept-Language). */
+function webapp_prefers_german(): bool
+{
+    $best = '';
+    $bestQ = -1.0;
+    foreach (explode(',', (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) as $part) {
+        $bits = explode(';', trim($part));
+        $tag  = strtolower(trim($bits[0]));
+        if ($tag === '' || $tag === '*') {
+            continue;
+        }
+        $q = 1.0;
+        foreach (array_slice($bits, 1) as $param) {
+            if (preg_match('~^\s*q=([0-9.]+)~', $param, $m)) {
+                $q = (float) $m[1];
+            }
+        }
+        if ($q > $bestQ) {   // equal q: the first one wins, as browsers list them in order
+            $best  = $tag;
+            $bestQ = $q;
+        }
+    }
+    return $bestQ > 0 && ($best === 'de' || str_starts_with($best, 'de-'));
+}
+
+function webapp_strings(string $lang): array
+{
+    $de = [
+        'description' => 'Ollis Radiosender: hören im Browser, auf Sonos und in VLC.',
+        'h1'          => '1radiœ: Ollis Radiosender',
+        'menu'        => 'Menü',
+        'menu_open'   => 'Menü öffnen',
+        'pages'       => 'Seiten',
+        'close'       => 'Schließen',
+        'back'        => 'Zurück zur Übersicht',
+        'about'       => 'Über',
+        'about_title' => 'Über 1radiœ',
+        'impressum'   => 'Impressum',
+        'datenverarbeitung' => 'Datenverarbeitung',
+        'language'    => 'Sprache',
+        'pill_note'   => 'Die kleinen Balken an einem Sender zeigen, dass ich ihn gerade höre. Mehr wird dabei nicht erfasst.',
+        'listening'   => 'Olli hört gerade',
+        'listening_to' => 'Olli hört gerade',
+        'and'         => 'und',
+    ];
+    $en = [
+        'description' => "Ollie's radio stations: listen in the browser, on Sonos and in VLC.",
+        'h1'          => "1radiœ: Ollie's radio stations",
+        'menu'        => 'Menu',
+        'menu_open'   => 'Open menu',
+        'pages'       => 'Pages',
+        'close'       => 'Close',
+        'back'        => 'Back to the menu',
+        'about'       => 'About',
+        'about_title' => 'About 1radiœ',
+        'impressum'   => 'Legal notice',
+        'datenverarbeitung' => 'Data processing',
+        'language'    => 'Language',
+        'pill_note'   => "The small bars on a station show that I'm listening to it right now. Nothing more is recorded.",
+        'listening'   => 'Ollie is listening',
+        'listening_to' => 'Ollie is listening to',
+        'and'         => 'and',
+    ];
+    return $lang === 'de' ? $de : $en;
+}
+
 /** JSON that is safe inside a <script type="application/json"> block. */
 function webapp_json(array $data): string
 {
