@@ -4,6 +4,7 @@
 
 * Nur noch eine Playlist: `/streams.m3u`. M3U mit Namen verstehen VLC, Apple Music, foobar2000 und praktisch alle Player. `/streams.pls` entfällt, manche Apps lasen eine PLS mit mehreren Einträgen ohnehin als einen Sender mit Ersatz-Streams. Ebenso entfällt `/s/<id>.m3u`, die Playlist eines einzelnen Senders, seit 1.12.3 nirgends mehr verlinkt. Beide Adressen antworten mit 410
 * „Über 1radiœ“, Admin unter „Öffentliche Adressen“ und `README.md` nennen nur noch `streams.m3u`
+* Web-App am Desktop: Die Namen unter den Logos auf der Skala dürfen zwei Zeilen lang sein, abgeschnitten wird erst danach. „BBC Radio 1 Dance“, „lounge-radio.com“ und „Seven Inch Soul“ sind so ganz lesbar
 
 ## 1.12.3 (13. November 2026)
 
