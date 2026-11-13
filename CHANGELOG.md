@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.14.1 (13. November 2026)
+
+* Korrektur zu 1.12.0: Sonos meldet eine Pause doch, mit einem `final` wenige Sekunden danach (getestet am Büro-Lautsprecher). Der frühere Test lief an einem Lautsprecher, der schon vor dem Reporting Endpoint pausiert war. Es fehlt nur die Meldung jede Minute. `README.md` und der Hilfetext unter Hörstatus im Admin sagen das jetzt richtig
+
 ## 1.14.0 (13. November 2026)
 
 * HLS-Streams (`.m3u8`, etwa BBC Radio 1) spielen jetzt auch in Firefox. Firefox kann HLS im `<audio>`-Element nicht, Safari, Chrome und die Handy-Browser schon. Für Firefox lädt die Web-App dann `www/assets/vendor/hls.light.min.js` (hls.js 1.7.4, Apache-2.0) von diesem Server nach, nur bei HLS-Sendern und nur in Browsern ohne eigene HLS-Wiedergabe. Der Ton kommt weiter direkt vom Sender
