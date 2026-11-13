@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.12.1 (13. November 2026)
+
+* Hörstatus über Home Assistant: Der Server erkennt einen Sender jetzt auch am Titel. Der erste echte Test lief ins Leere, weil FluxFM von `channels.fluxfm.de` auf wechselnde Streaming-Server umleitet und der Lautsprecher die neue Adresse meldet. Sonos zeigt Sender aus 1radiœ als „<Titel> • <Beschreibung>“, Home Assistant liefert das als `media_channel`. `POST /api/listen` nimmt dafür `title` an, die Adresse hat weiter Vorrang
+* `README.md`: `rest_command` schickt `title` mit, die Automation meldet Adresse und Titel und vermeidet Warnungen bei fehlenden Attributen
+
 ## 1.12.0 (13. November 2026)
 
 **Hörstatus über Home Assistant**
