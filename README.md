@@ -22,6 +22,7 @@ www/                  Web-Verzeichnis der Domain https://1radioe.net
   index.php           Web-App mit Player
   assets/             CSS, JavaScript, Schrift Mona Sans der Web-App
   smapi.php           SMAPI-Endpoint für Sonos
+  report.php          Wiedergabe-Meldungen von Sonos (Reporting Endpoint)
   admin/              Verwaltung (Login mit Passwort und TOTP)
   deploy.php          Ziel des GitHub-Webhooks
   robots.txt          sperrt Suchmaschinen
@@ -55,7 +56,7 @@ php -S 127.0.0.1:8080 -t www app/dev-router.php
 
 Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `co.eichhof.radioe`:
 
-* **Sonos Music API:** SMAPI Endpoint `https://1radioe.net/smapi.php`
+* **Sonos Music API:** SMAPI Endpoint `https://1radioe.net/smapi.php`, Reporting Endpoint `https://1radioe.net/report/v2.3` mit Reporting Endpoint Version 2.3
 * **Service Configuration:** nach jeder Änderung Refresh, dann Send
 
 ## Bedienung
@@ -155,7 +156,7 @@ Läuft bei Ollie ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr 
 
 * **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
 * **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft, für das Posting (`r1_listen_status`).
-* **Sonos:** `getMediaURI` für einen Sender startet, `reportPlaySeconds` hält am Leben (Antwort `interval` 60), `reportPlayStatus` beendet. Tracks und Playlists zählen nicht.
+* **Sonos:** `getMediaURI` für einen Sender startet. Danach melden die Lautsprecher über den Reporting Endpoint (`report.php`, Sonos schickt `POST …/timePlayed`): `update` etwa jede Minute hält am Leben, `final` beendet. Die alten SMAPI-Meldungen `reportPlaySeconds` und `reportPlayStatus` werden weiter verstanden, Sonos schickt sie neuen Integrationen aber nicht mehr. Tracks und Playlists zählen nicht.
 * **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
 * **Browser:** Nach dem Login im Admin lässt sich ein Browser zum Hören merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `POST /api/listen` erlaubt und nie den Admin öffnet. Der Player in der Web-App meldet dann „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. In diesem Browser zeigt die Web-App oben „Hören wird erfasst“, ein Klick pausiert das für die Sitzung. Geräte verwalten und widerrufen: System → Hörgeräte.
 * **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}`. Verlangt das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`.

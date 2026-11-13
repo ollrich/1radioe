@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.10.3';
+const APP_VERSION = '1.11.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -222,6 +222,45 @@ function ini_bytes(string $key): int
 function client_ip(): string
 {
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+/**
+ * The address Sonos called: host without port, and path, e.g. "1radioe.net/smapi.php",
+ * or "eichhof.co/1radioe/smapi.php" when an old address includes the SMAPI file.
+ * $path: default the running script; report.php passes the requested path.
+ */
+function called_endpoint(?string $path = null): string
+{
+    $host = strtolower(rtrim((string) preg_replace('~:\d+$~', '', (string) ($_SERVER['HTTP_HOST'] ?? '')), '.'));
+    if (!preg_match('~^[a-z0-9.-]{1,100}$~', $host)) {
+        $host = '?';
+    }
+    $path = (string) preg_replace('#[^A-Za-z0-9._/-]#', '', $path ?? (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    return substr($host . $path, 0, 160);
+}
+
+/**
+ * Diagnostic log of requests from Sonos (SMAPI and playback reports), switched on in
+ * the admin under System. Keeps the newest 500 entries and never breaks playback.
+ */
+function sonos_log(string $method, string $item, int $status, string $note): void
+{
+    try {
+        if (setting('log_enabled', '0') !== '1') {
+            return;
+        }
+        $path = str_ends_with((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/report.php')
+            ? (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) : null;
+        q('INSERT INTO r1_request_log (at, ip, agent, method, item, status, note, endpoint) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
+            time(), client_ip(), mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 120),
+            mb_substr($method, 0, 64), mb_substr($item, 0, 120), $status, mb_substr($note, 0, 255), called_endpoint($path),
+        ]);
+        if (random_int(1, 25) === 1) {   // keep the newest 500 entries
+            q('DELETE FROM r1_request_log WHERE id < (SELECT id FROM (SELECT id FROM r1_request_log ORDER BY id DESC LIMIT 1 OFFSET 499) t)');
+        }
+    } catch (Throwable) {
+        // logging must never break playback
+    }
 }
 
 /** Sends JSON and stops. $noStore false keeps a Cache-Control header set before. */
