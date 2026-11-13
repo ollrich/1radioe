@@ -44,7 +44,7 @@ foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
 }
 $og = [
     'title'       => $start !== null ? $start['name'] : APP_NAME,
-    'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : 'Ollies Radiosender: hören im Browser, auf Sonos und in VLC.',
+    'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : 'Ollis Radiosender: hören im Browser, auf Sonos und in VLC.',
     'url'         => base_url() . ($start !== null ? '/s/' . rawurlencode($start['id']) : '/'),
     'image'       => $start['logo'] ?? null,
 ];
@@ -81,7 +81,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fcfcfd" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1328" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Ollies Radiosender: hören im Browser, auf Sonos und in VLC.">
+<meta name="description" content="Ollis Radiosender: hören im Browser, auf Sonos und in VLC.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="<?= h(APP_NAME) ?>">
 <meta property="og:title" content="<?= h($og['title']) ?>">
@@ -117,7 +117,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   </header>
 
   <main id="main">
-    <h1 class="sr">1radiœ: Ollies Radiosender</h1>
+    <h1 class="sr">1radiœ: Ollis Radiosender</h1>
 <?php if ($levels === null): ?>
     <p class="notice">Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.</p>
 <?php elseif (!$levels['root']): ?>
@@ -132,7 +132,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
         <p class="kicker" data-r1="kicker" hidden></p>
         <h2 class="disp stage-name" data-r1="name"></h2>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
+        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Olli hört gerade" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
           <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
           <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
@@ -202,7 +202,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
     <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Ollie hört gerade" hidden><i></i><i></i><i></i></span></p>
+    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="Olli hört gerade" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
       <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
       <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
@@ -221,9 +221,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
     </div>
   </div>
   <p class="dp" data-info="desc"></p>
-  <p class="dp dlinks">
-    <a data-info="website" target="_blank" rel="noopener" hidden></a>
-    <a data-info="m3u">Als Playlist für VLC</a>
+  <p class="dp dlinks" hidden>
+    <a data-info="website" target="_blank" rel="noopener"></a>
   </p>
 </dialog>
 
@@ -251,7 +250,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   <p class="dp">Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a> oder <a href="streams.pls">streams.pls</a></p>
   <h3 class="d3">Quellcode</h3>
   <p class="dp"><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
-  <p class="dnote">Ein Projekt von Ollie.</p>
+  <p class="dnote">Ein Projekt von Olli.</p>
 </dialog>
 
 <dialog class="dialog" id="impressum" aria-labelledby="impressum-title">
@@ -274,7 +273,7 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
   <h3 class="d3">Lautstärke</h3>
   <p class="dp">Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
   <h3 class="d3">Cookies</h3>
-  <p class="dp">Besucher bekommen keine Cookies. Ein Cookie gibt es nur für Ollie selbst, damit sein Hörstatus erfasst werden kann.</p>
+  <p class="dp">Besucher bekommen keine Cookies. Ein Cookie gibt es nur für Olli selbst, damit sein Hörstatus erfasst werden kann.</p>
   <h3 class="d3">Hosting und Verantwortlicher</h3>
   <p class="dp">[Hoster, Server-Logfiles, Speicherdauer]<br>[Name, Kontakt]</p>
 </dialog>

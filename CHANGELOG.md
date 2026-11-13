@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.12.3 (13. November 2026)
+
+* In der deutschen Web-App heißt es jetzt „Olli“ statt „Ollie“: „Olli hört gerade“ an den Balken und in der Info dazu, „Ollis Radiosender“ in Titel und Beschreibung, „Ein Projekt von Olli.“ unter Über und „nur für Olli selbst“ unter Datenverarbeitung. Die englische Fassung wird „Ollie“ schreiben
+* `README.md` ebenso
+* „Über den Sender“ zeigt keinen Link „Als Playlist für VLC“ mehr. Die Zeile darunter erscheint nur noch, wenn der Sender eine Website hat. Die Adresse `/s/<id>.m3u` funktioniert weiter, die Listen aller Sender unter „Über 1radiœ“ bleiben
+
 ## 1.12.2 (13. November 2026)
 
 * Fehler behoben: Die Web-App zeigte auf 1radioe.net nie, dass Ollie einen Sender hört. Ihre Abfrage `GET /api/status` mit `Accept: application/json` bekam von Apache 406, weil MultiViews die Adresse ohne Endung selbst `status.php` zuordnete und den Dateityp mit dem `Accept`-Header verglich, bevor die Weiterleitung griff. `www/.htaccess` schaltet MultiViews jetzt ab. Lokal fiel das nicht auf, weil der eingebaute PHP-Server MultiViews nicht kennt

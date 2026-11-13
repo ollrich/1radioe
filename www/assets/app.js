@@ -15,7 +15,7 @@
   const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
   const STATUS_EVERY = 30000;
   const TEXT = { idle: 'Bereit', connecting: 'Verbindet', live: 'Live', paused: 'Pausiert', error: 'Keine Verbindung' };
-  const LISTENING = 'Ollie hört gerade';
+  const LISTENING = 'Olli hört gerade';
   const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
 
   /** Every station and category by id; stations know their level ('root' or a category id). */
@@ -609,14 +609,13 @@
     const desc = $('[data-info="desc"]');
     desc.textContent = it.desc || 'Keine Beschreibung.';
     const site = $('[data-info="website"]');
-    site.hidden = !it.website;
+    site.parentElement.hidden = !it.website;   // the line holds only the website
     if (it.website) {
       site.href = it.website;
       let host = it.website;
       try { host = new URL(it.website).host.replace(/^www\./, ''); } catch { /* keep the address */ }
       site.textContent = 'Website: ' + host;
     }
-    $('[data-info="m3u"]').href = it.m3u;
     return true;
   }
 
@@ -879,7 +878,7 @@
     now.timer = 0;
   }
 
-  /* ---------- Info at "Ollie hört gerade" ----------
+  /* ---------- Info at "Olli hört gerade" ----------
    * Hovering the bars shows who listens to what. On touch screens a tap on the bars
    * shows it instead of starting the station; the rest of the button still starts it.
    * Screen readers get the same text from the buttons' labels. */

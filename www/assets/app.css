@@ -1,5 +1,5 @@
 /* 1radiœ web app. Light by default, navy in dark mode. Logo blue #1a80b6 is the strong
-   accent, mint #9ac7bf marks "Ollie hört gerade". Wide screens: player in the middle,
+   accent, mint #9ac7bf marks "Olli hört gerade". Wide screens: player in the middle,
    stations on a scale below. Phones (760 px and less): list with a docked player. */
 
 @font-face {
@@ -133,7 +133,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 }
 .numchip:empty { display: none; }
 
-/* "Ollie hört gerade": mint bars on a navy pill, in every color mode */
+/* "Olli hört gerade": mint bars on a navy pill, in every color mode */
 .pill {
   display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; padding: 3px 5px; border-radius: 999px;
   background: var(--pillbg); vertical-align: middle; flex: none;
@@ -145,7 +145,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .pill { position: relative; }
 .pill::before { content: ""; position: absolute; inset: -10px; }   /* easier to hit with a finger */
 
-/* info at "Ollie hört gerade": hover with the mouse, tap on touch screens */
+/* info at "Olli hört gerade": hover with the mouse, tap on touch screens */
 .ptip {
   position: fixed; left: 0; top: 0; z-index: 60; max-width: min(260px, calc(100vw - 16px));
   background: var(--tipbg); color: #fcfcfd; padding: 8px 12px; border-radius: 6px; font-size: 12px; line-height: 1.4;

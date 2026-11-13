@@ -56,7 +56,6 @@ function webapp_station(array $e): array
         'website'  => (string) ($r['website'] ?? ''),
         'url'      => $url,
         'https'    => is_https_url($url),
-        'm3u'      => 's/' . rawurlencode($r['smapi_id']) . '.m3u',
         'category' => $e['category']['smapi_id'] ?? null,
     ];
 }
