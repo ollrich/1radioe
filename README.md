@@ -8,6 +8,7 @@ Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, gepflegt über
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
 * Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
 * **Hörstatus:** zeigt, welchen Sender Ollie gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
+* **Playlist-Dateien und JSON:** alle Sender als `/streams.m3u` und `/streams.pls` für VLC und als `/api/stations.json` für eine eigene App
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 
@@ -59,7 +60,8 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Logo:** hochladen oder per URL laden, im Editor zuschneiden, zoomen, drehen, einpassen oder füllen, Hintergrund für transparente Bereiche wählen. Gespeichert wird immer 600 × 600 px.
 * **Reihenfolge:** Kacheln per Drag & Drop verschieben. Die Vorschau entspricht der Liste in Sonos.
 * **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
-* **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme.
+* **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen.
+* **Website:** Link zur Seite des Senders, erscheint in der Web-App unter „Über den Sender“.
 * Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
 
 ### Kategorien
@@ -80,6 +82,49 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
 * **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App. Leere Playlists und Tracks, deren Datei fehlt, zeigt Sonos nicht an.
 * Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
+
+## Playlist-Dateien und App-Schnittstelle
+
+Alle aktiven Sender, nie MP3-Playlists oder Tracks. Die Reihenfolge ist die des Admins: die oberste Ebene wie in Sonos, die Sender einer Kategorie an der Stelle der Kategorie. Eine inaktive Kategorie blendet ihre Sender aus.
+
+| Adresse | Inhalt |
+|---|---|
+| `/streams.m3u` | M3U mit Namen, für VLC: „Medien, Netzwerkstream öffnen“ |
+| `/streams.pls` | dasselbe als PLS |
+| `/s/<id>.m3u` | ein Sender |
+| `/api/stations.json` | alles für eine eigene App |
+| `/api/status` | laufende Sender |
+
+Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
+
+**`stations.json`**
+
+```json
+{
+  "version": "<Katalog-Stand>",
+  "generated": "2026-11-12T16:00:00+01:00",
+  "status_url": "https://1radioe.net/api/status",
+  "ping_url": "https://1radioe.net/api/ping",
+  "categories": [ { "id": "jazz", "name": "Jazz", "sort": 3, "logo": null } ],
+  "stations": [
+    {
+      "id": "radio-swiss-jazz",
+      "name": "Radio Swiss Jazz",
+      "description": "…",
+      "website": "https://www.radioswissjazz.ch",
+      "category": "jazz",
+      "sort": 1,
+      "streams": [ { "url": "https://…", "format": "audio/mpeg", "https": true } ],
+      "logo": { "url": "https://1radioe.net/media/….jpg", "sha256": "…", "size": 600 }
+    }
+  ]
+}
+```
+
+* `id` ist die SMAPI-ID und ändert sich nie.
+* `sort` zählt innerhalb der Ebene: Sender ohne Kategorie und Kategorien teilen sich die Positionen der obersten Ebene, Sender einer Kategorie zählen darin ab 1.
+* `version` ändert sich mit jeder Änderung im Admin. Die Antwort trägt einen `ETag`. Wer ihn mit `If-None-Match` mitschickt, bekommt `304`, solange sich nichts geändert hat.
+* `logo` ist `null`, wenn es kein Bild gibt. Bei Kategorien ohne eigenes Bild ist es das Raster aus vier Logos.
 
 ## Hörstatus
 

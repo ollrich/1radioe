@@ -78,10 +78,13 @@ function station_save(array $in, ?int $id = null): array
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
     $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category'], true) ? $in['kind'] : 'stream');
+    // website: kept as it is when the field is not sent (e.g. by an older admin)
+    $website     = array_key_exists('website', $in) ? trim((string) $in['website']) : (string) ($existing['website'] ?? '');
     if ($kind !== 'stream') {
-        // playlists and categories have no stream of their own
-        $url  = '';
-        $mime = 'audio/mpeg';
+        // playlists and categories have no stream and no website of their own
+        $url     = '';
+        $mime    = 'audio/mpeg';
+        $website = '';
     }
 
     $errors = [];
@@ -94,6 +97,10 @@ function station_save(array $in, ?int $id = null): array
     }
     if (mb_strlen($description) > 500) {
         $errors['description'] = 'Höchstens 500 Zeichen.';
+    }
+    $webScheme = strtolower((string) parse_url($website, PHP_URL_SCHEME));
+    if ($website !== '' && (!filter_var($website, FILTER_VALIDATE_URL) || !in_array($webScheme, ['http', 'https'], true) || strlen($website) > 500)) {
+        $errors['website'] = 'Bitte eine gültige http(s)-Adresse eingeben.';
     }
     if (!isset(MIME_TYPES[$mime])) {
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
@@ -114,30 +121,31 @@ function station_save(array $in, ?int $id = null): array
     $isPlaylist = (!empty($in['is_playlist']) || looks_like_playlist($url)) && $mime !== 'application/vnd.apple.mpegURL' ? 1 : 0;
     // result of a stream test the editor ran for exactly this address (optional)
     $check = $kind === 'stream' && is_array($in['check'] ?? null) && isset($in['check']['ok'])
-        ? [(bool) $in['check']['ok'], clean_text((string) ($in['check']['info'] ?? ''))]
+        ? [(bool) $in['check']['ok'], clean_text((string) ($in['check']['info'] ?? '')),
+           isset($in['check']['https']) && is_bool($in['check']['https']) ? $in['check']['https'] : null]
         : null;
 
     if ($id === null) {
-        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
-            [$categoryId, $title, $description, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
+            [$categoryId, $title, $description, $website, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
         if (($old['category_id'] !== null ? (int) $old['category_id'] : null) !== $categoryId) {
             q('UPDATE r1_stations SET sort = ? WHERE id = ?', [station_next_sort(), $id]);   // moved: goes to the end
         }
         if ($old['stream_url'] !== $url) {
             // the cached playlist entry and the last test belong to the old address
             q('DELETE FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $old['stream_url'])]);
-            q('UPDATE r1_stations SET check_ok = NULL, check_info = NULL, checked_at = NULL WHERE id = ?', [$id]);
+            q('UPDATE r1_stations SET check_ok = NULL, check_info = NULL, https_ok = NULL, checked_at = NULL WHERE id = ?', [$id]);
         }
     }
     if ($check !== null) {
-        station_set_check($id, $check[0], $check[1]);
+        station_set_check($id, $check[0], $check[1], $check[2]);
     }
     catalog_bump();
     return station_find($id);
@@ -213,10 +221,14 @@ function station_set_active(int $id, bool $active): void
     catalog_bump();
 }
 
-/** Stores the result of a stream test. */
-function station_set_check(int $id, bool $ok, string $info): void
+/**
+ * Stores the result of a stream test. $https: can a browser on an HTTPS page play
+ * the stream (true), only via plain HTTP (false), unknown (null).
+ */
+function station_set_check(int $id, bool $ok, string $info, ?bool $https = null): void
 {
-    q('UPDATE r1_stations SET check_ok = ?, check_info = ?, checked_at = ? WHERE id = ?', [$ok ? 1 : 0, mb_substr($info, 0, 255), now_sql(), $id]);
+    q('UPDATE r1_stations SET check_ok = ?, check_info = ?, https_ok = ?, checked_at = ? WHERE id = ?',
+        [$ok ? 1 : 0, mb_substr($info, 0, 255), $https === null ? null : ($https ? 1 : 0), now_sql(), $id]);
 }
 
 function station_set_logo(int $id, ?string $file): void
@@ -284,6 +296,7 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'duration'    => $stats[(int) $s['id']]['duration'] ?? 0,
         'title'       => $s['title'],
         'description' => $s['description'],
+        'website'     => (string) ($s['website'] ?? ''),
         'stream_url'  => $s['stream_url'],
         'mime'        => $s['mime'],
         'is_playlist' => (bool) $s['is_playlist'],
@@ -291,6 +304,7 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'active'      => (bool) $s['active'],
         'check_ok'    => $s['check_ok'] === null ? null : (bool) $s['check_ok'],
         'check_info'  => $s['check_info'],
+        'https_ok'    => ($s['https_ok'] ?? null) === null ? null : (bool) $s['https_ok'],
         'checked_at'  => $s['checked_at'],
     ];
 }

@@ -107,6 +107,12 @@ try {
                     'FTP-Eingang'    => storage_state(inbox_dir()),
                     'Upload-Puffer'  => storage_state(upload_dir()),
                 ],
+                'public' => [
+                    'Playlist für VLC (M3U)' => base_url(1) . '/streams.m3u',
+                    'Playlist (PLS)'         => base_url(1) . '/streams.pls',
+                    'Sender als JSON'        => base_url(1) . '/api/stations.json',
+                    'Hörstatus als JSON'     => base_url(1) . '/api/status',
+                ],
                 'log_enabled' => setting('log_enabled', '0') === '1',
             ]);
 
@@ -214,10 +220,11 @@ try {
                 throw new InputError(['stream_url' => 'Bitte eine gültige http(s)-Adresse eingeben.']);
             }
             $result  = probe_stream($url);
+            $result += probe_https($url, $result);
             $station = $id !== null ? station_find($id) : null;
             if ($station !== null && $station['stream_url'] === $url) {
                 // only a test of the saved address says something about the station
-                station_set_check($id, $result['ok'], $result['info']);
+                station_set_check($id, $result['ok'], $result['info'], $result['https']);
             }
             json_out(['probe' => $result]);
 

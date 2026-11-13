@@ -16,7 +16,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -31,6 +31,7 @@ require __DIR__ . '/tracks.php';
 require __DIR__ . '/net.php';
 require __DIR__ . '/image.php';
 require __DIR__ . '/listen.php';
+require __DIR__ . '/catalog.php';
 
 date_default_timezone_set((string) cfg('timezone', 'Europe/Berlin'));
 
@@ -204,11 +205,14 @@ function client_ip(): string
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 }
 
-function json_out(array $data, int $status = 200): never
+/** Sends JSON and stops. $noStore false keeps a Cache-Control header set before. */
+function json_out(array $data, int $status = 200, bool $noStore = true): never
 {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-store');
+    if ($noStore) {
+        header('Cache-Control: no-store');
+    }
     // invalid UTF-8 (e.g. from old MP3 tags) must never turn the answer into an empty page
     echo json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
     exit;

@@ -206,6 +206,34 @@ function probe_stream(string $url, int $depth = 0): array
     return $result;
 }
 
+/**
+ * Can a browser on an HTTPS page play this stream? Browsers block plain HTTP audio
+ * there. Decisive is the address that is actually played, for a playlist its first
+ * stream. For an http:// address the same address with https:// is tried as well.
+ *
+ * $probe: the result of probe_stream($url).
+ * Returns ['https' => true|false|null (unknown), 'https_url' => an https address that
+ * works and could replace the stored one, or null].
+ */
+function probe_https(string $url, array $probe): array
+{
+    if (empty($probe['ok'])) {
+        return ['https' => null, 'https_url' => null];
+    }
+    $played = (string) ($probe['resolved'] ?? $url);
+    if (str_starts_with(strtolower($played), 'https://')) {
+        return ['https' => true, 'https_url' => null];
+    }
+    if (str_starts_with(strtolower($url), 'http://')) {
+        $variant = 'https://' . substr($url, 7);
+        $alt     = probe_stream($variant);
+        if ($alt['ok'] && str_starts_with(strtolower((string) ($alt['resolved'] ?? $variant)), 'https://')) {
+            return ['https' => false, 'https_url' => $variant];
+        }
+    }
+    return ['https' => false, 'https_url' => null];
+}
+
 /** Looks for MPEG audio frame headers: 'aac' (ADTS), 'mp3', or null. */
 function audio_frame_type(string $data): ?string
 {

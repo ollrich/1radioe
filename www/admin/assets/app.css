@@ -176,6 +176,9 @@ label small { font-weight: 400; }
 .probe { margin: .5rem 0 0; padding: .5rem .7rem; border-radius: 10px; font-size: .9rem; background: var(--surface-2); color: var(--muted); }
 .probe.ok { background: rgb(61 220 151 / .1); color: #b9f5da; }
 .probe.fail { background: rgb(255 107 107 / .12); color: #ffd3d3; }
+.probe.warn { background: rgb(255 196 87 / .12); color: #ffe3b0; }
+.probe-https { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.badge.http { left: auto; right: 8px; }
 
 /* System page */
 .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 1rem; }
