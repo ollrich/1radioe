@@ -609,14 +609,13 @@
     const desc = $('[data-info="desc"]');
     desc.textContent = it.desc || 'Keine Beschreibung.';
     const site = $('[data-info="website"]');
-    site.hidden = !it.website;
+    site.parentElement.hidden = !it.website;   // the line holds only the website
     if (it.website) {
       site.href = it.website;
       let host = it.website;
       try { host = new URL(it.website).host.replace(/^www\./, ''); } catch { /* keep the address */ }
       site.textContent = 'Website: ' + host;
     }
-    $('[data-info="m3u"]').href = it.m3u;
     return true;
   }
 

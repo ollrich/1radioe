@@ -221,9 +221,8 @@ $close = '<button type="button" class="close" data-close aria-label="Schließen"
     </div>
   </div>
   <p class="dp" data-info="desc"></p>
-  <p class="dp dlinks">
-    <a data-info="website" target="_blank" rel="noopener" hidden></a>
-    <a data-info="m3u">Als Playlist für VLC</a>
+  <p class="dp dlinks" hidden>
+    <a data-info="website" target="_blank" rel="noopener"></a>
   </p>
 </dialog>
 

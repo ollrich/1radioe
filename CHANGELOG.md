@@ -4,6 +4,7 @@
 
 * In der deutschen Web-App heißt es jetzt „Olli“ statt „Ollie“: „Olli hört gerade“ an den Balken und in der Info dazu, „Ollis Radiosender“ in Titel und Beschreibung, „Ein Projekt von Olli.“ unter Über und „nur für Olli selbst“ unter Datenverarbeitung. Die englische Fassung wird „Ollie“ schreiben
 * `README.md` ebenso
+* „Über den Sender“ zeigt keinen Link „Als Playlist für VLC“ mehr. Die Zeile darunter erscheint nur noch, wenn der Sender eine Website hat. Die Adresse `/s/<id>.m3u` funktioniert weiter, die Listen aller Sender unter „Über 1radiœ“ bleiben
 
 ## 1.12.2 (13. November 2026)
 
