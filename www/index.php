@@ -72,7 +72,7 @@ $og = [
 $v    = h(APP_VERSION);
 $data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL,
     'start' => $start['id'] ?? null, 'lang' => $lang,
-    'text' => ['listening' => $L['listening'], 'listeningTo' => $L['listening_to'], 'and' => $L['and']]]) : '';
+    'text' => ['listening' => $L['listening'], 'listeningTo' => $L['listening_to'], 'and' => $L['and']] + webapp_script_strings($lang)]) : '';
 // the other language, with the station of a station page
 $langLinks = [
     'en' => ($lang === 'de' ? '../' : './') . '?lang=en',
@@ -136,8 +136,8 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     <a class="wm" href="./"><span class="sr">1radiœ, Startseite</span><span aria-hidden="true">1radi<span class="oe">œ</span></span></a>
     <span class="top-actions">
 <?php if ($listener !== null): ?>
-      <button type="button" class="listen-switch" data-listen-switch aria-pressed="true" data-js title="Nur für dich sichtbar: Dein Hören in diesem Browser wird als Hörstatus erfasst (<?= h($listener['name']) ?>).">
-        <span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span data-listen-label>Hören wird erfasst</span>
+      <button type="button" class="listen-switch" data-listen-switch aria-pressed="true" data-js title="<?= h(sprintf($L['listen_title'], $listener['name'])) ?>">
+        <span class="pill" aria-hidden="true"><i></i><i></i><i></i></span><span data-listen-label><?= h($L['listen_on']) ?></span>
       </button>
 <?php endif; ?>
       <button type="button" class="menu-btn" data-menu aria-controls="menu" aria-expanded="false" aria-label="<?= h($L['menu_open']) ?>" data-js><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
@@ -147,9 +147,9 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
   <main id="main">
     <h1 class="sr"><?= h($L['h1']) ?></h1>
 <?php if ($levels === null): ?>
-    <p class="notice">Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.</p>
+    <p class="notice"><?= h($L['unreachable']) ?></p>
 <?php elseif (!$levels['root']): ?>
-    <p class="notice">Noch keine Sender.</p>
+    <p class="notice"><?= h($L['no_stations']) ?></p>
 <?php else: ?>
     <section class="stage" aria-label="Player" data-js>
       <div class="stage-art">
@@ -160,42 +160,42 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         <p class="kicker" data-r1="kicker" hidden></p>
         <h2 class="disp stage-name" data-r1="name"></h2>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
+        <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
-          <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
-          <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
-          <button type="button" class="ic" data-act="next" aria-label="Nächster Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
+          <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
+          <button type="button" class="play" data-act="toggle" aria-label="<?= h($L['play']) ?>"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+          <button type="button" class="ic" data-act="next" aria-label="<?= h($L['next']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
         </div>
         <div class="secondary">
           <label class="volume" data-volume>
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.5L12 5v14l-4.5-4H4zM15.5 9.2l1.1-1.1a5.5 5.5 0 0 1 0 7.8l-1.1-1.1a4 4 0 0 0 0-5.6z"/></svg>
-            <span class="sr">Lautstärke</span>
+            <span class="sr"><?= h($L['volume']) ?></span>
             <input type="range" min="0" max="100" step="1" value="80" data-r1="volume">
           </label>
-          <button type="button" class="pillbtn" data-act="info"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg>Über den Sender</button>
+          <button type="button" class="pillbtn" data-act="info"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg><?= h($L['station_info']) ?></button>
         </div>
       </div>
     </section>
 
-    <section class="picker" aria-label="Senderauswahl">
+    <section class="picker" aria-label="<?= h($L['picker']) ?>">
       <div class="picker-head" data-js>
         <div class="crumbs" data-r1="crumbs"></div>
         <span class="tipwrap">
-          <button type="button" class="qbtn" aria-label="Tastaturkürzel" aria-describedby="r1-keys"><span class="qmark" aria-hidden="true">?</span></button>
+          <button type="button" class="qbtn" aria-label="<?= h($L['keys']) ?>" aria-describedby="r1-keys"><span class="qmark" aria-hidden="true">?</span></button>
           <span class="tip" role="tooltip" id="r1-keys">
-            <span><kbd>←</kbd><kbd>→</kbd>Sender zurück und vor</span>
-            <span><kbd>1</kbd>bis <kbd>0</kbd>Sender direkt wählen</span>
-            <span><kbd>Leertaste</kbd>Play und Pause</span>
-            <span><kbd>Esc</kbd>zurück zu allen Sendern</span>
+            <span><kbd>←</kbd><kbd>→</kbd><?= h($L['key_arrows']) ?></span>
+            <span><?= $L['key_digits'] ?></span>
+            <span><?= $L['key_space'] ?></span>
+            <span><kbd>Esc</kbd><?= h($L['key_esc']) ?></span>
           </span>
         </span>
       </div>
       <div class="scale-row" data-js>
-        <button type="button" class="ic scl" data-scroll="-1" aria-label="Weitere Sender links" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.7 4.3 8 12l7.7 7.7-1.4 1.4L5.2 12l9.1-9.1z"/></svg></button>
+        <button type="button" class="ic scl" data-scroll="-1" aria-label="<?= h($L['more_left']) ?>" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.7 4.3 8 12l7.7 7.7-1.4 1.4L5.2 12l9.1-9.1z"/></svg></button>
         <div class="scroller" data-r1="scroller"><div class="strip" data-r1="strip"></div></div>
-        <button type="button" class="ic scl" data-scroll="1" aria-label="Weitere Sender rechts" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.3 16 12l-7.7 7.7 1.4 1.4 9.1-9.1-9.1-9.1z"/></svg></button>
+        <button type="button" class="ic scl" data-scroll="1" aria-label="<?= h($L['more_right']) ?>" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.3 16 12l-7.7 7.7 1.4 1.4 9.1-9.1-9.1-9.1z"/></svg></button>
       </div>
-      <h2 class="list-title">Alle Sender</h2>
+      <h2 class="list-title"><?= h($L['all']) ?></h2>
       <ul class="list" data-r1="list" data-js></ul>
       <?= nojs_list($levels) ?>
     </section>
@@ -213,17 +213,17 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <div class="mini" data-r1="mini" hidden>
   <button type="button" class="mini-open" data-act="sheet">
     <span class="tile tile-s" data-r1="art"></span>
-    <span class="rn"><span class="rname" data-r1="name"></span><span class="rsub"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span></span>
+    <span class="rn"><span class="rname" data-r1="name"></span><span class="rsub"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span></span>
   </button>
-  <button type="button" class="ic ic-play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
-  <button type="button" class="ic ic-panel" data-act="next" aria-label="Nächster Sender"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
+  <button type="button" class="ic ic-play" data-act="toggle" aria-label="<?= h($L['play']) ?>"><svg class="i-play" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+  <button type="button" class="ic ic-panel" data-act="next" aria-label="<?= h($L['next']) ?>"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
 </div>
 
 <dialog class="sheet" id="sheet" aria-label="Player">
   <div class="sheet-top">
-    <button type="button" class="ic" data-close aria-label="Player schließen"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.3 12 15l6.7-6.7 1.4 1.4L12 17.8 3.9 9.7z"/></svg></button>
+    <button type="button" class="ic" data-close aria-label="<?= h($L['close_player']) ?>"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.3 12 15l6.7-6.7 1.4 1.4L12 17.8 3.9 9.7z"/></svg></button>
     <p class="sheet-level" data-r1="level"></p>
-    <button type="button" class="ic" data-act="info" aria-label="Über den Sender"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg></button>
+    <button type="button" class="ic" data-act="info" aria-label="<?= h($L['station_info']) ?>"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg></button>
   </div>
   <div class="sheet-body">
     <div class="stage-art">
@@ -232,11 +232,11 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
     <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
-    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state">Bereit</span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
+    <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
-      <button type="button" class="ic" data-act="prev" aria-label="Vorheriger Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
-      <button type="button" class="play" data-act="toggle" aria-label="Abspielen"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
-      <button type="button" class="ic" data-act="next" aria-label="Nächster Sender"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
+      <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
+      <button type="button" class="play" data-act="toggle" aria-label="<?= h($L['play']) ?>"><svg class="i-play" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><svg class="i-pause" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button type="button" class="ic" data-act="next" aria-label="<?= h($L['next']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5H18v14h-2.5zM5 6.2v11.6a.9.9 0 0 0 1.4.75l7.8-5.8a.9.9 0 0 0 0-1.5L6.4 5.45A.9.9 0 0 0 5 6.2z"/></svg></button>
     </div>
   </div>
 </dialog>
@@ -246,7 +246,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
   <div class="info-head">
     <span class="tile tile-m" data-info="art"></span>
     <div>
-      <p class="dkicker">Über den Sender</p>
+      <p class="dkicker"><?= h($L['station_info']) ?></p>
       <h2 class="disp dh" id="info-title" data-info="name"></h2>
     </div>
   </div>

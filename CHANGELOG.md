@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.16.1 (13. November 2026)
+
+* Die englische Seite ist jetzt ganz englisch: Status (Ready, Connecting, Live, Paused, No connection), „All stations“, „About the station“, die Tastenkürzel im Fragezeichen, Hinweise, Website und fehlende Beschreibung im Info-Fenster sowie die Vorlesetexte für Screenreader. Die Texte stehen in `app/webapp.php`, die des Skripts kommen über die Seitendaten. Nur die Senderbeschreibungen gibt es weiter nur einmal
+
 ## 1.16.0 (13. November 2026)
 
 **Englisch und Deutsch, Menü auch am Desktop**

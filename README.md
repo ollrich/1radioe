@@ -93,7 +93,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 
 `https://1radioe.net/` zeigt alle aktiven Sender, keine MP3-Playlists.
 
-* **Sprachen:** `1radioe.net` ist Englisch, `1radioe.net/de/` Deutsch. Unter `/de/` gilt jede Adresse genauso (`.htaccess` reicht sie ohne `/de` weiter, die Seite liest die Sprache aus der Adresse), also auch `/de/s/<smapi_id>`. Ist Deutsch die erste Sprache des Browsers, leitet `1radioe.net` auf `/de/` um (`Accept-Language`). Wer im Menü Englisch wählt, landet auf `/?lang=en` und wird nicht umgeleitet, ganz ohne Cookie. Übersetzt sind der Rahmen (Menü, Titel, die Texte aus dem Admin, die Info an den Balken), Status, Knöpfe und Senderbeschreibungen noch nicht.
+* **Sprachen:** `1radioe.net` ist Englisch, `1radioe.net/de/` Deutsch. Unter `/de/` gilt jede Adresse genauso (`.htaccess` reicht sie ohne `/de` weiter, die Seite liest die Sprache aus der Adresse), also auch `/de/s/<smapi_id>`. Ist Deutsch die erste Sprache des Browsers, leitet `1radioe.net` auf `/de/` um (`Accept-Language`). Wer im Menü Englisch wählt, landet auf `/?lang=en` und wird nicht umgeleitet, ganz ohne Cookie. Übersetzt ist die ganze Oberfläche (`webapp_strings()` und `webapp_script_strings()` in `app/webapp.php`), die Texte aus dem Admin je Sprache. Nur die Senderbeschreibungen gibt es einmal.
 
 * **Desktop:** Player in der Mitte, darunter die Sender als Skala mit Nadel. Ein Klick spielt, ein zweiter pausiert. Kategorien öffnen eine eigene Skala. Sind es zu viele für die Breite, blättern Pfeile die Skala.
 * **Handy:** Liste mit aufklappbaren Kategorien, nach dem ersten Start ein angedockter Player, der sich zur Vollansicht aufziehen lässt.
