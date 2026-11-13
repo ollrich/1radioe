@@ -70,7 +70,7 @@ function webapp_json(array $data): string
 function webapp_headers(): void
 {
     $media = media_origin(0);
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     // the browser talks to the stations' servers directly; they need not know where it came from

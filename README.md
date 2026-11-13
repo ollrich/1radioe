@@ -97,6 +97,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde, mit Umlauf, und überspringt Ordner. Medientasten und Sperrbildschirm folgen derselben Regel.
 * **Tastatur:** Leertaste, Pfeiltasten, 1 bis 0, Esc. Erklärt im (?) über der Skala.
 * **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
+* **HLS** (`.m3u8`, etwa die BBC): Safari, Chrome und die Browser auf dem Handy spielen das selbst. Firefox kann es nicht, dort lädt die Web-App [hls.js](https://github.com/video-dev/hls.js) von diesem Server nach, nur für HLS-Sender und nur in Browsern ohne eigene HLS-Wiedergabe. hls.js holt Playlist und Stücke direkt beim Sender. Dafür erlaubt die Sicherheitsrichtlinie der Seite (CSP) Abrufe an `https:`-Adressen und `blob:` als Quelle für Ton. Ohne Worker, weil der `blob:`-Skripte bräuchte.
 * **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. HLS-Streams und Streams ohne Titel zeigen nur den Sender. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
 * **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Olli hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
 * **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollis gemerkter Browser hat das Hör-Cookie.
@@ -285,7 +286,7 @@ PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.
 
 ## Mitgelieferte Bibliotheken
 
-[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`).
+[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. [hls.js](https://github.com/video-dev/hls.js) 1.7.4 (`hls.light.min.js` aus dem npm-Paket, Prüfsumme in `www/assets/vendor/hls.js-LICENSE.txt`), Apache-2.0-Lizenz, nur für HLS in Firefox. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`).
 
 ## Lizenz
 

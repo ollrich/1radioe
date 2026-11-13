@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.14.0 (13. November 2026)
+
+* HLS-Streams (`.m3u8`, etwa BBC Radio 1) spielen jetzt auch in Firefox. Firefox kann HLS im `<audio>`-Element nicht, Safari, Chrome und die Handy-Browser schon. Für Firefox lädt die Web-App dann `www/assets/vendor/hls.light.min.js` (hls.js 1.7.4, Apache-2.0) von diesem Server nach, nur bei HLS-Sendern und nur in Browsern ohne eigene HLS-Wiedergabe. Der Ton kommt weiter direkt vom Sender
+* Sicherheitsrichtlinie der Web-App: `connect-src` erlaubt zusätzlich `https:`, damit hls.js Playlist und Stücke beim Sender holen kann, `media-src` zusätzlich `blob:` für die Übergabe an `<audio>`
+* `README.md`: Abschnitt zu HLS, hls.js bei den mitgelieferten Bibliotheken
+
 ## 1.13.0 (13. November 2026)
 
 * Nur noch eine Playlist: `/streams.m3u`. M3U mit Namen verstehen VLC, Apple Music, foobar2000 und praktisch alle Player. `/streams.pls` entfällt, manche Apps lasen eine PLS mit mehreren Einträgen ohnehin als einen Sender mit Ersatz-Streams. Ebenso entfällt `/s/<id>.m3u`, die Playlist eines einzelnen Senders, seit 1.12.3 nirgends mehr verlinkt. Beide Adressen antworten mit 410
