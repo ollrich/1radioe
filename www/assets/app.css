@@ -103,9 +103,16 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .tile-xl { width: 248px; height: 248px; border-radius: 32px; font-size: 68px; }
 .tile-m { width: 72px; height: 72px; border-radius: 16px; font-size: 22px; }
 .tile-s { width: 44px; height: 44px; border-radius: 11px; font-size: 14px; }
-.folder { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 5px; border: 1.5px solid var(--line); background: transparent; }
-.folder > span { border-radius: 4px; background: var(--tilebg); overflow: hidden; }
-.folder > span img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* a category: its picture with a small stack in the top right corner */
+.tile.cat { position: relative; }
+.tile .stack {
+  position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 6px;
+  display: grid; place-items: center; color: #fcfcfd; background: rgb(11 19 40 / .78);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.tile .stack svg { width: 12px; height: 12px; }
+.tile-s .stack { top: 3px; right: 3px; width: 15px; height: 15px; border-radius: 5px; }
+.tile-s .stack svg { width: 10px; height: 10px; }
 
 .ic {
   width: 52px; height: 52px; border-radius: 999px; border: 1.5px solid var(--line); background: transparent;
@@ -264,7 +271,6 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .row[aria-current="true"] { background: var(--hl); }
 .row.is-sub { padding-left: 34px; }
 .row .num { min-width: 22px; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
-.row .folder { width: 44px; height: 44px; border-radius: 11px; padding: 4px; gap: 2px; }
 .rn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rname { font-weight: 640; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rsub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }

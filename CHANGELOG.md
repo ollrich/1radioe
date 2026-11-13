@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.15.1 (13. November 2026)
+
+* Web-App: Kategorien zeigen ihr eigenes Bild aus dem Admin statt eines Rasters aus den Logos darin. Ohne eigenes Bild zeigen sie die Collage, die der Server aus den ersten Logos baut, wie in Sonos. Ein kleines Stapel-Symbol oben rechts kennzeichnet sie als Kategorie, auf der Skala und in der Liste
+
 ## 1.15.0 (13. November 2026)
 
 **Texte im Admin**
