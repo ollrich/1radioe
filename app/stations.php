@@ -81,6 +81,29 @@ function station_by_play_uri(string $uri): ?array
 }
 
 /**
+ * The stream station with this title, for a player that names what it plays. Sonos shows
+ * a station from 1radiœ as "<title> • <description>" (Home Assistant: media_channel), so
+ * the part before " • " counts as well. Needed because many streams redirect, FluxFM for
+ * example to a changing streaming server, and the speaker then reports that address.
+ * Case does not matter.
+ */
+function station_by_title(string $title): ?array
+{
+    $title = trim($title);
+    if ($title === '') {
+        return null;
+    }
+    $want = array_unique([mb_strtolower($title), mb_strtolower(trim(explode(' • ', $title)[0]))]);
+    foreach (q("SELECT * FROM r1_stations WHERE kind = 'stream' AND active = 1 ORDER BY sort, id")->fetchAll() as $s) {
+        $t = mb_strtolower(trim((string) $s['title']));
+        if ($t !== '' && in_array($t, $want, true)) {
+            return $s;
+        }
+    }
+    return null;
+}
+
+/**
  * A stream address in comparable form: [with query, without query], without scheme
  * (http and https count the same), host in lower case, no slash at the end.
  */
