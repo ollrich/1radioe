@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 7;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)
+const SCHEMA_VERSION = 8;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)
 
 function db(): PDO
 {
@@ -217,6 +217,21 @@ function db_migrate_locked(): void
             station_id INT UNSIGNED NOT NULL PRIMARY KEY,
             text       VARCHAR(300) NULL,
             fetched_at INT UNSIGNED NOT NULL
+        ) $opts");
+    }
+    if ($current < 8) {
+        // 1.10.2: the address Sonos called (host and path), so an old address that only
+        // includes this code can be deleted once nobody uses it. In the log per request
+        // (with a default, older code inserting without it keeps working) and as a small
+        // counter per address that runs without the log and without IP addresses.
+        if (!q("SHOW COLUMNS FROM r1_request_log LIKE 'endpoint'")->fetch()) {
+            db()->exec("ALTER TABLE r1_request_log ADD COLUMN endpoint VARCHAR(160) NOT NULL DEFAULT ''");
+        }
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_endpoints (
+            endpoint   VARCHAR(160) NOT NULL PRIMARY KEY,
+            first_seen INT UNSIGNED NOT NULL,
+            last_seen  INT UNSIGNED NOT NULL,
+            hits       INT UNSIGNED NOT NULL DEFAULT 0
         ) $opts");
     }
     setting_set('schema', (string) SCHEMA_VERSION);

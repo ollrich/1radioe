@@ -45,6 +45,29 @@ function state_stations(): array
     return array_map(static fn($s) => station_public($s, $stats, $rows), $rows);
 }
 
+/**
+ * Addresses Sonos called, newest first, with the one the portal should use marked.
+ * An old address that only includes this code can go once it has not been used for days.
+ */
+function endpoints_overview(): array
+{
+    $u       = parse_url(base_url(1) . '/smapi.php');
+    $current = strtolower((string) ($u['host'] ?? '')) . (string) ($u['path'] ?? '');
+    $now     = time();
+    $rows    = [];
+    foreach (q('SELECT endpoint, first_seen, last_seen, hits FROM r1_endpoints ORDER BY last_seen DESC LIMIT 20')->fetchAll() as $r) {
+        $rows[] = [
+            'endpoint' => $r['endpoint'],
+            'current'  => $r['endpoint'] === $current,
+            'since'    => date('d.m.Y', (int) $r['first_seen']),
+            'last'     => date('d.m.Y H:i', (int) $r['last_seen']),
+            'age'      => max(0, $now - (int) $r['last_seen']),
+            'hits'     => (int) $r['hits'],
+        ];
+    }
+    return $rows;
+}
+
 /** "keine ✓" or e.g. "2 Logos, 14 Tracks fehlen im Medienordner". */
 function media_missing_text(): string
 {
@@ -114,6 +137,7 @@ try {
                     'Hörstatus als JSON'     => base_url(1) . '/api/status',
                 ],
                 'log_enabled' => setting('log_enabled', '0') === '1',
+                'endpoints'   => endpoints_overview(),
             ]);
 
         case 'GET listen':
@@ -155,7 +179,7 @@ try {
             json_out(['ok' => true]);
 
         case 'GET log':
-            $rows = q('SELECT at, ip, agent, method, item, status, note FROM r1_request_log ORDER BY id DESC LIMIT 200')->fetchAll();
+            $rows = q('SELECT at, ip, agent, method, item, status, note, endpoint FROM r1_request_log ORDER BY id DESC LIMIT 200')->fetchAll();
             foreach ($rows as &$r) {
                 $r['at'] = date('d.m. H:i:s', (int) $r['at']);
             }

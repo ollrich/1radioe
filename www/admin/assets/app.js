@@ -1046,6 +1046,7 @@
       fillKv('#public', data.public, true);
       fillKv('#status', data.status, false);
       $('#log-enabled').checked = data.log_enabled;
+      fillEndpoints(data.endpoints || []);
       loadLog();
       loadListen();
       loadDevices();
@@ -1059,7 +1060,29 @@
   function ago(sec) {
     if (sec < 60) return `vor ${sec} s`;
     if (sec < 3600) return `vor ${Math.floor(sec / 60)} min`;
-    return `vor ${Math.floor(sec / 3600)} h`;
+    if (sec < 86400) return `vor ${Math.floor(sec / 3600)} h`;
+    const days = Math.floor(sec / 86400);
+    return days === 1 ? 'vor 1 Tag' : `vor ${days} Tagen`;
+  }
+
+  /* Addresses Sonos called (System, Sonos-Adressen). */
+  function fillEndpoints(rows) {
+    const body = $('#endpoints');
+    body.replaceChildren();
+    if (!rows.length) {
+      const tr = el('tr');
+      const td = el('td', 'muted', 'Noch keine Anfrage von Sonos seit Version 1.10.2.');
+      td.colSpan = 4;
+      tr.append(td);
+      body.append(tr);
+    }
+    for (const r of rows) {
+      const tr = el('tr');
+      const addr = el('td', '', r.endpoint);
+      if (r.current) addr.append(el('small', 'muted', ' (aktuelle Adresse)'));
+      tr.append(addr, el('td', '', `${r.last} (${ago(r.age)})`), el('td', '', String(r.hits)), el('td', '', r.since));
+      body.append(tr);
+    }
   }
 
   async function loadListen() {
@@ -1103,13 +1126,14 @@
     if (!log.length) {
       const tr = el('tr');
       const td = el('td', 'muted', 'Keine Einträge.');
-      td.colSpan = 6;
+      td.colSpan = 7;
       tr.append(td);
       body.append(tr);
     }
     for (const r of log) {
       const tr = el('tr', Number(r.status) >= 400 ? 'is-error' : '');
-      [r.at, r.method, r.item, r.status, r.note, `${r.ip} ${r.agent}`].forEach((v) => tr.append(el('td', '', String(v))));
+      // entries without an address come from a version before 1.10.2, e.g. the old installation
+      [r.at, r.method, r.item, r.status, r.note, r.endpoint || 'alte Version', `${r.ip} ${r.agent}`].forEach((v) => tr.append(el('td', '', String(v))));
       body.append(tr);
     }
   }
