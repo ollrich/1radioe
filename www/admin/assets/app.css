@@ -215,6 +215,9 @@ label small { font-weight: 400; }
 
 /* Posting */
 .social-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6rem; margin-top: .6rem; }
+.tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.tpl-lang { display: flex; align-items: center; gap: .5rem; font-weight: 400; color: var(--muted); }
+.tpl-lang input { width: 3.6rem; margin-top: 0; padding: .3rem .5rem; text-align: center; }
 .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
 .chip { font: inherit; font-size: .85rem; padding: .2rem .65rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
 .chip:hover, .chip:focus-visible { border-color: var(--accent); }
@@ -223,7 +226,7 @@ label small { font-weight: 400; }
 .preview .count { color: var(--muted); font-weight: 400; }
 .preview .count.over { color: var(--danger); font-weight: 600; }
 .preview-text { margin: 0; padding: .7rem .8rem; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 4.5rem; }
-.brakes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: .6rem 0 1rem; }
+.brakes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: .6rem 0 1rem; }
 .brakes label { display: flex; flex-direction: column; gap: .3rem; }
 .brakes label small.muted { display: block; }
 .brakes input { margin-top: auto; }

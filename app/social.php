@@ -37,17 +37,18 @@ function social_defaults(): array
 {
     return [
         'enabled'  => false,
-        'template' => "Läuft gerade bei mir: {sender}\n{link}\n\n{hashtags}",
         'hashtags' => '#Radio #NowPlaying',
         'site_url' => '',
         'delay'    => 3,      // minutes a station must keep playing
         'cooldown' => 6,      // hours before the same station is posted again
         'daily'    => 4,      // posts per day at most
         'card'     => true,   // link card with the station logo on Bluesky
-        'lang'     => 'de',
-        'bsky'     => ['enabled' => false, 'pds' => 'https://bsky.social', 'handle' => '', 'secret' => '', 'checked' => ''],
+        // text and language per network (1.10.3): Ollie posts in English on Bluesky and in German on Mastodon
+        'bsky'     => ['enabled' => false, 'pds' => 'https://bsky.social', 'handle' => '', 'secret' => '', 'checked' => '',
+                       'template' => "On my radio right now: {sender}\n{link}\n\n{hashtags}", 'lang' => 'en'],
         'masto'    => ['enabled' => false, 'instance' => '', 'secret' => '', 'visibility' => 'public',
-                       'max' => SOCIAL_MASTO_MAX, 'url_chars' => SOCIAL_MASTO_URL, 'checked' => ''],
+                       'max' => SOCIAL_MASTO_MAX, 'url_chars' => SOCIAL_MASTO_URL, 'checked' => '',
+                       'template' => "Läuft gerade bei mir: {sender}\n{link}\n\n{hashtags}", 'lang' => 'de'],
     ];
 }
 
@@ -61,7 +62,14 @@ function social_settings(): array
     }
     $s = array_replace($d, array_intersect_key($stored, $d));
     foreach (['bsky', 'masto'] as $net) {
-        $s[$net] = array_replace($d[$net], is_array($stored[$net] ?? null) ? array_intersect_key($stored[$net], $d[$net]) : []);
+        $own = is_array($stored[$net] ?? null) ? array_intersect_key($stored[$net], $d[$net]) : [];
+        // up to 1.10.2 both networks shared one text and one language
+        foreach (['template', 'lang'] as $k) {
+            if (!isset($own[$k]) && is_string($stored[$k] ?? null)) {
+                $own[$k] = $stored[$k];
+            }
+        }
+        $s[$net] = array_replace($d[$net], $own);
     }
     return $s;
 }
@@ -351,7 +359,7 @@ function social_compose(array $station, array $s, string $net, int $levels = 0):
     $link = social_link($s, $station, $levels);
     $max  = $net === 'bsky' ? SOCIAL_BSKY_MAX : max(1, (int) $s['masto']['max']);
     for ($n = count($tags); $n >= 0; $n--) {
-        $text = social_fill((string) $s['template'], $station, $link, array_slice($tags, 0, $n));
+        $text = social_fill((string) $s[$net]['template'], $station, $link, array_slice($tags, 0, $n));
         if ($net === 'bsky') {
             $rich   = bsky_richtext($text);
             $length = social_graphemes($rich['text']);
@@ -533,7 +541,7 @@ function bsky_post(array $s, array $post, array $station): string
         '$type'     => 'app.bsky.feed.post',
         'text'      => $post['text'],
         'createdAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.v\Z'),
-        'langs'     => [$s['lang']],
+        'langs'     => [$b['lang']],
     ];
     if ($post['facets']) {
         $record['facets'] = $post['facets'];
@@ -543,7 +551,7 @@ function bsky_post(array $s, array $post, array $station): string
         $external = [
             'uri'         => $post['link'],
             'title'       => (string) $station['title'],
-            'description' => $desc !== '' ? mb_substr($desc, 0, 300) : 'Live hören auf ' . APP_NAME,
+            'description' => $desc !== '' ? mb_substr($desc, 0, 300) : ($b['lang'] === 'de' ? 'Live hören auf ' : 'Listen live on ') . APP_NAME,
         ];
         $thumb = bsky_thumb($b['pds'], $auth, $station);
         if ($thumb !== null) {
@@ -581,7 +589,7 @@ function masto_post(array $s, array $post, string $idempotencyKey): string
         'Content-Type: application/json',
         'Authorization: Bearer ' . social_secret($m, 'Das Token'),
         'Idempotency-Key: ' . $idempotencyKey,
-    ], social_json(['status' => $post['text'], 'visibility' => $m['visibility'], 'language' => $s['lang']]));
+    ], social_json(['status' => $post['text'], 'visibility' => $m['visibility'], 'language' => $m['lang']]));
     if ($r['status'] !== 200 || empty($r['json']['id'])) {
         throw new SocialError(masto_error($r, 'Posten'));
     }
@@ -689,13 +697,23 @@ function social_save(array $in): array
     $s['enabled'] = !empty($in['enabled']);
     $s['card']    = !empty($in['card']);
 
-    $template = trim(str_replace("\r", '', clean_text_multiline((string) ($in['template'] ?? ''))));
-    if ($template === '' || mb_strlen($template) > 1000) {
-        $errors['template'] = 'Bitte einen Text mit höchstens 1000 Zeichen eingeben.';
-    } elseif (!str_contains($template, '{sender}')) {
-        $errors['template'] = 'Der Text braucht den Platzhalter {sender}.';
-    } else {
-        $s['template'] = $template;
+    // text and language per network
+    foreach (['bsky', 'masto'] as $net) {
+        $n        = is_array($in[$net] ?? null) ? $in[$net] : [];
+        $template = trim(str_replace("\r", '', clean_text_multiline((string) ($n['template'] ?? ''))));
+        if ($template === '' || mb_strlen($template) > 1000) {
+            $errors[$net . '.template'] = 'Bitte einen Text mit höchstens 1000 Zeichen eingeben.';
+        } elseif (!str_contains($template, '{sender}')) {
+            $errors[$net . '.template'] = 'Der Text braucht den Platzhalter {sender}.';
+        } else {
+            $s[$net]['template'] = $template;
+        }
+        $lang = strtolower(trim((string) ($n['lang'] ?? '')));
+        if (!preg_match('~^[a-z]{2}$~', $lang)) {
+            $errors[$net . '.lang'] = 'Bitte ein Kürzel aus zwei Buchstaben, zum Beispiel de oder en.';
+        } else {
+            $s[$net]['lang'] = $lang;
+        }
     }
     $tags = social_tags_text((string) ($in['hashtags'] ?? ''));
     if (mb_strlen($tags) > 255) {
@@ -718,9 +736,6 @@ function social_save(array $in): array
             $s[$k] = $v;
         }
     }
-    $lang = strtolower(trim((string) ($in['lang'] ?? 'de')));
-    $s['lang'] = preg_match('~^[a-z]{2}$~', $lang) ? $lang : 'de';
-
     // Bluesky
     $b  = is_array($in['bsky'] ?? null) ? $in['bsky'] : [];
     $pds = social_origin((string) ($b['pds'] ?? '')) ?: 'https://bsky.social';
