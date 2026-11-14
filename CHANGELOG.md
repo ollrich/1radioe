@@ -1,5 +1,16 @@
 # Änderungen
 
+## 1.18.0 (14. November 2026)
+
+**SoundCloud in der Web-App**
+
+* Neue Eintragsart im Admin: „SoundCloud hinzufügen“, oben und in jeder Kategorie. Eingetragen wird der Link zum Track, Name, Cover und Beschreibung legt Ollie selbst fest. Kurzlinks (`on.soundcloud.com`) löst der Server auf, Tracking-Parameter fallen weg. Kachel mit „☁ SoundCloud“
+* Die Web-App spielt SoundCloud im offiziellen Player von SoundCloud. Vorher ein Hinweis mit „SoundCloud laden“, erst der Klick lädt den Player, die Zustimmung gilt für den Besuch und wird nicht gespeichert. „Mehr dazu“ öffnet die Datenverarbeitung. Am Desktop auf der Bühne, auf dem Handy im großen Player
+* Die eigenen Knöpfe, die Leertaste, Vor und Zurück und die Lautstärke steuern den Player über `postMessage`, SoundClouds Skript wird nicht geladen. Am Ende eines Tracks folgt der nächste SoundCloud-Eintrag der Liste. Status „Spielt“, die Beschreibung steht wie bei Sendern ohne Song
+* Kein Hörstatus, kein Posting, keine Songabfrage für SoundCloud. Sonos, `streams.m3u` und `stations.json` lassen die Einträge aus, die API-Bedingungen von SoundCloud erlauben dort nichts davon
+* Sicherheitsrichtlinie der Web-App: `frame-src https://w.soundcloud.com`
+* Standardtexte: Datenverarbeitung mit einem Abschnitt zu SoundCloud, Über 1radiœ nennt SoundCloud als einzige Ausnahme
+
 ## 1.17.1 (14. November 2026)
 
 * Lautstärke am Desktop: Am Lautsprecher-Symbol stehen jetzt vier Schallwellen, je eine für ein Viertel der Lautstärke. Beim Ziehen am Regler wird die nächste Welle sichtbar und wächst ein Stück aus dem Lautsprecher heraus, die übrigen bleiben als blasser Umriss. Ohne Inline-Stile, die Sicherheitsrichtlinie der Seite bleibt, wie sie ist

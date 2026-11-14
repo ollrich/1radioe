@@ -187,10 +187,11 @@ render_page('Sender', <<<HTML
         <button class="btn ghost" id="check-all">Alle Streams prüfen</button>
         <button class="btn ghost" id="add-category">Kategorie hinzufügen</button>
         <button class="btn ghost" id="add-playlist">Playlist hinzufügen</button>
+        <button class="btn ghost" id="add-soundcloud">SoundCloud hinzufügen</button>
         <button class="btn primary" id="add-station">Sender hinzufügen</button>
       </div>
     </div>
-    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender, die Playlist oder die Kategorie. Kategorien erscheinen in Sonos als Ordner. Ausgegraute Einträge sind inaktiv oder leer und in Sonos nicht sichtbar.</p>
+    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender, die Playlist oder die Kategorie. Kategorien erscheinen in Sonos als Ordner. Ausgegraute Einträge sind inaktiv oder leer und in Sonos nicht sichtbar. SoundCloud-Tracks gibt es nur in der Web-App.</p>
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" hidden>
       <p>Noch keine Sender angelegt.</p>
@@ -210,6 +211,7 @@ render_page('Sender', <<<HTML
         <div class="toolbar-actions">
           <button class="btn ghost" id="cat-edit">Bearbeiten</button>
           <button class="btn ghost" id="cat-pick">Vorhandene zuordnen</button>
+          <button class="btn ghost" id="cat-add-sc">SoundCloud hinzufügen</button>
           <button class="btn primary" id="cat-add">Sender hinzufügen</button>
         </div>
       </div>
@@ -508,6 +510,10 @@ render_page('Sender', <<<HTML
           <div class="probe probe-https" id="probe-https" hidden></div>
           <label>Format<select name="mime" id="mime"></select><small class="muted">Wird beim Stream-Test automatisch gesetzt.</small><small class="err" data-err="mime"></small></label>
         </div>
+        <div class="sc-only" hidden>
+          <label>SoundCloud-Link<input name="sc_url" type="url" maxlength="1000" placeholder="https://soundcloud.com/künstler/track"><small class="err" data-err="sc_url"></small></label>
+          <p class="muted small">Die Adresse des Tracks auf soundcloud.com, auch ein Kurzlink aus der App (on.soundcloud.com). Name, Cover und Beschreibung legst du hier selbst fest. Der Track spielt nur in der Web-App im Player von SoundCloud, nicht in Sonos, und zählt nicht zum Hörstatus.</p>
+        </div>
         <label class="stream-only">Website des Senders <small class="muted">für „Über den Sender“ in der Web-App</small><input name="website" type="url" maxlength="500" placeholder="https://…"><small class="err" data-err="website"></small></label>
         <div class="stream-only social-fields">
           <label class="switch"><input type="checkbox" name="social" checked><span>Posten, wenn ich diesen Sender höre</span></label>
@@ -515,7 +521,7 @@ render_page('Sender', <<<HTML
         </div>
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
-        <label class="switch"><input type="checkbox" name="active" checked><span>Aktiv, in Sonos sichtbar</span></label>
+        <label class="switch"><input type="checkbox" name="active" checked><span id="active-label">Aktiv, in Sonos sichtbar</span></label>
         <input type="hidden" name="is_playlist" value="0">
         <p class="muted small" id="smapi-id"></p>
       </div>

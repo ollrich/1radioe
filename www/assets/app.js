@@ -21,6 +21,7 @@
     all: 'Alle Sender', category: 'Kategorie {name}', count1: '1 Sender', countN: '{n} Sender',
     holdsCur: 'enthält den aktuellen Sender', play: 'Abspielen', pause: 'Pause',
     noDesc: 'Keine Beschreibung.', website: 'Website: {host}', listenOn: 'Hören wird erfasst', listenOff: 'Erfassung pausiert',
+    scPlaying: 'Spielt', scFrame: 'Player von SoundCloud',
   }, data.text || {});
   const TEXT = T.phase;
   const LISTENING = T.listening;
@@ -33,7 +34,9 @@
   for (const [level, list] of Object.entries(levels)) {
     for (const it of list) items.set(it.id, Object.assign(it, { level }));
   }
-  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type === 'station');
+  // everything playable in a list: stations and SoundCloud tracks
+  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type !== 'category');
+  const isSc = (it) => Boolean(it && it.type === 'soundcloud');
 
   const state = {
     view: 'root',        // level shown on the scale
@@ -45,6 +48,8 @@
     retry: 0,
   };
   const isPlaying = () => state.phase === 'live' || state.phase === 'connecting';
+  // SoundCloud is not live radio: "Spielt" instead of "Live"
+  const phaseText = (phase) => (phase === 'live' && isSc(state.cur) ? T.scPlaying : TEXT[phase]);
 
   /* ---------- Helpers ---------- */
 
@@ -122,7 +127,7 @@
     let text = it.type === 'category'
       ? `${it.num} ${fill(T.category, { name: it.name })}, ${countText(it.count)}`
       : `${it.num} ${it.name}`;
-    if (it.type === 'station' && state.cur && state.cur.id === it.id) text += ', ' + TEXT[state.phase];
+    if (it.type !== 'category' && state.cur && state.cur.id === it.id) text += ', ' + phaseText(state.phase);
     if (it.type === 'category' && holdsCur(it)) text += ', ' + T.holdsCur;
     if (isActive(it)) text += ', ' + LISTENING;
     return text;
@@ -328,7 +333,7 @@
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
       sub.textContent = it.type === 'category' ? countText(it.count)
-        : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || TEXT[state.phase])
+        : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || phaseText(state.phase))
         : (it.desc || '');
       // an open category shows the status at the station inside, not twice
       pill.hidden = !isActive(it) || (it.type === 'category' && state.openCat === it.id);
@@ -355,17 +360,18 @@
 
   function setPhase(phase) {
     state.phase = phase;
-    $$('[data-r1="state"]').forEach((n) => { n.textContent = TEXT[phase]; });
+    const radio = !isSc(state.cur);
+    $$('[data-r1="state"]').forEach((n) => { n.textContent = phaseText(phase); });
     $$('[data-r1="dot"]').forEach((n) => { n.className = 'dot ' + phase; });
     $$('[data-act="toggle"]').forEach((b) => {
       b.classList.toggle('is-playing', isPlaying());
       b.setAttribute('aria-label', isPlaying() ? T.pause : T.play);
     });
     if (phase !== 'idle') $('[data-r1="mini"]').hidden = false;
-    if (phase === 'live') listenStart();
+    if (phase === 'live' && radio) listenStart();
     else if (phase !== 'connecting') listenStop(false);
-    if (phase === 'live' && (now.id !== state.cur.id || !now.timer)) pollNow();
-    else if (phase !== 'live' && phase !== 'connecting') stopNow();
+    if (phase === 'live' && radio && (now.id !== state.cur.id || !now.timer)) pollNow();
+    else if (!radio || (phase !== 'live' && phase !== 'connecting')) stopNow();
     document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ` : '1radiœ';
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
     renderTrack();
@@ -449,15 +455,26 @@
 
   function play(it, level) {
     if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
+    const fromSc = isSc(state.cur);
     state.cur = it;
     state.curLevel = level;
     renderPlayer();
-    connect(true);
+    if (isSc(it)) {
+      hangUp();          // the radio stops, SoundCloud plays in its own player
+      scShow(it, true);
+    } else {
+      if (fromSc) scClose();
+      connect(true);
+    }
     reveal(false);
   }
 
   /** (Re)connects to the current station. Always sets the address again, so no stale buffer is left. */
   function connect(fresh) {
+    if (isSc(state.cur)) {
+      scPlay();
+      return;
+    }
     clearTimeout(retryTimer);
     retryTimer = 0;
     if (fresh) state.retry = 0;
@@ -474,9 +491,17 @@
 
   /** Pausing live radio means hanging up; playing again starts fresh at the live point. */
   function stop() {
+    if (isSc(state.cur)) {
+      scPause();
+      return;
+    }
+    setPhase(state.cur ? 'paused' : 'idle');
+    hangUp();
+  }
+
+  function hangUp() {
     clearTimeout(retryTimer);
     retryTimer = 0;
-    setPhase(state.cur ? 'paused' : 'idle');
     dropHls();
     audio.pause();
     audio.removeAttribute('src');
@@ -484,7 +509,7 @@
   }
 
   function failed(code) {
-    if (!isPlaying()) return;
+    if (!isPlaying() || isSc(state.cur)) return;
     // code 4: format or address not playable here, a long retry would not help
     const limit = code === 4 ? 2 : RETRY.length;
     if (state.retry >= limit) {
@@ -498,7 +523,7 @@
 
   function toggle() {
     if (!state.cur) {
-      const first = stationsOf('root')[0] || [...items.values()].find((x) => x.type === 'station');
+      const first = stationsOf('root').find((x) => x.type === 'station') || [...items.values()].find((x) => x.type === 'station');
       if (first) play(first, first.level);
       return;
     }
@@ -524,6 +549,7 @@
   }
 
   audio.addEventListener('playing', () => {
+    if (isSc(state.cur)) return;
     state.retry = 0;
     lastProgress = Date.now();
     setPhase('live');
@@ -534,19 +560,19 @@
       lastProgress = Date.now();
     }
   });
-  audio.addEventListener('waiting', () => { if (state.phase === 'live') setPhase('connecting'); });
+  audio.addEventListener('waiting', () => { if (state.phase === 'live' && !isSc(state.cur)) setPhase('connecting'); });
   audio.addEventListener('error', () => failed(audio.error ? audio.error.code : 0));
   audio.addEventListener('ended', () => failed(0));   // live radio does not end: reconnect
   // paused from outside, e.g. headphones unplugged or the system took the audio
-  audio.addEventListener('pause', () => { if (state.phase === 'live') stop(); });
+  audio.addEventListener('pause', () => { if (state.phase === 'live' && !isSc(state.cur)) stop(); });
 
   // watchdog: no progress for a while means the connection is gone
   setInterval(() => {
-    if (!isPlaying() || retryTimer) return;
+    if (!isPlaying() || retryTimer || isSc(state.cur)) return;
     const quiet = Date.now() - lastProgress;
     if ((state.phase === 'live' && quiet > 12000) || (state.phase === 'connecting' && quiet > 20000)) failed(0);
   }, 3000);
-  window.addEventListener('online', () => { if (state.cur && (isPlaying() || state.phase === 'error')) connect(true); });
+  window.addEventListener('online', () => { if (state.cur && !isSc(state.cur) && (isPlaying() || state.phase === 'error')) connect(true); });
 
   /* Volume, remembered in this browser only. iOS does not let pages change it. */
   const canVolume = (() => {
@@ -574,8 +600,180 @@
       volume = Number(input.value);
       audio.volume = volume / 100;
       showVolume();
+      if (sc.frame) scSend('setVolume', volume);
       try { localStorage.setItem('r1.volume', String(volume)); } catch { /* not remembered */ }
     });
+  });
+
+  /* ---------- SoundCloud ----------
+   * A SoundCloud entry plays in SoundCloud's own player (an iframe), never in <audio>.
+   * It loads only after a click on "SoundCloud laden"; that holds for this visit and is
+   * not stored. The page steers the player with postMessage, the protocol of SoundCloud's
+   * widget API (w.soundcloud.com/player/api.js), without loading that script. Wide
+   * screens show the player in the stage, phones in the full player (sheet). No
+   * listening status and no song lookups for SoundCloud. */
+
+  const SC_ORIGIN = 'https://w.soundcloud.com';
+  const sc = { ok: false, frame: null, url: '', ready: false, want: false, timer: 0 };
+  const phone = window.matchMedia('(max-width: 760px)');
+
+  const scSlot = () => $(`[data-sc-slot="${phone.matches ? 'sheet' : 'stage'}"]`);
+
+  function scSend(method, value) {
+    if (!sc.frame || !sc.frame.contentWindow) return;
+    sc.frame.contentWindow.postMessage(JSON.stringify(value === undefined ? { method } : { method, value }), SC_ORIGIN);
+  }
+
+  /** The place for the player of a SoundCloud entry: the note, or the player once allowed. */
+  function scShow(it, start) {
+    const slot = scSlot();
+    $$('[data-sc-slot]').forEach((s) => { s.hidden = s !== slot; });
+    if (start) $('[data-r1="mini"]').hidden = false;
+    if (!sc.ok) {
+      clearTimeout(sc.timer);
+      setPhase('idle');
+      if (start && phone.matches) openDialog('sheet');   // the note is in the full player
+      return;
+    }
+    if (sc.frame && sc.url === it.url) {
+      if (start) scPlay();
+      else setPhase('paused');
+      return;
+    }
+    scLoad(it, start);
+  }
+
+  function scLoad(it, autoplay) {
+    const slot = scSlot();
+    if (!sc.frame) {
+      sc.frame = el('iframe', 'sc-frame');
+      sc.frame.title = T.scFrame;
+      sc.frame.allow = 'autoplay; encrypted-media';
+    }
+    sc.url = it.url;
+    sc.ready = false;
+    sc.want = autoplay;
+    const q = new URLSearchParams({
+      url: it.url, auto_play: String(autoplay), visual: 'false', show_artwork: 'false', show_comments: 'false',
+      show_reposts: 'false', show_teaser: 'false', show_playcount: 'false', hide_related: 'true',
+      buying: 'false', sharing: 'false', download: 'false', color: '#1a80b6',
+    });
+    sc.frame.src = SC_ORIGIN + '/player/?' + q;
+    $$('[data-sc-card]').forEach((c) => { c.hidden = true; });
+    if (sc.frame.parentElement !== slot) slot.append(sc.frame);
+    setPhase(autoplay ? 'connecting' : 'paused');
+    if (autoplay) scWatch();
+  }
+
+  function scPlay() {
+    if (!sc.ok) {
+      scAsk();
+      return;
+    }
+    if (!sc.frame || sc.url !== state.cur.url) {
+      scLoad(state.cur, true);
+      return;
+    }
+    sc.want = true;
+    setPhase('connecting');
+    if (sc.ready) scSend('play');   // otherwise once the player is ready
+    scWatch();
+  }
+
+  function scPause() {
+    clearTimeout(sc.timer);
+    sc.want = false;
+    scSend('pause');
+    setPhase(sc.frame ? 'paused' : 'idle');
+  }
+
+  /** Phones may refuse to start a player from outside: then show it, a tap there starts it. */
+  function scWatch() {
+    clearTimeout(sc.timer);
+    sc.timer = setTimeout(() => {
+      if (!isSc(state.cur) || state.phase !== 'connecting') return;
+      setPhase('paused');
+      if (phone.matches) openDialog('sheet');
+    }, 6000);
+  }
+
+  /** Play without permission yet: point at the button that loads the player. */
+  function scAsk() {
+    if (phone.matches) openDialog('sheet');
+    const b = $('[data-sc-load]', scSlot());
+    if (!b) return;
+    b.classList.remove('nudge');
+    void b.offsetWidth;   // restart the animation
+    b.classList.add('nudge');
+    b.focus();
+  }
+
+  function scClose() {
+    clearTimeout(sc.timer);
+    if (sc.frame) sc.frame.remove();
+    Object.assign(sc, { frame: null, url: '', ready: false, want: false });
+    $$('[data-sc-slot]').forEach((s) => { s.hidden = true; });
+    $$('[data-sc-card]').forEach((c) => { c.hidden = false; });
+  }
+
+  /** A track came to its end: the next entry of the list if it is SoundCloud too, else stop. */
+  function scNext() {
+    const list = stationsOf(state.curLevel);
+    const i = list.findIndex((x) => x.id === state.cur.id);
+    const next = i >= 0 ? list[i + 1] : null;
+    if (next && isSc(next)) play(next, state.curLevel);
+    else scPause();
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.origin !== SC_ORIGIN || !sc.frame || e.source !== sc.frame.contentWindow || !isSc(state.cur)) return;
+    let msg = null;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    if (!msg || typeof msg.method !== 'string') return;
+    if (msg.method === 'ready') {
+      sc.ready = true;
+      ['play', 'pause', 'finish', 'error', 'playProgress'].forEach((ev) => scSend('addEventListener', ev));
+      scSend('setVolume', volume);
+      if (sc.want) scSend('play');
+    } else if (msg.method === 'play' || (msg.method === 'playProgress' && sc.want)) {
+      // the player may start without a "play" event, then progress tells; after a pause
+      // one more progress report can follow, which must not count as playing again
+      if (state.phase !== 'live') {
+        clearTimeout(sc.timer);
+        sc.want = true;
+        setPhase('live');
+      }
+    } else if (msg.method === 'pause') {
+      if (isPlaying()) {
+        sc.want = false;
+        setPhase('paused');
+      }
+    } else if (msg.method === 'finish') {
+      scNext();
+    } else if (msg.method === 'error') {
+      clearTimeout(sc.timer);
+      setPhase('error');
+    }
+  });
+
+  $$('[data-sc-load]').forEach((b) => b.addEventListener('click', () => {
+    sc.ok = true;
+    if (isSc(state.cur)) scLoad(state.cur, true);
+  }));
+  $$('[data-sc-more]').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    openPage('datenverarbeitung');
+  }));
+  // the player moves with the layout (this reloads it; it continues if it was playing)
+  phone.addEventListener('change', () => {
+    if (!isSc(state.cur)) return;
+    const slot = scSlot();
+    $$('[data-sc-slot]').forEach((s) => { s.hidden = s !== slot; });
+    if (sc.frame && sc.frame.parentElement !== slot) {
+      sc.ready = false;
+      sc.want = isPlaying();
+      slot.append(sc.frame);
+    }
   });
 
   /* Media keys, Chrome's media controls, lock screen */
@@ -941,6 +1139,7 @@
    *  answered for this station, so a station with songs does not show it first. */
   function currentDesc() {
     const it = state.cur;
+    if (isSc(it)) return isPlaying() ? (it.desc || '') : '';
     return isPlaying() && it && now.id === it.id && !now.track ? (it.desc || '') : '';
   }
 
@@ -953,7 +1152,7 @@
     $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : desc; n.hidden = !(t ? t.artist : desc); });
     // the docked player has one line: the song or the description instead of "Live"
     $$('.mini [data-r1="state"]').forEach((n) => {
-      n.textContent = state.phase === 'live' && (t || desc) ? (trackLine(t) || desc) : TEXT[state.phase];
+      n.textContent = state.phase === 'live' && (t || desc) ? (trackLine(t) || desc) : phaseText(state.phase);
     });
     setMediaMetadata();
     updateIndicators();
@@ -963,7 +1162,7 @@
     clearTimeout(now.timer);
     now.timer = 0;
     const it = state.cur;
-    if (!it || state.phase !== 'live') return;
+    if (!it || state.phase !== 'live' || isSc(it)) return;
     let track = now.id === it.id ? now.track : null;
     try {
       const res = await fetch('api/nowplaying?id=' + encodeURIComponent(it.id), { credentials: 'omit' });
@@ -1076,8 +1275,8 @@
 
   // a station page (?s=<id>, the link in posts) puts that station in the player
   const start = data.start ? items.get(data.start) : null;
-  const first = (start && start.type === 'station' ? start : null)
-    || stationsOf('root')[0] || [...items.values()].find((x) => x.type === 'station');
+  const first = (start && start.type !== 'category' ? start : null)
+    || stationsOf('root').find((x) => x.type === 'station') || [...items.values()].find((x) => x.type === 'station');
   if (first) {
     state.cur = first;
     state.curLevel = first.level;
@@ -1087,6 +1286,7 @@
     }
     renderPlayer();
     if (first === start) $('[data-r1="mini"]').hidden = false;   // on phones: one tap to play
+    if (isSc(first)) scShow(first, false);
   }
   renderList();
   renderScale();

@@ -86,7 +86,8 @@ function endpoint_seen(): void
 function station(string $smapiId, ?string $kind = null): array
 {
     $s = station_by_smapi($smapiId);
-    if ($s === null || !$s['active'] || ($kind !== null && $s['kind'] !== $kind)) {
+    // SoundCloud tracks exist only in the web app
+    if ($s === null || !$s['active'] || $s['kind'] === 'soundcloud' || ($kind !== null && $s['kind'] !== $kind)) {
         fault('Client.ItemNotFound', 'Unknown id');
     }
     return $s;

@@ -24,7 +24,7 @@ function text_defaults(): array
         'about' => [
             'de' => <<<'HTML'
                 <p>1radiœ ist meine persönliche Auswahl an Internetradios. Gepflegt wird sie an einer Stelle und läuft überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App.</p>
-                <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste.</p>
+                <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste, außer SoundCloud, wenn du es selbst lädst.</p>
                 <h3>Mitnehmen</h3>
                 <p>Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Quellcode</h3>
@@ -33,7 +33,7 @@ function text_defaults(): array
                 HTML,
             'en' => <<<'HTML'
                 <p>1radiœ is my personal selection of internet radio stations. It is kept in one place and plays everywhere: here in the browser, on Sonos, as a playlist in VLC and later in an app of its own.</p>
-                <p>The stations play straight from the original stream. No sound runs through this server. There is no tracking and there are no external services.</p>
+                <p>The stations play straight from the original stream. No sound runs through this server. There is no tracking and there are no external services, except SoundCloud when you load it yourself.</p>
                 <h3>Take it with you</h3>
                 <p>All stations as a playlist for VLC and other players: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Source code</h3>
@@ -60,9 +60,11 @@ function text_defaults(): array
         'datenverarbeitung' => [
             'de' => <<<'HTML'
                 <h3>Kein Tracking</h3>
-                <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server.</p>
+                <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt von sich aus nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server. Die einzige Ausnahme ist der Player von SoundCloud, siehe unten.</p>
                 <h3>Beim Abspielen</h3>
                 <p>Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
+                <h3>SoundCloud</h3>
+                <p>Einige Einträge spielen im Player von SoundCloud. Er lädt erst, wenn du auf „SoundCloud laden“ klickst, und nur für diesen Besuch. Ab dann verbindet sich dein Browser mit SoundCloud. SoundCloud erhält deine IP-Adresse, setzt Cookies und verarbeitet Daten nach seinen eigenen Hinweisen: <a href="https://soundcloud.com/pages/privacy">soundcloud.com/pages/privacy</a>. Anbieter ist die SoundCloud Global Limited &amp; Co. KG in Berlin.</p>
                 <h3>Lautstärke</h3>
                 <p>Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
                 <h3>Cookies</h3>
@@ -72,9 +74,11 @@ function text_defaults(): array
                 HTML,
             'en' => <<<'HTML'
                 <h3>No tracking</h3>
-                <p>This site uses no analytics and no advertising and loads nothing from other servers. Fonts and scripts are on this server.</p>
+                <p>This site uses no analytics and no advertising and loads nothing from other servers on its own. Fonts and scripts are on this server. The one exception is SoundCloud's player, see below.</p>
                 <h3>When a station plays</h3>
                 <p>Your browser connects directly to the server of the station. That server receives your IP address. The station's own notes on data processing apply.</p>
+                <h3>SoundCloud</h3>
+                <p>Some entries play in SoundCloud's player. It loads only when you click “Load SoundCloud”, and only for this visit. From then on your browser connects to SoundCloud. SoundCloud receives your IP address, sets cookies and processes data under its own notes: <a href="https://soundcloud.com/pages/privacy">soundcloud.com/pages/privacy</a>. The provider is SoundCloud Global Limited &amp; Co. KG in Berlin.</p>
                 <h3>Volume</h3>
                 <p>The volume you choose stays in your browser's local storage and does not leave your device.</p>
                 <h3>Cookies</h3>

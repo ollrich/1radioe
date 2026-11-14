@@ -1,9 +1,15 @@
 <?php
 /**
- * Stations, playlists (kind = 'playlist') and categories (kind = 'category'): reading,
- * validation, saving, ordering. A category is a folder in Sonos; streams and playlists
- * belong to at most one category (category_id), everything else stays at the top level.
- * One sort column orders both the top level and the content of each category.
+ * Stations, playlists (kind = 'playlist'), categories (kind = 'category') and SoundCloud
+ * tracks (kind = 'soundcloud'): reading, validation, saving, ordering. A category is a
+ * folder in Sonos; streams, playlists and SoundCloud tracks belong to at most one
+ * category (category_id), everything else stays at the top level. One sort column
+ * orders both the top level and the content of each category.
+ *
+ * A SoundCloud track exists only in the web app, which plays it in SoundCloud's own
+ * widget. stream_url holds its address on soundcloud.com, name, cover and description
+ * come from the admin. Sonos, the playlist file and stations.json leave it out: the
+ * SoundCloud API terms rule out streaming it through a radio app (see README).
  *
  * Each station has a stable "smapi_id". Sonos stores it in favorites and alarms,
  * so it is created once from the title and never changes afterwards.
@@ -137,6 +143,33 @@ function looks_like_playlist(string $url): bool
     return (bool) preg_match('~\.(pls|m3u)$~i', (string) parse_url($url, PHP_URL_PATH));
 }
 
+/**
+ * A SoundCloud address in the form the widget takes, https://soundcloud.com/<user>/<track>
+ * (also a set, or a private link with its s-… part), without tracking parameters.
+ * Short links (on.soundcloud.com) are followed once to the full address.
+ * Returns null if it is no SoundCloud address.
+ */
+function soundcloud_url(string $url, bool $follow = true): ?string
+{
+    $url = trim($url);
+    $p   = parse_url($url);
+    if (!is_array($p) || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true) || isset($p['user']) || isset($p['port'])) {
+        return null;
+    }
+    $host = strtolower($p['host'] ?? '');
+    if ($host === 'on.soundcloud.com' && $follow) {
+        $res = http_get('https://on.soundcloud.com' . ($p['path'] ?? ''), 65536, 6);
+        return $res['url'] !== $url && !str_contains((string) parse_url($res['url'], PHP_URL_HOST), 'on.soundcloud.com')
+            ? soundcloud_url($res['url'], false) : null;
+    }
+    $path = rtrim($p['path'] ?? '', '/');
+    if (!in_array($host, ['soundcloud.com', 'www.soundcloud.com', 'm.soundcloud.com'], true)
+        || !preg_match('~^(/[A-Za-z0-9_-]+){2,4}$~', $path)) {
+        return null;
+    }
+    return 'https://soundcloud.com' . $path;
+}
+
 /** Builds a readable, unique SMAPI id from a title, e.g. "bbc-radio-1-dance". */
 function station_make_smapi_id(string $title): string
 {
@@ -163,21 +196,30 @@ function station_save(array $in, ?int $id = null): array
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
-    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category'], true) ? $in['kind'] : 'stream');
+    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category', 'soundcloud'], true) ? $in['kind'] : 'stream');
     // website: kept as it is when the field is not sent (e.g. by an older admin)
     $website     = array_key_exists('website', $in) ? trim((string) $in['website']) : (string) ($existing['website'] ?? '');
     // posting (1.9): kept as they are when not sent
     $social      = array_key_exists('social', $in) ? (!empty($in['social']) ? 1 : 0) : (int) ($existing['social'] ?? 1);
     $hashtags    = array_key_exists('hashtags', $in) ? social_tags_text((string) $in['hashtags']) : (string) ($existing['hashtags'] ?? '');
     if ($kind !== 'stream') {
-        // playlists and categories have no stream and no website of their own
-        $url      = '';
+        // playlists, categories and SoundCloud tracks have no stream and no website of
+        // their own; SoundCloud keeps its address, but never posts (no listening status)
+        $url      = $kind === 'soundcloud' ? $url : '';
         $mime     = 'audio/mpeg';
         $website  = '';
         $hashtags = '';
+        $social   = $kind === 'soundcloud' ? 0 : $social;
     }
 
     $errors = [];
+    if ($kind === 'soundcloud') {
+        $sc = soundcloud_url($url);
+        if ($sc === null) {
+            $errors['stream_url'] = 'Bitte die Adresse eines Tracks auf soundcloud.com eingeben, etwa https://soundcloud.com/künstler/track.';
+        }
+        $url = $sc ?? $url;
+    }
     if ($title === '' || mb_strlen($title) > 120) {
         $errors['title'] = 'Name fehlt oder ist länger als 120 Zeichen.';
     }
@@ -211,7 +253,7 @@ function station_save(array $in, ?int $id = null): array
     if ($errors) {
         throw new InputError($errors);
     }
-    $isPlaylist = (!empty($in['is_playlist']) || looks_like_playlist($url)) && $mime !== 'application/vnd.apple.mpegURL' ? 1 : 0;
+    $isPlaylist = $kind === 'stream' && (!empty($in['is_playlist']) || looks_like_playlist($url)) && $mime !== 'application/vnd.apple.mpegURL' ? 1 : 0;
     // result of a stream test the editor ran for exactly this address (optional)
     $check = $kind === 'stream' && is_array($in['check'] ?? null) && isset($in['check']['ok'])
         ? [(bool) $in['check']['ok'], clean_text((string) ($in['check']['info'] ?? '')),
@@ -250,7 +292,7 @@ function station_next_sort(): int
     return (int) q('SELECT COALESCE(MAX(sort), 0) + 1 FROM r1_stations')->fetchColumn();
 }
 
-/** Moves streams and playlists into a category ($categoryId) or to the top level (null), at the end. */
+/** Moves streams, playlists and SoundCloud tracks into a category ($categoryId) or to the top level (null), at the end. */
 function stations_assign(?int $categoryId, array $ids): void
 {
     if ($categoryId !== null && (station_find($categoryId)['kind'] ?? '') !== 'category') {
@@ -264,7 +306,8 @@ function stations_assign(?int $categoryId, array $ids): void
 
 /**
  * The entries Sonos shows at the top level ($categoryId null) or inside a category:
- * active, playlists only with tracks, categories only with something to show.
+ * active, playlists only with tracks, categories only with something to show,
+ * never SoundCloud tracks (web app only).
  * $rows: stations_all() in display order, $stats: playlist_stats().
  */
 function sonos_visible(array $rows, array $stats, ?int $categoryId): array
@@ -272,7 +315,7 @@ function sonos_visible(array $rows, array $stats, ?int $categoryId): array
     $out = [];
     foreach ($rows as $s) {
         $in = $s['category_id'] !== null ? (int) $s['category_id'] : null;
-        if (!$s['active'] || $in !== $categoryId) {
+        if (!$s['active'] || $in !== $categoryId || $s['kind'] === 'soundcloud') {
             continue;
         }
         if ($s['kind'] === 'playlist' && ($stats[(int) $s['id']]['tracks'] ?? 0) === 0) {
