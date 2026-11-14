@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.17.0 (14. November 2026)
+
+* Schickt ein Stream keinen Song mit, zeigt die Web-App stattdessen die Beschreibung des Senders aus dem Admin: im Player unter dem Namen, im angedockten Player und in der Liste statt „Live“ und auf dem Sperrbildschirm. Sie erscheint erst, wenn der Server geantwortet hat, damit bei Sendern mit Songs nicht kurz die Beschreibung aufblitzt. Ohne Beschreibung bleibt es bei „Live“
+
 ## 1.16.1 (13. November 2026)
 
 * Die englische Seite ist jetzt ganz englisch: Status (Ready, Connecting, Live, Paused, No connection), „All stations“, „About the station“, die Tastenkürzel im Fragezeichen, Hinweise, Website und fehlende Beschreibung im Info-Fenster sowie die Vorlesetexte für Screenreader. Die Texte stehen in `app/webapp.php`, die des Skripts kommen über die Seitendaten. Nur die Senderbeschreibungen gibt es weiter nur einmal
