@@ -188,12 +188,11 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .kicker { margin: 0; font-size: 14px; color: var(--muted); }
 .stage-name { margin: 0; font-size: 54px; line-height: 1.02; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
 .stage-name.is-long { font-size: 42px; }
-/* "About the station" as a small round button right after the name, on the middle of its
-   first line: the button takes the name's font size, so 1em is the size of that line */
-.name-row { display: flex; align-items: flex-start; gap: 16px; }
+/* "About the station" as a small round button right after the name, in the middle of the
+   name's height, also when it takes two lines */
+.name-row { display: flex; align-items: center; gap: 16px; }
 .name-row .stage-name { min-width: 0; }
-.ic-info { width: 40px; height: 40px; font-size: 54px; margin-top: calc((1.02em - 40px) / 2); }
-.stage-name.is-long + .ic-info { font-size: 42px; }
+.ic-info { width: 40px; height: 40px; }
 .controls { display: flex; align-items: center; gap: 18px; }
 .secondary { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .volume { display: flex; align-items: center; gap: 10px; }
@@ -303,6 +302,17 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .tip::after { content: ""; position: absolute; top: 50%; left: 100%; transform: translateY(-50%); border: 5px solid transparent; border-left-color: var(--tipbg); }
 @media (hover: hover) { .tipwrap:hover .tip { opacity: 1; } }
 .tipwrap:focus-within .tip { opacity: 1; }
+/* "About the station": the same tooltip, right of the button (left of it is the name, which
+   may take two lines). Without room there, in narrow windows, below the button (app.js sets
+   .below; the hidden tooltip must not widen the page either). Focus shows it only from the
+   keyboard, a click leaves the focus there when the dialog closes */
+.infowrap { position: relative; display: inline-flex; flex: none; }
+.tip-side { right: auto; left: calc(100% + 8px); }
+.tip-side::after { left: auto; right: 100%; border-left-color: transparent; border-right-color: var(--tipbg); }
+.tip-side.below { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+.tip-side.below::after { top: auto; bottom: 100%; left: 50%; right: auto; transform: translateX(-50%); border-right-color: transparent; border-bottom-color: var(--tipbg); }
+@media (hover: hover) { .infowrap:hover .tip { opacity: 1; } }
+.ic-info:focus-visible + .tip { opacity: 1; }
 .tip kbd { font-family: inherit; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgb(255 255 255 / .18); margin-right: 6px; }
 
 /* ---------- List (phones) ---------- */
@@ -447,8 +457,6 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .stage-info { width: 380px; }
   .stage-name { font-size: 44px; }
   .stage-name.is-long { font-size: 36px; }
-  .ic-info { font-size: 44px; }
-  .stage-name.is-long + .ic-info { font-size: 36px; }
 }
 
 /* ---------- Phones ---------- */

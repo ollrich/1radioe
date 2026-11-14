@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.18.3 (14. November 2026)
+
+* Desktop: Der ⓘ-Knopf neben dem Sendernamen zeigt „Über den Sender“ im selben Tooltip wie das Fragezeichen mit den Tastaturkürzeln, statt im Tooltip des Browsers. Er erscheint rechts vom Knopf, damit er keinen zweizeiligen Namen verdeckt, und nur in zu schmalen Fenstern darunter. Sichtbar beim Darüberfahren und bei Fokus per Tastatur. Screenreader lesen den Text als Namen des Knopfs
+* Der ⓘ-Knopf sitzt mittig zur Höhe des Namens, bei zweizeiligen Namen also zwischen den Zeilen statt auf der ersten
+
 ## 1.18.2 (14. November 2026)
 
 * Handy: Die Überschrift „Alle Sender“ über der Liste ist ausgeblendet, sie hatte kein Gegenstück, weil Kategorien in der Liste aufklappen. Für Screenreader bleibt sie als Überschrift der Liste
