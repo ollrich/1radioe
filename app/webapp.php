@@ -13,7 +13,7 @@ declare(strict_types=1);
  */
 function webapp_levels(): array
 {
-    $catalog = public_catalog();
+    $catalog = public_catalog(true);
     $levels  = ['root' => []];
     $root    = [];
     foreach ($catalog['stations'] as $e) {
@@ -41,10 +41,25 @@ function webapp_levels(): array
     return $levels;
 }
 
-/** One station for the web app. $e: an entry of public_catalog()['stations']. */
+/** One station or SoundCloud track for the web app. $e: an entry of public_catalog()['stations']. */
 function webapp_station(array $e): array
 {
-    $r   = $e['row'];
+    $r = $e['row'];
+    if ($r['kind'] === 'soundcloud') {
+        // plays in SoundCloud's widget; the address is the track page on soundcloud.com
+        return [
+            'id'       => $r['smapi_id'],
+            'type'     => 'soundcloud',
+            'name'     => $r['title'],
+            'num'      => sprintf('%02d', $e['sort']),
+            'logo'     => logo_url($r['logo']),
+            'desc'     => $r['description'],
+            'website'  => $r['stream_url'],
+            'url'      => $r['stream_url'],
+            'https'    => true,
+            'category' => $e['category']['smapi_id'] ?? null,
+        ];
+    }
     $url = station_playback_url($r);
     return [
         'id'       => $r['smapi_id'],
@@ -117,6 +132,10 @@ function webapp_strings(string $lang): array
         'and'         => 'und',
         'listen_on'   => 'Hören wird erfasst',
         'listen_title' => 'Nur für dich sichtbar: Dein Hören in diesem Browser wird als Hörstatus erfasst (%s).',
+        'sc_title'    => 'Spielt über SoundCloud',
+        'sc_text'     => 'Der Player von SoundCloud lädt erst nach deinem Klick. Dann setzt SoundCloud Cookies und erfährt deine IP-Adresse.',
+        'sc_more'     => 'Mehr dazu',
+        'sc_load'     => 'SoundCloud laden',
         'unreachable' => 'Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.',
         'no_stations' => 'Noch keine Sender.',
         'idle'        => 'Bereit',
@@ -155,6 +174,10 @@ function webapp_strings(string $lang): array
         'and'         => 'and',
         'listen_on'   => 'Listening is recorded',
         'listen_title' => 'Only visible to you: listening in this browser counts as the listening status (%s).',
+        'sc_title'    => 'Plays via SoundCloud',
+        'sc_text'     => "SoundCloud's player loads only after your click. SoundCloud then sets cookies and learns your IP address.",
+        'sc_more'     => 'More about it',
+        'sc_load'     => 'Load SoundCloud',
         'unreachable' => 'The stations cannot be reached right now. Please try again later.',
         'no_stations' => 'No stations yet.',
         'idle'        => 'Ready',
@@ -194,6 +217,8 @@ function webapp_script_strings(string $lang): array
             'website'  => 'Website: {host}',
             'listenOn' => 'Hören wird erfasst',
             'listenOff' => 'Erfassung pausiert',
+            'scPlaying' => 'Spielt',
+            'scFrame'   => 'Player von SoundCloud',
         ];
     }
     return [
@@ -209,6 +234,8 @@ function webapp_script_strings(string $lang): array
         'website'  => 'Website: {host}',
         'listenOn' => 'Listening is recorded',
         'listenOff' => 'Recording paused',
+        'scPlaying' => 'Playing',
+        'scFrame'   => 'SoundCloud player',
     ];
 }
 
@@ -222,7 +249,8 @@ function webapp_json(array $data): string
 function webapp_headers(): void
 {
     $media = media_origin(0);
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    // frame-src: SoundCloud's player, loaded only after a click in the web app (see app.js)
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; frame-src https://w.soundcloud.com; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     // the browser talks to the stations' servers directly; they need not know where it came from

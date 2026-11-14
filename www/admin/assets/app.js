@@ -298,10 +298,14 @@
     t.dataset.id = s.id;
     t.tabIndex = 0;
     t.setAttribute('role', 'button');
-    const kindName = { playlist: ', Playlist', category: ', Kategorie' }[s.kind] || '';
+    const kindName = { playlist: ', Playlist', category: ', Kategorie', soundcloud: ', SoundCloud' }[s.kind] || '';
     t.setAttribute('aria-label', s.title + kindName + (s.active ? '' : ', inaktiv') + (empty ? ', leer' : ''));
     const a = art(s.logo_url, s.title);
-    if (s.kind !== 'stream') {
+    if (s.kind === 'soundcloud') {
+      const kind = el('span', 'kind', '☁ SoundCloud');
+      kind.title = 'Nur in der Web-App, nicht in Sonos';
+      a.append(kind);
+    } else if (s.kind !== 'stream') {
       const icon = s.kind === 'playlist' ? '♫ ' : '▦ ';
       const kind = el('span', 'kind', icon + (empty ? 'leer' : s.kind === 'playlist' ? trackCount(size) : entryCount(size)));
       if (empty) kind.title = 'Leere Playlists und Kategorien zeigt Sonos nicht an';
@@ -333,6 +337,7 @@
     const n = (k) => list.filter((s) => s.kind === k).length;
     const parts = [`${n('stream')} Sender`];
     if (n('playlist')) parts.push(n('playlist') === 1 ? '1 Playlist' : `${n('playlist')} Playlists`);
+    if (n('soundcloud')) parts.push(n('soundcloud') === 1 ? '1 SoundCloud-Track' : `${n('soundcloud')} SoundCloud-Tracks`);
     if (n('category')) parts.push(n('category') === 1 ? '1 Kategorie' : `${n('category')} Kategorien`);
     return parts.join(', ');
   }
@@ -453,7 +458,8 @@
       box.value = s.id;
       const text = el('span', 'track-text');
       const where = s.category_id ? 'jetzt in „' + (names[s.category_id] || '?') + '“' : 'jetzt direkt in der Liste';
-      text.append(el('span', 'track-title', s.title), el('span', 'track-sub', (s.kind === 'playlist' ? 'Playlist, ' : '') + where));
+      const prefix = { playlist: 'Playlist, ', soundcloud: 'SoundCloud, ' }[s.kind] || '';
+      text.append(el('span', 'track-title', s.title), el('span', 'track-sub', prefix + where));
       label.append(box, art(s.logo_url, s.title, 'thumb'), text);
       const li = el('li');
       li.append(label);
@@ -560,14 +566,19 @@
     const isList = ed.kind !== 'stream';
     form.reset();
     clearErrors(form);
+    const isSc = ed.kind === 'soundcloud';
     $$('.stream-only', form).forEach((n) => { n.hidden = isList; });
-    $('#editor-title').textContent = s ? s.title : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie' }[ed.kind] || 'Neuer Sender');
+    $$('.sc-only', form).forEach((n) => { n.hidden = !isSc; });
+    $('#active-label').textContent = isSc ? 'Aktiv, in der Web-App sichtbar' : 'Aktiv, in Sonos sichtbar';
+    $('#editor-title').textContent = s ? s.title
+      : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie', soundcloud: 'Neuer SoundCloud-Track' }[ed.kind] || 'Neuer Sender');
     // the category field only appears when there are categories; unknown state keeps the stored one
     const hasCategories = state.stations.some((x) => x.kind === 'category');
     $('.cat-field', form).hidden = ed.kind === 'category' || !hasCategories;
     F('category_id').value = String((s ? s.category_id : categoryId) || '');
     F('title').value = s ? s.title : '';
-    F('stream_url').value = s ? s.stream_url : '';
+    F('stream_url').value = s && !isSc ? s.stream_url : '';
+    F('sc_url').value = s && isSc ? s.stream_url : '';
     F('mime').value = s && !isList ? s.mime : '';
     F('description').value = s ? s.description : '';
     F('website').value = s ? (s.website || '') : '';
@@ -575,7 +586,8 @@
     F('hashtags').value = s ? (s.hashtags || '') : '';
     F('active').checked = s ? s.active : true;
     F('is_playlist').value = s && s.is_playlist ? '1' : '0';
-    $('#smapi-id').textContent = s ? `SMAPI-ID: ${s.smapi_id} (bleibt dauerhaft gleich, Sonos speichert sie in Favoriten)` : '';
+    $('#smapi-id').textContent = !s ? '' : isSc ? `ID: ${s.smapi_id}, eigene Seite in der Web-App: /s/${s.smapi_id}`
+      : `SMAPI-ID: ${s.smapi_id} (bleibt dauerhaft gleich, Sonos speichert sie in Favoriten)`;
     const del = $('#delete');
     del.hidden = !s;
     del.classList.remove('confirm');
@@ -584,14 +596,14 @@
     if (s && s.check_info && !isList) setProbe(s.check_ok, 'Letzter Test: ' + s.check_info);
     setHttps(s && !isList ? s.https_ok : null);
     stationImage.reset(s && s.has_logo ? s.logo_url : null);
-    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : 'Kein Logo';
+    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : isSc ? 'Kein Cover' : 'Kein Logo';
     updateCount();
     dialog.showModal();
-    F('title').focus();
+    (isSc && !s ? F('sc_url') : F('title')).focus();
   }
 
   function deleteLabel() {
-    return { playlist: 'Playlist löschen', category: 'Kategorie löschen' }[ed.kind] || 'Löschen';
+    return { playlist: 'Playlist löschen', category: 'Kategorie löschen', soundcloud: 'Track löschen' }[ed.kind] || 'Löschen';
   }
 
   function closeEditor() {
@@ -646,7 +658,7 @@
     btn.disabled = true;
     try {
       const isNew = !ed.station;
-      const url = F('stream_url').value.trim();
+      const url = (ed.kind === 'soundcloud' ? F('sc_url') : F('stream_url')).value.trim();
       const data = {
         id: ed.station ? ed.station.id : null,
         kind: ed.kind,
@@ -670,9 +682,11 @@
       closeEditor();
       toast('Gespeichert');
       const own = '#' + station.kind + '/' + station.id;
-      if (station.kind !== 'stream' && isNew && location.hash !== own) location.hash = own;
+      if ((station.kind === 'playlist' || station.kind === 'category') && isNew && location.hash !== own) location.hash = own;
       else refreshView();
     } catch (err) {
+      // the address of a SoundCloud track has its own field
+      if (ed.kind === 'soundcloud' && err.fields && err.fields.stream_url) err.fields.sc_url = err.fields.stream_url;
       showErrors(form, err);
       toast(err.message, 'error');
     } finally {
@@ -689,6 +703,7 @@
       toast({
         playlist: 'Playlist gelöscht, die Tracks bleiben in der Bibliothek',
         category: 'Kategorie gelöscht, ihre Einträge stehen wieder direkt in der Liste',
+        soundcloud: 'SoundCloud-Track gelöscht',
       }[ed.kind] || 'Sender gelöscht');
       if (location.hash === '#' + ed.kind + '/' + ed.station.id) location.hash = '#stations';
       else refreshView();
@@ -1597,8 +1612,10 @@
   $('#add-station').addEventListener('click', () => openEditor(null, 'stream'));
   $('#add-playlist').addEventListener('click', () => openEditor(null, 'playlist'));
   $('#add-category').addEventListener('click', () => openEditor(null, 'category'));
+  $('#add-soundcloud').addEventListener('click', () => openEditor(null, 'soundcloud'));
   $('#cat-edit').addEventListener('click', () => openEditor(state.category));
   $('#cat-add').addEventListener('click', () => openEditor(null, 'stream', state.category.id));
+  $('#cat-add-sc').addEventListener('click', () => openEditor(null, 'soundcloud', state.category.id));
   $('#cat-pick').addEventListener('click', openStationPicker);
   $$('[data-close]', stPicker).forEach((b) => b.addEventListener('click', () => stPicker.close()));
   $('#st-picker-form').addEventListener('submit', assignPicked);

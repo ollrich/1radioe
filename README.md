@@ -89,6 +89,12 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App. Leere Playlists und Tracks, deren Datei fehlt, zeigt Sonos nicht an.
 * Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
 
+### SoundCloud
+
+* **Anlegen:** „SoundCloud hinzufügen“ (oben oder in einer Kategorie) mit dem Link zum Track auf soundcloud.com. Kurzlinks aus der App (`on.soundcloud.com`) löst der Server beim Speichern auf, Tracking-Parameter wie `?si=` fallen weg. Name, Cover und Beschreibung legst du selbst fest, sie kommen nicht von SoundCloud. Sortieren, deaktivieren und Kategorien wie bei Sendern.
+* **Nur in der Web-App:** Sonos, `streams.m3u` und `stations.json` lassen SoundCloud-Tracks aus. Eine Kategorie nur mit SoundCloud gibt es deshalb nur in der Web-App. Grund sind die API-Bedingungen von SoundCloud: Sie verbieten Radio-Apps und eigene Angebote, die Inhalte vieler Nutzer bündeln. Erlaubt ist das Einbetten des offiziellen Players.
+* **Kein Hörstatus und kein Posting** für SoundCloud.
+
 ## Web-App
 
 `https://1radioe.net/` zeigt alle aktiven Sender, keine MP3-Playlists.
@@ -103,7 +109,8 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **HLS** (`.m3u8`, etwa die BBC): Safari, Chrome und die Browser auf dem Handy spielen das selbst. Firefox kann es nicht, dort lädt die Web-App [hls.js](https://github.com/video-dev/hls.js) von diesem Server nach, nur für HLS-Sender und nur in Browsern ohne eigene HLS-Wiedergabe. hls.js holt Playlist und Stücke direkt beim Sender. Dafür erlaubt die Sicherheitsrichtlinie der Seite (CSP) Abrufe an `https:`-Adressen und `blob:` als Quelle für Ton. Ohne Worker, weil der `blob:`-Skripte bräuchte.
 * **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. Schickt ein Stream keinen Titel (so auch HLS-Streams), steht an dessen Stelle die Beschreibung des Senders aus dem Admin, ohne Beschreibung nur „Live“. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
 * **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Olli hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
-* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen. Nur Ollis gemerkter Browser hat das Hör-Cookie.
+* **SoundCloud:** Ein SoundCloud-Eintrag spielt im offiziellen Player von SoundCloud (Widget, iframe von `w.soundcloud.com`). Erst steht dort ein Hinweis mit „SoundCloud laden“, der Player lädt erst nach diesem Klick, denn ab dann setzt SoundCloud Cookies. Die Zustimmung gilt nur für den Besuch und wird nicht gespeichert. Am Desktop steht der Player auf der Bühne, auf dem Handy im großen Player. Play, Pause, Vor und Zurück, Leertaste und Lautstärke steuern ihn über `postMessage` (Protokoll der Widget-API, ohne SoundClouds Skript zu laden). Ist ein Track zu Ende, folgt der nächste Eintrag der Liste, wenn er auch von SoundCloud ist. Status „Spielt“ statt „Live“. Die Sicherheitsrichtlinie erlaubt dafür `frame-src https://w.soundcloud.com`. Auf dem Handy kann der Browser den Start von außen verweigern, dann öffnet sich der große Player und ein Tipp auf Play im Player von SoundCloud startet ihn.
+* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen, außer SoundCloud nach dem Klick. Nur Ollis gemerkter Browser hat das Hör-Cookie.
 * **Menü:** Der Burger oben rechts öffnet auf dem Handy und am Desktop ein Menü mit Über, Impressum, Datenverarbeitung und dem Sprachumschalter. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop ist es breiter (520 px). Links unten gibt es nur ohne JavaScript. Der Sprachumschalter nimmt den Sender im Player mit. Die Texte kommen aus dem Admin (Reiter „Texte“).
 * **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenverarbeitung als Abschnitte.
 
@@ -111,7 +118,7 @@ Impressum und Datenverarbeitung haben als Standard Platzhalter in eckigen Klamme
 
 ## Playlist-Dateien und App-Schnittstelle
 
-Alle aktiven Sender, nie MP3-Playlists oder Tracks. Die Reihenfolge ist die des Admins: die oberste Ebene wie in Sonos, die Sender einer Kategorie an der Stelle der Kategorie. Eine inaktive Kategorie blendet ihre Sender aus.
+Alle aktiven Sender, nie MP3-Playlists, Tracks oder SoundCloud. Die Reihenfolge ist die des Admins: die oberste Ebene wie in Sonos, die Sender einer Kategorie an der Stelle der Kategorie. Eine inaktive Kategorie blendet ihre Sender aus.
 
 | Adresse | Inhalt |
 |---|---|

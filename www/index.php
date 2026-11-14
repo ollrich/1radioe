@@ -56,7 +56,7 @@ foreach (array_keys(TEXT_NAMES) as $name) {
 $start = null;
 foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
     foreach ($list as $item) {
-        if ($item['type'] === 'station' && $item['id'] === $sid) {
+        if ($item['type'] !== 'category' && $item['id'] === $sid) {
             $start = $item;
             break 2;
         }
@@ -95,6 +95,16 @@ function nojs_list(array $levels): string
         }
     }
     return '<ul class="nojs-list">' . $html . '</ul>';
+}
+
+/** Place for SoundCloud's player: first a note with a button, the player only after the click. */
+function sc_slot(string $where, array $L): string
+{
+    return '<div class="sc-slot" data-sc-slot="' . $where . '" hidden><div class="sc-card" data-sc-card>'
+        . '<p class="sc-title">' . h($L['sc_title']) . '</p>'
+        . '<p class="sc-text">' . h($L['sc_text']) . ' <a href="#datenverarbeitung" data-sc-more>' . h($L['sc_more']) . '</a></p>'
+        . '<button type="button" class="sc-load" data-sc-load>' . h($L['sc_load']) . '</button>'
+        . '</div></div>';
 }
 
 $close = '<button type="button" class="close" data-close aria-label="' . h($L['close']) . '"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg></button>';
@@ -160,6 +170,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         <p class="kicker" data-r1="kicker" hidden></p>
         <h2 class="disp stage-name" data-r1="name"></h2>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
+        <?= sc_slot('stage', $L) ?>
         <p class="state" role="status"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
           <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
@@ -232,6 +243,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
     <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
+    <?= sc_slot('sheet', $L) ?>
     <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
       <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>

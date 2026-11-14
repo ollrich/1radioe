@@ -5,7 +5,8 @@
  * Only streams: MP3 playlists and tracks stay in Sonos, publishing bought music is not
  * an option. Everything active appears, in the order of the admin and of Sonos: the
  * top level as it is, a category's streams where the category stands. An inactive
- * category hides its streams, like in Sonos.
+ * category hides its streams, like in Sonos. The web app also asks for SoundCloud
+ * tracks ($soundcloud), the playlist file and stations.json do not.
  */
 declare(strict_types=1);
 
@@ -17,8 +18,9 @@ declare(strict_types=1);
  *   (top-level streams and categories share one sequence of positions).
  * Stations come in listening order: what Sonos shows, categories opened in place.
  */
-function public_catalog(): array
+function public_catalog(bool $soundcloud = false): array
 {
+    $kinds    = $soundcloud ? ['stream', 'soundcloud'] : ['stream'];
     $byParent = [];
     foreach (stations_all(true) as $r) {
         $byParent[$r['category_id'] !== null ? (int) $r['category_id'] : 0][] = $r;
@@ -27,12 +29,12 @@ function public_catalog(): array
     $categories = [];
     $pos        = 0;
     foreach ($byParent[0] ?? [] as $r) {
-        if ($r['kind'] === 'stream') {
+        if (in_array($r['kind'], $kinds, true)) {
             $stations[] = ['row' => $r, 'category' => null, 'sort' => ++$pos];
         } elseif ($r['kind'] === 'category') {
-            $inner = array_values(array_filter($byParent[(int) $r['id']] ?? [], static fn($x) => $x['kind'] === 'stream'));
+            $inner = array_values(array_filter($byParent[(int) $r['id']] ?? [], static fn($x) => in_array($x['kind'], $kinds, true)));
             if (!$inner) {
-                continue;   // empty, or holds playlists only
+                continue;   // empty, or holds nothing for this list
             }
             $categories[] = ['row' => $r, 'sort' => ++$pos];
             foreach ($inner as $i => $x) {
