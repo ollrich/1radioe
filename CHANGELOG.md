@@ -3,6 +3,7 @@
 ## 1.18.2 (14. November 2026)
 
 * Handy: Die Überschrift „Alle Sender“ über der Liste ist ausgeblendet, sie hatte kein Gegenstück, weil Kategorien in der Liste aufklappen. Für Screenreader bleibt sie als Überschrift der Liste
+* Desktop: „Über den Sender“ ist jetzt ein kleiner runder ⓘ-Knopf direkt neben dem Sendernamen, wie oben rechts im großen Player auf dem Handy. Die Pille unter dem Player entfällt, dort steht nur noch die Lautstärke
 
 ## 1.18.1 (14. November 2026)
 
