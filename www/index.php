@@ -169,7 +169,10 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
       </div>
       <div class="stage-info">
         <p class="kicker" data-r1="kicker" hidden></p>
-        <h2 class="disp stage-name" data-r1="name"></h2>
+        <div class="name-row">
+          <h2 class="disp stage-name" data-r1="name"></h2>
+          <button type="button" class="ic ic-info" data-act="info" aria-label="<?= h($L['station_info']) ?>" title="<?= h($L['station_info']) ?>"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg></button>
+        </div>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
         <?= sc_slot('stage', $L) ?>
         <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
@@ -184,7 +187,6 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
             <span class="sr"><?= h($L['volume']) ?></span>
             <input type="range" min="0" max="100" step="1" value="80" data-r1="volume">
           </label>
-          <button type="button" class="pillbtn" data-act="info"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg><?= h($L['station_info']) ?></button>
         </div>
       </div>
     </section>
