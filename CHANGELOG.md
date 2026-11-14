@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.18.2 (14. November 2026)
+
+* Handy: Die Überschrift „Alle Sender“ über der Liste ist ausgeblendet, sie hatte kein Gegenstück, weil Kategorien in der Liste aufklappen. Für Screenreader bleibt sie als Überschrift der Liste
+
 ## 1.18.1 (14. November 2026)
 
 **Tastatur und Screenreader**

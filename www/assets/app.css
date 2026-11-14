@@ -453,7 +453,9 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { justify-content: flex-start; gap: 0; }
   .stage, .picker-head, .scale-row { display: none; }
-  .list-title { display: block; }
+  /* "Alle Sender" has no counterpart on phones (categories open in place):
+     only screen readers keep it, as the heading of the list */
+  .list-title { display: block; position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .list { display: flex; }
 }
 @media (min-width: 761px) {
