@@ -46,6 +46,7 @@
     active: new Set(),   // stations Ollie is listening to
     openCat: null,       // open category in the phone list
     retry: 0,
+    touched: false,      // the visitor started something: from now on changes are announced
   };
   const isPlaying = () => state.phase === 'live' || state.phase === 'connecting';
   // SoundCloud is not live radio: "Spielt" instead of "Live"
@@ -355,6 +356,8 @@
     });
     $$('[data-r1="kicker"]').forEach((n) => { n.textContent = cat ? cat.name : ''; n.hidden = !cat; });
     $$('[data-r1="level"]').forEach((n) => { n.textContent = cat ? cat.name : T.all; });
+    // SoundCloud's player has its own buttons: the stage and the full player hide theirs
+    document.documentElement.classList.toggle('sc-cur', isSc(it));
     setMediaMetadata();
   }
 
@@ -375,6 +378,20 @@
     document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ` : '1radiœ';
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
     renderTrack();
+    announce();
+  }
+
+  /* Screen readers hear every change in one polite announcement: the station and its
+     state, only the state while the station stays the same. Nothing at page load. */
+  const announcer = $('[data-r1="announce"]');
+  const said = { id: null, phase: '' };
+  function announce() {
+    if (!announcer || !state.cur || !state.touched) return;
+    const phase = phaseText(state.phase);
+    if (said.id === state.cur.id && said.phase === phase) return;   // e.g. a second connection attempt
+    announcer.textContent = said.id === state.cur.id ? phase : `${state.cur.name}, ${phase}`;
+    said.id = state.cur.id;
+    said.phase = phase;
   }
 
   /* ---------- Audio ---------- */
@@ -454,14 +471,18 @@
   }
 
   function play(it, level) {
+    state.touched = true;
     if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
     const fromSc = isSc(state.cur);
+    // the buttons disappear for SoundCloud; a keyboard focus on them must not get lost
+    const focusOnButtons = document.activeElement instanceof Element && Boolean(document.activeElement.closest('.controls'));
     state.cur = it;
     state.curLevel = level;
     renderPlayer();
     if (isSc(it)) {
       hangUp();          // the radio stops, SoundCloud plays in its own player
       scShow(it, true);
+      if (focusOnButtons) scFocus();
     } else {
       if (fromSc) scClose();
       connect(true);
@@ -522,6 +543,7 @@
   }
 
   function toggle() {
+    state.touched = true;
     if (!state.cur) {
       const first = stationsOf('root').find((x) => x.type === 'station') || [...items.values()].find((x) => x.type === 'station');
       if (first) play(first, first.level);
@@ -591,7 +613,10 @@
   } catch { /* storage blocked: default volume */ }
   audio.volume = volume / 100;
   // the waves at the speaker follow the volume (app.css, .vol-ic)
-  const showVolume = () => $$('[data-volume]').forEach((n) => n.style.setProperty('--v', String(volume / 100)));
+  const showVolume = () => {
+    $$('[data-volume]').forEach((n) => n.style.setProperty('--v', String(volume / 100)));
+    $$('[data-r1="volume"]').forEach((n) => n.setAttribute('aria-valuetext', `${volume} %`));
+  };
   $$('[data-volume]').forEach((n) => { n.hidden = !canVolume; });
   showVolume();
   $$('[data-r1="volume"]').forEach((input) => {
@@ -697,6 +722,14 @@
     }, 6000);
   }
 
+  /** Focus into the place of the player: its load button, or the place itself (arrows keep working). */
+  function scFocus() {
+    const slot = scSlot();
+    if (slot.hidden || !slot.offsetParent) return;   // phones: the full player is closed
+    const b = $('[data-sc-load]', slot);
+    (b && !b.closest('[hidden]') ? b : slot).focus();
+  }
+
   /** Play without permission yet: point at the button that loads the player. */
   function scAsk() {
     if (phone.matches) openDialog('sheet');
@@ -757,8 +790,10 @@
   });
 
   $$('[data-sc-load]').forEach((b) => b.addEventListener('click', () => {
+    const hadFocus = document.activeElement === b;   // the button goes away with the note
     sc.ok = true;
     if (isSc(state.cur)) scLoad(state.cur, true);
+    if (hadFocus) scFocus();
   }));
   $$('[data-sc-more]').forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault();
@@ -1101,7 +1136,9 @@
     if (k === 'ArrowRight' || k === 'ArrowLeft') {
       e.preventDefault();
       step(k === 'ArrowRight' ? 1 : -1);
-    } else if (/^[0-9]$/.test(k)) {
+    } else if (/^[0-9]$/.test(k) && t && t.closest('main')) {
+      // a single character as a shortcut works only while the focus is in the player or
+      // the station picker (WCAG 2.1.4): speech input would otherwise start stations
       const it = (levels[state.view] || [])[k === '0' ? 9 : Number(k) - 1];
       if (it) {
         e.preventDefault();
