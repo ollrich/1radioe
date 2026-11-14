@@ -8,6 +8,7 @@
 * Screenreader hören jetzt, welcher Sender läuft: Eine Statusmeldung außerhalb von Bühne und großem Player sagt Sender und Zustand an („FIP, Verbindet“, dann „Live“), bei gleichem Sender nur den Zustand, einen zweiten Verbindungsversuch nicht doppelt. Beim Laden der Seite bleibt sie still. Bisher kam nur der Zustand, und auf dem Handy gar nichts, weil die Bühne dort ausgeblendet ist
 * Der Lautstärkeregler nennt seinen Wert in Prozent (`aria-valuetext`)
 * Der versteckte Text am Logo („1radiœ, Startseite“) ist auf der englischen Seite jetzt Englisch
+* SoundCloud: Bühne und großer Player blenden Zurück, Play/Pause und Vor aus, der Player von SoundCloud hat eigene Knöpfe. Der angedockte Player auf dem Handy behält seine. Leertaste und Pfeiltasten wirken weiter. Stand der Fokus auf den ausgeblendeten Knöpfen, wandert er zum Knopf „SoundCloud laden“ oder auf den Platz des Players
 
 ## 1.18.0 (14. November 2026)
 

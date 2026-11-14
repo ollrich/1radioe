@@ -100,7 +100,7 @@ function nojs_list(array $levels): string
 /** Place for SoundCloud's player: first a note with a button, the player only after the click. */
 function sc_slot(string $where, array $L): string
 {
-    return '<div class="sc-slot" data-sc-slot="' . $where . '" hidden><div class="sc-card" data-sc-card>'
+    return '<div class="sc-slot" data-sc-slot="' . $where . '" tabindex="-1" hidden><div class="sc-card" data-sc-card>'
         . '<p class="sc-title">' . h($L['sc_title']) . '</p>'
         . '<p class="sc-text">' . h($L['sc_text']) . ' <a href="#datenverarbeitung" data-sc-more>' . h($L['sc_more']) . '</a></p>'
         . '<button type="button" class="sc-load" data-sc-load>' . h($L['sc_load']) . '</button>'
