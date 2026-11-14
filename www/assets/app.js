@@ -327,7 +327,9 @@
       const cur = Boolean(state.cur && state.cur.id === it.id && state.phase !== 'idle');
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
-      sub.textContent = it.type === 'category' ? countText(it.count) : cur ? (trackLine(currentTrack()) || TEXT[state.phase]) : (it.desc || '');
+      sub.textContent = it.type === 'category' ? countText(it.count)
+        : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || TEXT[state.phase])
+        : (it.desc || '');
       // an open category shows the status at the station inside, not twice
       pill.hidden = !isActive(it) || (it.type === 'category' && state.openCat === it.id);
     }
@@ -582,7 +584,7 @@
     const t = currentTrack();
     media.metadata = new MediaMetadata({
       title: t ? t.title : it.name,
-      artist: t ? (t.artist || it.name) : '1radiœ',
+      artist: t ? (t.artist || it.name) : (currentDesc() || '1radiœ'),
       album: t ? it.name : (cat ? cat.name : ''),
       artwork: it.logo ? [{ src: it.logo, sizes: '600x600', type }] : [],
     });
@@ -931,13 +933,24 @@
     return t ? (t.artist ? `${t.artist} · ${t.title}` : t.title) : '';
   }
 
+  /** Without a song: the station's description from the admin. Only once the server
+   *  answered for this station, so a station with songs does not show it first. */
+  function currentDesc() {
+    const it = state.cur;
+    return isPlaying() && it && now.id === it.id && !now.track ? (it.desc || '') : '';
+  }
+
   function renderTrack() {
     const t = currentTrack();
-    $$('[data-r1="track"]').forEach((n) => { n.hidden = !t; n.title = trackLine(t); });
-    $$('[data-r1="track-title"]').forEach((n) => { n.textContent = t ? t.title : ''; });
-    $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : ''; n.hidden = !(t && t.artist); });
-    // the docked player has one line: the song instead of "Live"
-    $$('.mini [data-r1="state"]').forEach((n) => { n.textContent = t && state.phase === 'live' ? trackLine(t) : TEXT[state.phase]; });
+    const desc = t ? '' : currentDesc();
+    $$('[data-r1="track"]').forEach((n) => { n.hidden = !t && !desc; n.title = trackLine(t) || desc; });
+    $$('[data-r1="track-title"]').forEach((n) => { n.textContent = t ? t.title : ''; n.hidden = !t; });
+    // the description takes the quieter line of the artist
+    $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : desc; n.hidden = !(t ? t.artist : desc); });
+    // the docked player has one line: the song or the description instead of "Live"
+    $$('.mini [data-r1="state"]').forEach((n) => {
+      n.textContent = state.phase === 'live' && (t || desc) ? (trackLine(t) || desc) : TEXT[state.phase];
+    });
     setMediaMetadata();
     updateIndicators();
   }
