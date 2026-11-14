@@ -168,7 +168,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         </div>
         <div class="secondary">
           <label class="volume" data-volume>
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.5L12 5v14l-4.5-4H4zM15.5 9.2l1.1-1.1a5.5 5.5 0 0 1 0 7.8l-1.1-1.1a4 4 0 0 0 0-5.6z"/></svg>
+            <svg class="vol-ic" width="25" height="22" viewBox="0 0 27 24" aria-hidden="true"><path d="M2 9h3.5L10 5v14l-4.5-4H2z"/><g class="waves" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M13.28 9.12A4 4 0 0 1 13.28 14.88"/><path d="M15.9 6.79A7.5 7.5 0 0 1 15.9 17.21"/><path d="M18.67 4.64A11 11 0 0 1 18.67 19.36"/><path d="M21.61 2.68A14.5 14.5 0 0 1 21.61 21.32"/></g></svg>
             <span class="sr"><?= h($L['volume']) ?></span>
             <input type="range" min="0" max="100" step="1" value="80" data-r1="volume">
           </label>

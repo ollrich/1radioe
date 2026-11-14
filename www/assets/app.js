@@ -564,12 +564,16 @@
     if (saved !== null && saved !== '' && !Number.isNaN(Number(saved))) volume = Math.min(100, Math.max(0, Number(saved)));
   } catch { /* storage blocked: default volume */ }
   audio.volume = volume / 100;
+  // the waves at the speaker follow the volume (app.css, .vol-ic)
+  const showVolume = () => $$('[data-volume]').forEach((n) => n.style.setProperty('--v', String(volume / 100)));
   $$('[data-volume]').forEach((n) => { n.hidden = !canVolume; });
+  showVolume();
   $$('[data-r1="volume"]').forEach((input) => {
     input.value = String(volume);
     input.addEventListener('input', () => {
       volume = Number(input.value);
       audio.volume = volume / 100;
+      showVolume();
       try { localStorage.setItem('r1.volume', String(volume)); } catch { /* not remembered */ }
     });
   });

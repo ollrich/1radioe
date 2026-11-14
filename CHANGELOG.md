@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.17.1 (14. November 2026)
+
+* Lautstärke am Desktop: Am Lautsprecher-Symbol stehen jetzt vier Schallwellen, je eine für ein Viertel der Lautstärke. Beim Ziehen am Regler wird die nächste Welle sichtbar und wächst ein Stück aus dem Lautsprecher heraus, die übrigen bleiben als blasser Umriss. Ohne Inline-Stile, die Sicherheitsrichtlinie der Seite bleibt, wie sie ist
+
 ## 1.17.0 (14. November 2026)
 
 * Schickt ein Stream keinen Song mit, zeigt die Web-App stattdessen die Beschreibung des Senders aus dem Admin: im Player unter dem Namen, im angedockten Player und in der Liste statt „Live“ und auf dem Sperrbildschirm. Sie erscheint erst, wenn der Server geantwortet hat, damit bei Sendern mit Songs nicht kurz die Beschreibung aufblitzt. Ohne Beschreibung bleibt es bei „Live“

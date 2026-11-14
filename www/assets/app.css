@@ -192,6 +192,20 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .secondary { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .volume { display: flex; align-items: center; gap: 10px; }
 .volume input { width: 150px; accent-color: var(--fg); }
+/* four waves at the speaker, one per quarter of the volume: each fades in and grows
+   from the speaker while its quarter fills, the others stay as a faint outline */
+.vol-ic .waves path {
+  --o: clamp(0, calc(var(--v, .8) * 4 - var(--i)), 1);
+  opacity: calc(.18 + .82 * var(--o));
+  transform: scale(calc(.82 + .18 * var(--o)));
+  transform-origin: 10.5px 12px;
+  transition: opacity .12s ease-out, transform .12s ease-out;
+}
+.vol-ic .waves path:nth-child(1) { --i: 0; }   /* in CSS, the page allows no inline styles */
+.vol-ic .waves path:nth-child(2) { --i: 1; }
+.vol-ic .waves path:nth-child(3) { --i: 2; }
+.vol-ic .waves path:nth-child(4) { --i: 3; }
+@media (prefers-reduced-motion: reduce) { .vol-ic .waves path { transition: none; } }
 
 /* ---------- Scale ---------- */
 
