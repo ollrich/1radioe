@@ -358,8 +358,18 @@
     $$('[data-r1="level"]').forEach((n) => { n.textContent = cat ? cat.name : T.all; });
     // SoundCloud's player has its own buttons: the stage and the full player hide theirs
     document.documentElement.classList.toggle('sc-cur', isSc(it));
+    placeInfoTip();   // the button moves with the length of the name
     setMediaMetadata();
   }
+
+  /** The tooltip of "About the station" goes right of the button, below it if the window is too narrow. */
+  function placeInfoTip() {
+    const tip = $('#r1-info-tip');
+    if (!tip || !tip.offsetParent) return;   // the stage is hidden on phones
+    const button = tip.parentElement.getBoundingClientRect();
+    tip.classList.toggle('below', button.right + 8 + tip.offsetWidth > document.documentElement.clientWidth - 8);
+  }
+  window.addEventListener('resize', placeInfoTip, { passive: true });
 
   function setPhase(phase) {
     state.phase = phase;

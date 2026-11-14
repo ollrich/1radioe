@@ -171,7 +171,10 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         <p class="kicker" data-r1="kicker" hidden></p>
         <div class="name-row">
           <h2 class="disp stage-name" data-r1="name"></h2>
-          <button type="button" class="ic ic-info" data-act="info" aria-label="<?= h($L['station_info']) ?>" title="<?= h($L['station_info']) ?>"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg></button>
+          <span class="infowrap">
+            <button type="button" class="ic ic-info" data-act="info" aria-labelledby="r1-info-tip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4zM11 10h2v7h-2zm0-3h2v2h-2z"/></svg></button>
+            <span class="tip tip-side" role="tooltip" id="r1-info-tip"><?= h($L['station_info']) ?></span>
+          </span>
         </div>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
         <?= sc_slot('stage', $L) ?>
