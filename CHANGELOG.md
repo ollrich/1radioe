@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.18.4 (14. November 2026)
+
+* Die Beschreibung des Senders steht immer unter dem Namen, auch vor dem Abspielen und beim Pausieren, auf der Bühne und im großen Player. Sobald der Stream einen Song meldet, ersetzen Titel und Interpret sie. Bisher erschien sie erst beim Spielen und nur bei Sendern ohne Song
+
 ## 1.18.3 (14. November 2026)
 
 * Desktop: Der ⓘ-Knopf neben dem Sendernamen zeigt „Über den Sender“ im selben Tooltip wie das Fragezeichen mit den Tastaturkürzeln, statt im Tooltip des Browsers. Er erscheint rechts vom Knopf, damit er keinen zweizeiligen Namen verdeckt, und nur in zu schmalen Fenstern darunter. Sichtbar beim Darüberfahren und bei Fokus per Tastatur. Screenreader lesen den Text als Namen des Knopfs

@@ -1182,12 +1182,9 @@
     return t ? (t.artist ? `${t.artist} · ${t.title}` : t.title) : '';
   }
 
-  /** Without a song: the station's description from the admin. Only once the server
-   *  answered for this station, so a station with songs does not show it first. */
+  /** The station's description from the admin: always under the name, until a song replaces it. */
   function currentDesc() {
-    const it = state.cur;
-    if (isSc(it)) return isPlaying() ? (it.desc || '') : '';
-    return isPlaying() && it && now.id === it.id && !now.track ? (it.desc || '') : '';
+    return state.cur ? (state.cur.desc || '') : '';
   }
 
   function renderTrack() {
