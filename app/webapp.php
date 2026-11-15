@@ -147,7 +147,7 @@ function webapp_strings(string $lang): array
         'sc_more'     => 'Mehr dazu',
         'sc_load'     => 'SoundCloud laden',
         'dz_kicker'   => 'Playlist bei Deezer',
-        'dz_text'     => 'Diese Playlist spielt nicht hier, sondern bei Deezer. Der Knopf öffnet sie in einem neuen Tab oder in der Deezer-App.',
+        'dz_text'     => 'Diese Playlist spielt nicht hier, sondern bei Deezer. Der Button öffnet sie in einem neuen Tab oder in der Deezer-App.',
         'dz_transfer' => 'Hörst du mit einem anderen Dienst? Bei Deezer kannst du die Playlist auch in deine Musik-App exportieren, etwa zu Spotify, YouTube Music oder Apple Music.',
         'dz_go'       => 'Zu Deezer',
         'unreachable' => 'Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.',
