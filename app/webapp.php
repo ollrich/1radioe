@@ -46,7 +46,12 @@ function webapp_station(array $e): array
 {
     $r = $e['row'];
     if ($r['kind'] === 'soundcloud' || $r['kind'] === 'deezer') {
-        // SoundCloud plays in its widget, Deezer only opens: the address is the page there
+        // SoundCloud plays in its widget, Deezer only opens: the address is the page there.
+        // Deezer shows its "Export playlist" offer (Spotify, YouTube Music, Apple Music) only
+        // with universal_link=1, which share links carry; the stored address stays plain.
+        $url = $r['kind'] === 'deezer'
+            ? $r['stream_url'] . (str_contains($r['stream_url'], '?') ? '&' : '?') . 'universal_link=1'
+            : $r['stream_url'];
         return [
             'id'       => $r['smapi_id'],
             'type'     => $r['kind'],
@@ -54,8 +59,8 @@ function webapp_station(array $e): array
             'num'      => sprintf('%02d', $e['sort']),
             'logo'     => logo_url($r['logo']),
             'desc'     => $r['description'],
-            'website'  => $r['stream_url'],
-            'url'      => $r['stream_url'],
+            'website'  => $url,
+            'url'      => $url,
             'https'    => true,
             'category' => $e['category']['smapi_id'] ?? null,
         ];
@@ -138,7 +143,7 @@ function webapp_strings(string $lang): array
         'sc_load'     => 'SoundCloud laden',
         'dz_kicker'   => 'Playlist bei Deezer',
         'dz_text'     => 'Diese Playlist spielt nicht hier, sondern bei Deezer. Der Knopf öffnet sie in einem neuen Tab oder in der Deezer-App.',
-        'dz_transfer' => 'Hörst du mit einem anderen Dienst? Mit Werkzeugen wie TuneMyMusic oder Soundiiz kannst du die Playlist dorthin übertragen, sie brauchen nur ihren Link.',
+        'dz_transfer' => 'Hörst du mit einem anderen Dienst? Bei Deezer kannst du die Playlist auch in deine Musik-App exportieren, etwa zu Spotify, YouTube Music oder Apple Music.',
         'dz_go'       => 'Zu Deezer',
         'unreachable' => 'Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.',
         'no_stations' => 'Noch keine Sender.',
@@ -185,7 +190,7 @@ function webapp_strings(string $lang): array
         'sc_load'     => 'Load SoundCloud',
         'dz_kicker'   => 'Playlist on Deezer',
         'dz_text'     => 'This playlist does not play here but on Deezer. The button opens it in a new tab or in the Deezer app.',
-        'dz_transfer' => 'Using another service? Tools such as TuneMyMusic or Soundiiz can transfer the playlist there, all they need is its link.',
+        'dz_transfer' => 'Using another service? On Deezer you can also export the playlist to your music app, such as Spotify, YouTube Music or Apple Music.',
         'dz_go'       => 'Open Deezer',
         'unreachable' => 'The stations cannot be reached right now. Please try again later.',
         'no_stations' => 'No stations yet.',

@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.19.1 (15. November 2026)
+
+* Deezer: Der Link aus der Web-App trägt wieder `universal_link=1`. Nur damit zeigt Deezer auf der Playlist-Seite „Playlist exportieren“ (zu Spotify, YouTube Music, Apple Music), das Bereinigen in 1.19.0 hatte das Angebot verschwinden lassen. Angehängt wird beim Ausliefern, gespeichert bleibt die reine Adresse, also gilt es auch für schon angelegte Einträge. Die Nutzernummer und das Tracking bleiben weg, sie braucht es dafür nicht
+* Der Hinweis in der Web-App nennt jetzt Deezers eigenen Export statt TuneMyMusic und Soundiiz
+
 ## 1.19.0 (15. November 2026)
 
 **Deezer-Playlists und ein Globus**

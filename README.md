@@ -98,7 +98,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 ### Deezer
 
 * **Anlegen:** „Deezer hinzufügen“ (oben oder in einer Kategorie) mit dem Link zu einer Playlist, auch dem Teilen-Link aus der App (`link.deezer.com`). Der Server folgt ihm und speichert die reine Adresse `https://www.deezer.com/playlist/<id>`, ohne Tracking-Parameter und ohne die Nummer dessen, der geteilt hat. Name, Cover und Beschreibung legst du selbst fest.
-* **In der Web-App** spielt die Playlist nicht. Die Kachel trägt einen Pfeil nach außen, ein Klick öffnet einen Hinweis mit „Zu Deezer“ (neuer Tab oder Deezer-App) und dem Tipp, dass Werkzeuge wie TuneMyMusic oder Soundiiz sie in andere Dienste übertragen. Das Radio läuft dabei weiter, Vor und Zurück überspringen Deezer-Einträge.
+* **In der Web-App** spielt die Playlist nicht. Die Kachel trägt einen Pfeil nach außen, ein Klick öffnet einen Hinweis mit „Zu Deezer“ (neuer Tab oder Deezer-App) und dem Tipp, dass man sie bei Deezer in andere Musik-Apps exportieren kann. Dafür hängt die Web-App an den Link `universal_link=1`, sonst zeigt Deezer sein Angebot „Playlist exportieren“ (Spotify, YouTube Music, Apple Music) nicht. Gespeichert bleibt die reine Adresse. Das Radio läuft dabei weiter, Vor und Zurück überspringen Deezer-Einträge.
 * **Nur in der Web-App:** Sonos, `streams.m3u` und `stations.json` lassen Deezer aus. Kein Hörstatus, kein Posting.
 
 ## Web-App
