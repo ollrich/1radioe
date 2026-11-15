@@ -122,6 +122,9 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <meta name="description" content="<?= h($L['description']) ?>">
 <link rel="alternate" hreflang="en" href="<?= h(base_url()) ?>/">
 <link rel="alternate" hreflang="de" href="<?= h(base_url()) ?>/de/">
+<?php foreach (ME_LINKS as $me): ?>
+<link rel="me" href="<?= h($me) ?>">
+<?php endforeach; ?>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="<?= h(APP_NAME) ?>">
 <meta property="og:title" content="<?= h($og['title']) ?>">
