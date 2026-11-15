@@ -168,7 +168,12 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 
 /* the song from the stream, while it plays */
 .track { margin: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.track-title, .track-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-title, .track-artist { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a song stays on one line each and ends in "…"; the description wraps, at most two lines */
+.track.is-desc .track-artist {
+  white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow-wrap: break-word;
+}
 .track-title { font-size: 18px; font-weight: 640; }
 .track-artist { font-size: 16px; color: var(--muted); }
 .sheet-body .track { text-align: center; align-items: center; max-width: 100%; }

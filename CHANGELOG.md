@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.21.1 (15. November 2026)
+
+* Lange Beschreibungen unter dem Sendernamen liefen im großen Player auf dem Handy links und rechts aus dem Bildschirm. Jetzt bricht die Beschreibung um, höchstens auf zwei Zeilen, und endet dann mit „…“, auf dem Handy und am Desktop. Titel und Interpret eines Songs bleiben je eine Zeile und enden mit „…“, auch auf dem Handy
+
 ## 1.21.0 (15. November 2026)
 
 **Herkunft der Sender**
