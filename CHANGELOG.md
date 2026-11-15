@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.19.0 (15. November 2026)
+
+**Deezer-Playlists und ein Globus**
+
+* Neue Eintragsart im Admin: „Deezer hinzufügen“, oben und in jeder Kategorie. Eingetragen wird der Link zur Playlist, auch der Teilen-Link aus der App (`link.deezer.com`). Der Server folgt ihm und speichert `https://www.deezer.com/playlist/<id>`, ohne Tracking-Parameter und ohne die Nutzernummer im Parameter `host`. Name, Cover und Beschreibung legt Ollie selbst fest. Kachel mit „↗ Deezer“
+* Die Web-App spielt Deezer nicht ab. Die Kachel trägt einen Pfeil nach außen statt des Stapels, ein Klick öffnet einen Hinweis: die Playlist spielt bei Deezer, „Zu Deezer“ öffnet sie im neuen Tab oder in der App, und Werkzeuge wie TuneMyMusic oder Soundiiz übertragen sie in andere Dienste. Das Radio läuft weiter, Vor und Zurück überspringen Deezer-Einträge, eine Senderseite `/s/<id>` gibt es für sie nicht
+* Sonos, `streams.m3u` und `stations.json` lassen Deezer aus, kein Hörstatus, kein Posting
+* „Über den Sender“: Statt „Website:“ steht ein Globus mit Europa und Afrika vor der Adresse. Screenreader hören weiter „Website: …“
+* Admin: SoundCloud und Deezer teilen sich ein Linkfeld mit eigener Beschriftung und Hilfe
+
 ## 1.18.4 (14. November 2026)
 
 * Die Beschreibung des Senders steht immer unter dem Namen, auch vor dem Abspielen und beim Pausieren, auf der Bühne und im großen Player. Sobald der Stream einen Song meldet, ersetzen Titel und Interpret sie. Bisher erschien sie erst beim Spielen und nur bei Sendern ohne Song
