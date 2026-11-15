@@ -59,6 +59,8 @@ try {
             'name'        => $e['row']['title'],
             'description' => $e['row']['description'],
             'website'     => (string) ($e['row']['website'] ?? ''),
+            'country'     => ($e['row']['country'] ?? '') !== '' ? $e['row']['country'] : null,
+            'city'        => ($e['row']['city'] ?? '') !== '' ? $e['row']['city'] : null,
             'category'    => $e['category']['smapi_id'] ?? null,
             'sort'        => $e['sort'],
             'streams'     => [[

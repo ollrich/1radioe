@@ -231,6 +231,9 @@ function station_save(array $in, ?int $id = null): array
     // posting (1.9): kept as they are when not sent
     $social      = array_key_exists('social', $in) ? (!empty($in['social']) ? 1 : 0) : (int) ($existing['social'] ?? 1);
     $hashtags    = array_key_exists('hashtags', $in) ? social_tags_text((string) $in['hashtags']) : (string) ($existing['hashtags'] ?? '');
+    // origin (1.21): ISO country code and city, for streams and SoundCloud; kept when not sent
+    $country     = array_key_exists('country', $in) ? strtoupper(trim((string) $in['country'])) : (string) ($existing['country'] ?? '');
+    $city        = array_key_exists('city', $in) ? clean_text((string) $in['city']) : (string) ($existing['city'] ?? '');
     if ($kind !== 'stream') {
         // playlists, categories, SoundCloud and Deezer have no stream and no website of
         // their own; SoundCloud and Deezer keep their address, but never post (no listening status)
@@ -239,6 +242,10 @@ function station_save(array $in, ?int $id = null): array
         $website  = '';
         $hashtags = '';
         $social   = $isLink ? 0 : $social;
+        if ($kind !== 'soundcloud') {
+            $country = '';
+            $city    = '';
+        }
     }
 
     $errors = [];
@@ -273,6 +280,12 @@ function station_save(array $in, ?int $id = null): array
     if (mb_strlen($hashtags) > 255) {
         $errors['hashtags'] = 'Höchstens 255 Zeichen.';
     }
+    if ($country !== '' && !preg_match('~^[A-Z]{2}$~', $country)) {
+        $errors['country'] = 'Bitte ein Land aus der Liste wählen.';
+    }
+    if (mb_strlen($city) > 80) {
+        $errors['city'] = 'Höchstens 80 Zeichen.';
+    }
     if (!isset(MIME_TYPES[$mime])) {
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
     }
@@ -297,15 +310,15 @@ function station_save(array $in, ?int $id = null): array
         : null;
 
     if ($id === null) {
-        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, social, hashtags, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $social, $hashtags, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, country, city, social, hashtags, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, social = ?, hashtags = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
-            [$categoryId, $title, $description, $website, $social, $hashtags, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, country = ?, city = ?, social = ?, hashtags = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
+            [$categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
         if (($old['category_id'] !== null ? (int) $old['category_id'] : null) !== $categoryId) {
             q('UPDATE r1_stations SET sort = ? WHERE id = ?', [station_next_sort(), $id]);   // moved: goes to the end
         }
@@ -469,6 +482,8 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'title'       => $s['title'],
         'description' => $s['description'],
         'website'     => (string) ($s['website'] ?? ''),
+        'country'     => (string) ($s['country'] ?? ''),
+        'city'        => (string) ($s['city'] ?? ''),
         'social'      => (int) ($s['social'] ?? 1) === 1,
         'hashtags'    => (string) ($s['hashtags'] ?? ''),
         'stream_url'  => $s['stream_url'],
