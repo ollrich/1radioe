@@ -30,7 +30,6 @@ Options -Indexes -MultiViews
     RewriteRule ^report/ report.php [L]
 </IfModule>
 
-# Personal project, not meant for search engines (see robots.txt)
-<IfModule mod_headers.c>
-    Header set X-Robots-Tag "noindex, nofollow"
-</IfModule>
+# Search engines may index the web app (robots.txt keeps them off the admin, the
+# interfaces and the tracks; the admin also says noindex itself). Until 1.21 a
+# header kept the whole site out of the index.

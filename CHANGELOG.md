@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.22.0 (15. November 2026)
+
+**Für Suchmaschinen offen**
+
+* `robots.txt` nach dem Vorbild von eichhof.me: Die Web-App darf gefunden werden, auf Englisch (`/`) und Deutsch (`/de/`). Gesperrt bleiben Admin, `/api/`, `smapi.php`, `/report/`, `deploy.php`, `streams.m3u` und die MP3-Tracks unter `/media/tracks/`, jeweils auch unter `/de/`. Wie bei eichhof.me ausgesperrt: Yandex, Baidu, Sogou, Ahrefs, Semrush, MJ12, DotBot, BLEXBot
+* Der Header `X-Robots-Tag: noindex, nofollow` für die ganze Seite und das `noindex` der Web-App entfallen. Der Admin sagt weiter selbst `noindex`
+* Keine PWA (Ollies Entscheidung): `icon-192.png` und `icon-512.png` entfallen wieder, das Icon für den Home-Bildschirm bleibt
+
 ## 1.21.1 (15. November 2026)
 
 * Lange Beschreibungen unter dem Sendernamen liefen im großen Player auf dem Handy links und rechts aus dem Bildschirm. Jetzt bricht die Beschreibung um, höchstens auf zwei Zeilen, und endet dann mit „…“, auf dem Handy und am Desktop. Titel und Interpret eines Songs bleiben je eine Zeile und enden mit „…“, auch auf dem Handy

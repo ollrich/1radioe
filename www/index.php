@@ -114,7 +114,6 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fcfcfd" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1328" media="(prefers-color-scheme: dark)">
