@@ -1234,7 +1234,11 @@
   function renderTrack() {
     const t = currentTrack();
     const desc = t ? '' : currentDesc();
-    $$('[data-r1="track"]').forEach((n) => { n.hidden = !t && !desc; n.title = trackLine(t) || desc; });
+    $$('[data-r1="track"]').forEach((n) => {
+      n.hidden = !t && !desc;
+      n.title = trackLine(t) || desc;
+      n.classList.toggle('is-desc', !t && Boolean(desc));   // a description may take two lines
+    });
     $$('[data-r1="track-title"]').forEach((n) => { n.textContent = t ? t.title : ''; n.hidden = !t; });
     // the description takes the quieter line of the artist
     $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : desc; n.hidden = !(t ? t.artist : desc); });
