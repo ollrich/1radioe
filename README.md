@@ -67,6 +67,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 * **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
 * **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen.
 * **Website:** Link zur Seite des Senders, erscheint in der Web-App unter „Über den Sender“.
+* **Land und Ort:** Herkunft des Senders, das Land aus einer Liste (gespeichert als ISO-Code wie `FR`), der Ort frei und optional. Erscheint unter „Über den Sender“ mit einer Ortsmarke über der Website, etwa „Paris, Frankreich“. Den Ländernamen setzt der Browser in der Sprache der Seite ein („France“ auf Englisch). Auch für SoundCloud-Einträge.
 * **Texte:** Über 1radiœ, Impressum und Datenverarbeitung im Reiter „Texte“ bearbeiten, je auf Deutsch und Englisch. Ein schlichter Editor ohne Bibliothek: Absätze, Zwischenüberschriften, fett, kursiv, Listen, Links. Der Server lässt nur diese Auszeichnungen durch (`app/texts.php`), Links nur zu `http`, `https`, `mailto` oder relativ auf dieser Seite, externe öffnen in einem neuen Tab. Gespeichert wird in `r1_settings` (`text.<name>.<sprache>`). Ohne eigenen Text gilt der Standardtext, „Auf Standard zurücksetzen“ löscht den eigenen. Englisch steht auf `1radioe.net`, Deutsch auf `1radioe.net/de/`. Ohne eigenen englischen Text zeigt die englische Seite den eigenen deutschen (echte Angaben im Impressum gehen vor Platzhaltern), erst ohne beide den englischen Standardtext. Der Hinweis zu den Balken unter „Über“ bleibt fest im Code, weil er das Symbol selbst zeigt.
 * Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
 
@@ -155,6 +156,8 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
       "name": "Radio Swiss Jazz",
       "description": "…",
       "website": "https://www.radioswissjazz.ch",
+      "country": "CH",
+      "city": "Basel",
       "category": "jazz",
       "sort": 1,
       "streams": [ { "url": "https://…", "format": "audio/mpeg", "https": true } ],
@@ -167,6 +170,7 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
 * `id` ist die SMAPI-ID und ändert sich nie.
 * `sort` zählt innerhalb der Ebene: Sender ohne Kategorie und Kategorien teilen sich die Positionen der obersten Ebene, Sender einer Kategorie zählen darin ab 1.
 * `version` ändert sich mit jeder Änderung im Admin. Die Antwort trägt einen `ETag`. Wer ihn mit `If-None-Match` mitschickt, bekommt `304`, solange sich nichts geändert hat.
+* `country` ist der ISO-Code des Landes (`CH`, `FR`, `GB` …), `city` der Ort. Beide sind `null`, wenn nichts eingetragen ist.
 * `logo` ist `null`, wenn es kein Bild gibt. Bei Kategorien ohne eigenes Bild ist es das Raster aus vier Logos.
 
 ## Hörstatus

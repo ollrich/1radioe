@@ -517,6 +517,10 @@ render_page('Sender', <<<HTML
           <p class="muted small" id="link-help"></p>
         </div>
         <label class="stream-only">Website des Senders <small class="muted">für „Über den Sender“ in der Web-App</small><input name="website" type="url" maxlength="500" placeholder="https://…"><small class="err" data-err="website"></small></label>
+        <div class="origin-fields">
+          <label>Land <small class="muted">Herkunft in „Über den Sender“</small><select name="country" id="country-select"></select><small class="err" data-err="country"></small></label>
+          <label>Ort <small class="muted">optional</small><input name="city" maxlength="80" placeholder="z. B. Paris"><small class="err" data-err="city"></small></label>
+        </div>
         <div class="stream-only social-fields">
           <label class="switch"><input type="checkbox" name="social" checked><span>Posten, wenn ich diesen Sender höre</span></label>
           <label>Eigene Hashtags <small class="muted">kommen zu denen aus „Posting“ dazu</small><input name="hashtags" maxlength="255" placeholder="#Jazz #Köln"><small class="err" data-err="hashtags"></small></label>

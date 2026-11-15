@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.21.0 (15. November 2026)
+
+**Herkunft der Sender**
+
+* Neue Felder im Editor: „Land“ (Liste aller Länder, auf Deutsch benannt, gespeichert als ISO-Code) und „Ort“ (optional), für Sender und SoundCloud-Einträge. Datenbank Schema 9: Spalten `country` und `city`, beim ersten Aufruf angelegt
+* „Über den Sender“ zeigt die Herkunft in einer eigenen Zeile mit Ortsmarke über der Website, etwa „Paris, Frankreich“. Den Ländernamen setzt der Browser in der Sprache der Seite ein (`Intl.DisplayNames`), auf Englisch „Paris, France“. Screenreader hören „Herkunft: …“. Ohne Eintrag fällt die Zeile weg
+* `stations.json` hat die Felder `country` und `city`
+
 ## 1.20.0 (15. November 2026)
 
 **Wortmarke und Icons**

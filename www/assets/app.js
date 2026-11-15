@@ -957,8 +957,13 @@
     $('[data-info="name"]').textContent = it.name;
     const desc = $('[data-info="desc"]');
     desc.textContent = it.desc || T.noDesc;
+    // origin (city, country in the page's language) and website, each line only if set
+    const place = [it.city, regionName(it.country)].filter(Boolean).join(', ');
+    $('[data-info="place"]').textContent = place;
+    $('[data-info="origin"]').hidden = !place;
     const site = $('[data-info="website"]');
-    site.parentElement.hidden = !it.website;   // the line holds only the website
+    site.hidden = !it.website;
+    $('[data-info="links"]').hidden = !place && !it.website;
     if (it.website) {
       site.href = it.website;
       let host = it.website;
@@ -967,6 +972,16 @@
       site.setAttribute('aria-label', fill(T.website, { host }));   // the globe says it on screen
     }
     return true;
+  }
+
+  /** A country's name from its ISO code, in the language of the page ("FR": Frankreich, France). */
+  function regionName(code) {
+    if (!code) return '';
+    try {
+      return new Intl.DisplayNames([data.lang || 'de'], { type: 'region' }).of(code) || code;
+    } catch {
+      return code;   // old browser: the code itself
+    }
   }
 
   /** A Deezer entry: a note about where it plays, with the way there. */

@@ -70,6 +70,10 @@ label small { font-weight: 400; }
 .err { display: block; color: var(--danger); font-weight: 500; min-height: 0; }
 .err:empty { display: none; }
 .row { display: flex; gap: .5rem; align-items: center; }
+/* origin of a station: country and city side by side */
+.origin-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.origin-fields label + label { margin-top: 0; }
+@media (max-width: 560px) { .origin-fields { grid-template-columns: 1fr; } }
 .row input { margin-top: .3rem; }
 .row .btn { margin-top: .3rem; }
 .switch { display: flex; align-items: center; gap: .6rem; cursor: pointer; font-weight: 600; }

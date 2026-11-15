@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 8;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)
+const SCHEMA_VERSION = 9;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)  9: origin (1.21)
 
 function db(): PDO
 {
@@ -233,6 +233,13 @@ function db_migrate_locked(): void
             last_seen  INT UNSIGNED NOT NULL,
             hits       INT UNSIGNED NOT NULL DEFAULT 0
         ) $opts");
+    }
+    if ($current < 9) {
+        // 1.21: where a station comes from, for "About the station": an ISO country code
+        // (the browser names the country in the page's language) and an optional city
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'country'")->fetch()) {
+            db()->exec("ALTER TABLE r1_stations ADD COLUMN country CHAR(2) NOT NULL DEFAULT '' AFTER website, ADD COLUMN city VARCHAR(80) NOT NULL DEFAULT '' AFTER country");
+        }
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {

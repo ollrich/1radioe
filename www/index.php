@@ -271,7 +271,8 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     </div>
   </div>
   <p class="dp" data-info="desc"></p>
-  <p class="dp dlinks" hidden>
+  <p class="dp dlinks" data-info="links" hidden>
+    <span class="origin" data-info="origin" hidden><svg class="pin" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a7.3 7.3 0 0 0-7.3 7.3c0 5.3 7.3 12.3 7.3 12.3s7.3-7 7.3-12.3A7.3 7.3 0 0 0 12 2.2zm0 10a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z"/></svg><span class="sr"><?= h($L['origin']) ?>: </span><span data-info="place"></span></span>
     <a class="site-link" data-info="website" target="_blank" rel="noopener"><svg class="globe" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7.4 10.9L7.3 9.4L8.9 8.9L9.4 7.7L10.6 7.2L11.4 6.4L12.6 6.5L12.7 5.6L13.4 6.2L15.4 5.9L17.6 6.4L19.3 7.6L19.5 9.6L17.6 10L16.6 11.2L15.6 11.6L14.8 10.4L13.6 9.2L14.6 11L13.8 11.4L12.4 9.4L11.2 9.6L10.2 10L9.8 11.2L8.4 11.2ZM8.7 7.5L9 5.4L9.8 4.9L10.2 6.4L9.7 7.5ZM7.3 6.3L8 5.9L8.2 6.9L7.5 7.2ZM11.9 5.4L11.5 4.4L12.6 3.5L14.2 3.1L15.6 3.6L15.2 4.7L14 5.4L13.3 4.7L12.7 5.8ZM7.6 12.6L9.4 12L11.2 12.4L12.6 12.2L14.4 12.6L15.4 13.4L16.8 15L18 15L16.6 16.8L15.6 19L13.8 20.8L12.8 20.2L12.2 17.6L11 15.8L9 15.8L7.4 14.6L6.8 13.6ZM16.4 12.8L18.2 12.4L19.6 14L18.4 15L17.2 14.2Z"/></svg><span data-info="host"></span></a>
   </p>
 </dialog>
