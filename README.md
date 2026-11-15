@@ -127,6 +127,8 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 
 Impressum und Datenverarbeitung haben als Standard Platzhalter in eckigen Klammern. Die echten Angaben gehören in den Admin, Reiter „Texte“.
 
+**E-Mail-Adressen** schreibst du im Admin ganz normal, als Text oder als Link. Auf der Seite stehen sie nicht im HTML: Der Server ersetzt jede Adresse in Über, Impressum und Datenverarbeitung durch einen Platzhalter mit verschlüsselter Adresse (`text_protect_mail()` in `app/texts.php`), das Skript der Seite macht daraus beim Laden einen normalen `mailto:`-Link, auch im Menü. Adress-Sammler lesen Seiten meist ohne Skript und finden nichts. Ohne JavaScript steht an der Stelle „E-Mail-Adresse, sichtbar mit JavaScript“. Ein Link mit eigenem Text („Schreib mir“) behält ihn. Wie auf eichhof.me. Am besten mit einer eigenen Weiterleitungsadresse fürs Impressum, die sich bei Spam austauschen lässt.
+
 ## Playlist-Dateien und App-Schnittstelle
 
 Alle aktiven Sender, nie MP3-Playlists, Tracks, SoundCloud oder Deezer. Die Reihenfolge ist die des Admins: die oberste Ebene wie in Sonos, die Sender einer Kategorie an der Stelle der Kategorie. Eine inaktive Kategorie blendet ihre Sender aus.

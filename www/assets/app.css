@@ -387,6 +387,8 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .rich ul, .rich ol { padding-left: 1.3em; }
 .rich li + li { margin-top: 4px; }
 .rich > :last-child { margin-bottom: 0; }
+/* an e-mail address before the script set it in (without JavaScript: a hint) */
+.rich .mail { font-style: italic; color: var(--panelmuted); }
 .d3 { margin: 20px 0 4px; font-size: 15px; font-weight: 700; }
 .dnote { margin: 20px 0 0; font-size: 13px; color: var(--panelmuted); }
 .dkicker { margin: 0; font-size: 13px; color: var(--panelmuted); }
