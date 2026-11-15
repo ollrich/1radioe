@@ -282,6 +282,10 @@
     parts.forEach((p) => p.setAttribute('aria-hidden', 'true'));
     row.append(...parts);
     rows.set(it.id, { row, sub, pill, it });
+    row.addEventListener('mouseenter', () => marquee(sub, () => canHover.matches && row.matches(':hover')));
+    row.addEventListener('focus', () => marquee(sub, () => row === document.activeElement));
+    row.addEventListener('mouseleave', () => stopMarquee(sub));
+    row.addEventListener('blur', () => stopMarquee(sub));
     return row;
   }
 
@@ -339,9 +343,9 @@
       const cur = Boolean(state.cur && state.cur.id === it.id && state.phase !== 'idle');
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
-      sub.textContent = it.type === 'category' ? countText(it.count)
+      setText(sub, it.type === 'category' ? countText(it.count)
         : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || phaseText(state.phase))
-        : (it.desc || '');
+        : (it.desc || ''));
       // an open category shows the status at the station inside, not twice
       pill.hidden = !isActive(it) || (it.type === 'category' && state.openCat === it.id);
     }
@@ -380,7 +384,8 @@
   function setPhase(phase) {
     state.phase = phase;
     const radio = !isSc(state.cur);
-    $$('[data-r1="state"]').forEach((n) => { n.textContent = phaseText(phase); });
+    // the docked player's line is set by renderTrack below (song, description or state)
+    $$('[data-r1="state"]').forEach((n) => { if (!n.closest('.mini')) setText(n, phaseText(phase)); });
     $$('[data-r1="dot"]').forEach((n) => { n.className = 'dot ' + phase; });
     $$('[data-act="toggle"]').forEach((b) => {
       b.classList.toggle('is-playing', isPlaying());
@@ -395,6 +400,69 @@
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
     renderTrack();
     announce();
+    // a station picked on a phone: its line in the list and in the docked player run once
+    if (phase === 'live' && state.cur && mqPick === state.cur.id) {
+      mqPick = null;
+      const it = state.cur;
+      setTimeout(() => {
+        if (state.cur !== it) return;
+        const r = rows.get(it.id);
+        marquee(r && r.sub);
+        marquee($('.mini [data-r1="state"]'));
+      }, 1500);
+    }
+  }
+
+  /* ---------- Running text ----------
+   * A line cut off with "…" runs to its end on request, rests and jumps back: on hover
+   * or keyboard focus (as long as it lasts), once for a station picked on a phone, once
+   * for the song lines when the full player opens. Nothing moves on its own otherwise
+   * (WCAG 2.2.2), nothing at all with "reduce motion". */
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const canHover = window.matchMedia('(hover: hover)');
+  const MQ_SPEED = 40;     // px per second
+  const MQ_REST = 1200;    // ms still at the start and at the end
+  let mqPick = null;       // station picked, its line runs once it plays
+
+  function setText(node, text) {
+    if (node.textContent !== text) node.textContent = text;
+  }
+
+  /** Lets a cut-off line run once; again as long as `again()` says so. */
+  function marquee(node, again) {
+    if (!node || reduceMotion.matches || node.dataset.mq || typeof node.animate !== 'function') return;
+    const overflow = node.scrollWidth - node.clientWidth;
+    if (overflow < 4 || node.closest('[hidden]')) return;
+    const text = node.textContent;
+    const inner = el('span', 'mq', text);
+    node.dataset.mq = '1';
+    node.classList.add('mq-on');
+    node.replaceChildren(inner);
+    const move = (overflow / MQ_SPEED) * 1000;
+    const total = move + 2 * MQ_REST;
+    const run = inner.animate([
+      { transform: 'translateX(0)', offset: 0 },
+      { transform: 'translateX(0)', offset: MQ_REST / total },
+      { transform: `translateX(${-overflow}px)`, offset: (MQ_REST + move) / total },
+      { transform: `translateX(${-overflow}px)`, offset: 1 },
+    ], { duration: total, easing: 'linear' });
+    const end = () => {
+      if (inner.parentNode === node) node.textContent = text;   // unless the line got a new text meanwhile
+      node.classList.remove('mq-on');
+      delete node.dataset.mq;
+      node.mqRun = null;
+    };
+    node.mqRun = run;
+    run.onfinish = () => {
+      end();
+      if (again && again()) setTimeout(() => { if (again()) marquee(node, again); }, 400);
+    };
+    run.oncancel = end;
+  }
+
+  function stopMarquee(node) {
+    if (node && node.mqRun) node.mqRun.cancel();
   }
 
   /* Screen readers hear every change in one polite announcement: the station and its
@@ -488,6 +556,7 @@
 
   function play(it, level) {
     state.touched = true;
+    mqPick = it.id;
     if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
     const fromSc = isSc(state.cur);
     // the buttons disappear for SoundCloud; a keyboard focus on them must not get lost
@@ -1005,6 +1074,9 @@
     if (!d || d.open || typeof d.showModal !== 'function') return;
     if (id === 'info' && !fillInfo()) return;
     d.showModal();
+    if (id === 'sheet') {
+      setTimeout(() => $$('.sheet .track:not(.is-desc) > span').forEach((n) => marquee(n)), 700);
+    }
   }
 
   /* Menu on phones: a dialog that slides in from the right (class is-open moves it in).
@@ -1239,12 +1311,12 @@
       n.title = trackLine(t) || desc;
       n.classList.toggle('is-desc', !t && Boolean(desc));   // a description may take two lines
     });
-    $$('[data-r1="track-title"]').forEach((n) => { n.textContent = t ? t.title : ''; n.hidden = !t; });
+    $$('[data-r1="track-title"]').forEach((n) => { setText(n, t ? t.title : ''); n.hidden = !t; });
     // the description takes the quieter line of the artist
-    $$('[data-r1="track-artist"]').forEach((n) => { n.textContent = t ? t.artist : desc; n.hidden = !(t ? t.artist : desc); });
+    $$('[data-r1="track-artist"]').forEach((n) => { setText(n, t ? t.artist : desc); n.hidden = !(t ? t.artist : desc); });
     // the docked player has one line: the song or the description instead of "Live"
     $$('.mini [data-r1="state"]').forEach((n) => {
-      n.textContent = state.phase === 'live' && (t || desc) ? (trackLine(t) || desc) : phaseText(state.phase);
+      setText(n, state.phase === 'live' && (t || desc) ? (trackLine(t) || desc) : phaseText(state.phase));
     });
     setMediaMetadata();
     updateIndicators();
@@ -1274,6 +1346,15 @@
     clearTimeout(now.timer);
     now.timer = 0;
   }
+
+  // a cut-off song line on the stage runs while the pointer rests on it
+  $$('.stage [data-r1="track"]').forEach((track) => {
+    track.addEventListener('mouseenter', () => {
+      if (track.classList.contains('is-desc')) return;   // the description wraps instead
+      $$(':scope > span', track).forEach((n) => marquee(n, () => canHover.matches && track.matches(':hover')));
+    });
+    track.addEventListener('mouseleave', () => $$(':scope > span', track).forEach(stopMarquee));
+  });
 
   /* ---------- Info at "Olli hört gerade" ----------
    * Hovering the bars shows who listens to what. On touch screens a tap on the bars
