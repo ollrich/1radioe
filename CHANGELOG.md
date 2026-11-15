@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.24.2 (15. November 2026)
+
+* `rel="me"` für Ollies Mastodon-Profil (`https://norden.social/@olli`, Konstante `ME_LINKS` in `app/texts.php`): als `<link rel="me">` im Kopf der Web-App, auf Englisch und Deutsch. Damit kann Mastodon 1radioe.net im Profil als bestätigt anzeigen. Ein Link auf das Profil in den Texten aus dem Admin bekommt beim Speichern ebenfalls `rel="me"`
+
 ## 1.24.1 (15. November 2026)
 
 * Hinweis zu den Balken unter „Über“: Der Satz „Mehr wird dabei nicht erfasst.“ (englisch „Nothing more is recorded.“) entfällt, er hat eher verwirrt

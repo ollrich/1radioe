@@ -16,6 +16,9 @@ declare(strict_types=1);
 const TEXT_NAMES = ['about' => 'Über 1radiœ', 'impressum' => 'Impressum', 'datenverarbeitung' => 'Datenverarbeitung'];
 const TEXT_LANGS = ['de' => 'Deutsch', 'en' => 'Englisch'];
 const TEXT_MAX   = 30000;   // characters of cleaned HTML, far more than the dialogs need
+// Ollie's own profiles elsewhere: the web app names them with rel="me" (in the page head and
+// on links to them in the texts), so Mastodon can verify 1radioe.net in the profile
+const ME_LINKS   = ['https://norden.social/@olli'];
 
 /** The texts as long as nothing is stored, German and English. */
 function text_defaults(): array
@@ -243,8 +246,9 @@ function text_inline(DOMNode $node): string
             return $inner;
         }
         $external = (bool) preg_match('~^https?://~i', $href);
+        $me       = in_array(rtrim($href, '/'), ME_LINKS, true);   // own profile: rel="me"
         return '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '"'
-            . ($external ? ' target="_blank" rel="noopener"' : '') . '>' . $inner . '</a>';
+            . ($external ? ' target="_blank" rel="' . ($me ? 'me noopener' : 'noopener') . '"' : '') . '>' . $inner . '</a>';
     }
     if (isset(TEXT_BLOCK[$tag]) || $tag === 'li') {
         return text_trim_br($inner) . '<br>';   // a block nested in a block: keep the line
