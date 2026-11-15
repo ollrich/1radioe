@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.24.1 (15. November 2026)
+
+* Hinweis zu den Balken unter „Über“: Der Satz „Mehr wird dabei nicht erfasst.“ (englisch „Nothing more is recorded.“) entfällt, er hat eher verwirrt
+
 ## 1.24.0 (15. November 2026)
 
 **E-Mail-Adressen geschützt**
