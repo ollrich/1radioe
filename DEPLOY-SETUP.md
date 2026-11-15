@@ -160,7 +160,7 @@ cp -an ../eichhof.co/1radioe-media/. www/media/
 * System im Admin: aktuelle Version, Konfiguration unter `…/1radioe.net/1radioe-private/config.php`, Medien unter `…/1radioe.net/www/media ✓`, FTP-Eingang unter `…/1radioe.net/1radioe-private/inbox ✓`, Fehlende Dateien `keine ✓`
 * `https://1radioe.net/` zeigt die Web-App und spielt
 * `https://1radioe.net/1radioe-private/config.php` gibt es nicht (404), weil der Ordner außerhalb des Web-Verzeichnisses liegt
-* `https://1radioe.net/robots.txt` sperrt alles
+* `https://1radioe.net/robots.txt` erlaubt die Web-App und sperrt Admin, Schnittstellen, Playlist-Datei und Tracks
 
 Ausrollen testen: einen Commit auf `main` pushen. Im Log steht dann `SUCCESS` mit Commit.
 

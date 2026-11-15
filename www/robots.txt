@@ -1,3 +1,54 @@
-# Personal project, not meant to be indexed.
+# 1radiœ: the web app may be found, in English (/) and German (/de/).
+# Not pages: the admin, the interfaces for Sonos and apps, the playlist file
+# and the MP3 tracks. /de/ reaches every address as well, so both forms.
 User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /smapi.php
+Disallow: /report/
+Disallow: /report.php
+Disallow: /deploy.php
+Disallow: /streams.m3u
+Disallow: /playlist.php
+Disallow: /media/tracks/
+Disallow: /de/admin/
+Disallow: /de/api/
+Disallow: /de/smapi.php
+Disallow: /de/report/
+Disallow: /de/report.php
+Disallow: /de/deploy.php
+Disallow: /de/streams.m3u
+Disallow: /de/playlist.php
+Disallow: /de/media/tracks/
+
+# Blocked bots, as on eichhof.me
+User-agent: Yandex
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Sogou
+Disallow: /
+
+User-agent: SogouSpider
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: BLEXBot
 Disallow: /
