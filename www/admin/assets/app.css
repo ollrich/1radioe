@@ -82,7 +82,8 @@ label small { font-weight: 400; }
   width: min(440px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line);
   border-radius: 18px; padding: 2rem 1.8rem; box-shadow: 0 20px 60px rgb(0 0 0 / .35);
 }
-.card .brand { display: block; height: 52px; width: auto; margin: 0 auto 1.5rem; }
+.brand-wrap { margin: 0 0 1.5rem; line-height: 0; color: var(--text); }
+.card .brand { height: 40px; margin: 0 auto; }
 .card-foot { text-align: center; color: var(--muted); font-size: .8rem; }
 .alert { background: rgb(255 107 107 / .12); border: 1px solid rgb(255 107 107 / .4); color: #ffd3d3; padding: .6rem .8rem; border-radius: 10px; }
 .steps { color: var(--muted); font-size: .9rem; }
@@ -98,7 +99,12 @@ label small { font-weight: 400; }
   padding: .7rem max(16px, calc((100vw - 1240px) / 2)); background: rgb(11 19 40 / .92);
   backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
 }
-.topbar .brand { height: 34px; width: auto; }
+/* visually hidden, for screen readers */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the wordmark (app/brand.php) in the text colour, the œ in logo blue */
+.brand { display: block; width: auto; fill: currentColor; }
+.brand-link { display: block; line-height: 0; color: var(--text); flex: none; }
+.topbar .brand { height: 26px; }
 .tabs { display: flex; gap: .3rem; background: var(--surface); padding: .25rem; border-radius: 12px; border: 1px solid var(--line); }
 .tab { padding: .4rem 1rem; border-radius: 9px; color: var(--muted); text-decoration: none; font-weight: 600; }
 .tab[aria-current="page"] { background: var(--surface-2); color: var(--text); }
@@ -276,7 +282,7 @@ label small { font-weight: 400; }
   .logo-col { max-width: 360px; width: 100%; margin: 0 auto; }
   .panels { grid-template-columns: 1fr; }
   .topbar { gap: .8rem; }
-  .topbar .brand { height: 28px; }
+  .topbar .brand { height: 22px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
   .kv { grid-template-columns: 1fr; }
 }

@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.20.0 (15. November 2026)
+
+**Wortmarke und Icons**
+
+* Die Wortmarke „1radiœ“ ist jetzt ein sauberes SVG mit echten Innenräumen, gebaut aus Mona Sans genau so, wie die Web-App sie bisher als Text gesetzt hat (Gewicht 900, Breite 100, Laufweite −0,035 em, Abstände aus HarfBuzz). „1radi“ in Textfarbe, das œ in Logo-Blau `#1a80b6`. Eingebettet über `brand_wordmark()` aus `app/brand.php`, ohne Abhängigkeit vom Laden der Schrift
+* Web-App: oben links das SVG statt des Texts, gleich breit (106 px am Desktop, 94 px auf dem Handy), im hellen und dunklen Modus. Screenreader hören weiter „1radiœ, Startseite“
+* Admin: dieselbe Wortmarke in der Leiste (führt zu „Sender“) und auf der Anmeldeseite, statt des alten Pixelbilds mit großer „1“. `www/admin/assets/logo.png` entfällt
+* Icons: Favicon als SVG und PNG (weiße „1“ aus Mona Sans auf Navy, abgerundet), `apple-touch-icon.png` (180 px, volle Fläche, iOS rundet selbst) für den Home-Bildschirm, `icon-192.png` und `icon-512.png` für ein späteres PWA-Manifest. Gilt für Web-App und Admin
+
 ## 1.19.1 (15. November 2026)
 
 * Deezer: Der Link aus der Web-App trägt wieder `universal_link=1`. Nur damit zeigt Deezer auf der Playlist-Seite „Playlist exportieren“ (zu Spotify, YouTube Music, Apple Music), das Bereinigen in 1.19.0 hatte das Angebot verschwinden lassen. Angehängt wird beim Ausliefern, gespeichert bleibt die reine Adresse, also gilt es auch für schon angelegte Einträge. Die Nutzernummer und das Tracking bleiben weg, sie braucht es dafür nicht

@@ -149,13 +149,13 @@ function image_editor(string $empty): string
 HTML;
 }
 
-$logo         = 'assets/logo.png?v=' . APP_VERSION;
 $logout       = '<form method="post" class="inline"><input type="hidden" name="csrf" value="' . h(csrf_token()) . '"><input type="hidden" name="action" value="logout"><button class="btn ghost small">Abmelden</button></form>';
+$brand        = '<a class="brand-link" href="#stations"><span class="sr">1radiœ, Sender</span>' . brand_wordmark('brand') . '</a>';
 $stationImage = image_editor('Kein Logo');
 $trackImage   = image_editor('Kein Cover');
 render_page('Sender', <<<HTML
 <header class="topbar">
-  <img class="brand" src="{$logo}" alt="1radiœ" width="116" height="40">
+  {$brand}
   <nav class="tabs" aria-label="Bereiche">
     <a href="#stations" data-view="stations" class="tab">Sender</a>
     <a href="#tracks" data-view="tracks" class="tab">Tracks</a>
