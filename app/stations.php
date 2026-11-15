@@ -11,6 +11,9 @@
  * come from the admin. Sonos, the playlist file and stations.json leave it out: the
  * SoundCloud API terms rule out streaming it through a radio app (see README).
  *
+ * A Deezer entry (kind = 'deezer') is a link to a playlist on deezer.com, web app only as
+ * well: it does not play there, a note leads to Deezer.
+ *
  * Each station has a stable "smapi_id". Sonos stores it in favorites and alarms,
  * so it is created once from the title and never changes afterwards.
  */
@@ -170,6 +173,31 @@ function soundcloud_url(string $url, bool $follow = true): ?string
     return 'https://soundcloud.com' . $path;
 }
 
+/**
+ * A Deezer address in plain form, https://www.deezer.com/playlist/<id> (also album,
+ * artist, track), without language, tracking parameters and the sharer's "host" number.
+ * Share links (link.deezer.com, deezer.page.link) are followed to the full address.
+ * Returns null if it is no Deezer address.
+ */
+function deezer_url(string $url, bool $follow = true): ?string
+{
+    $url = trim($url);
+    $p   = parse_url($url);
+    if (!is_array($p) || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true) || isset($p['user']) || isset($p['port'])) {
+        return null;
+    }
+    $host = strtolower($p['host'] ?? '');
+    if (in_array($host, ['link.deezer.com', 'deezer.page.link'], true) && $follow) {
+        $res = http_get('https://' . $host . ($p['path'] ?? '') . (isset($p['query']) ? '?' . $p['query'] : ''), 65536, 8, 5);
+        return deezer_url($res['url'], false);
+    }
+    if (!in_array($host, ['deezer.com', 'www.deezer.com'], true)
+        || !preg_match('~^(?:/[a-z]{2}(?:-[a-z]{2})?)?/(playlist|album|artist|track)/(\d{1,20})/?$~', $p['path'] ?? '', $m)) {
+        return null;
+    }
+    return 'https://www.deezer.com/' . $m[1] . '/' . $m[2];
+}
+
 /** Builds a readable, unique SMAPI id from a title, e.g. "bbc-radio-1-dance". */
 function station_make_smapi_id(string $title): string
 {
@@ -196,20 +224,21 @@ function station_save(array $in, ?int $id = null): array
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
-    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category', 'soundcloud'], true) ? $in['kind'] : 'stream');
+    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category', 'soundcloud', 'deezer'], true) ? $in['kind'] : 'stream');
+    $isLink      = $kind === 'soundcloud' || $kind === 'deezer';   // web app only, an address elsewhere
     // website: kept as it is when the field is not sent (e.g. by an older admin)
     $website     = array_key_exists('website', $in) ? trim((string) $in['website']) : (string) ($existing['website'] ?? '');
     // posting (1.9): kept as they are when not sent
     $social      = array_key_exists('social', $in) ? (!empty($in['social']) ? 1 : 0) : (int) ($existing['social'] ?? 1);
     $hashtags    = array_key_exists('hashtags', $in) ? social_tags_text((string) $in['hashtags']) : (string) ($existing['hashtags'] ?? '');
     if ($kind !== 'stream') {
-        // playlists, categories and SoundCloud tracks have no stream and no website of
-        // their own; SoundCloud keeps its address, but never posts (no listening status)
-        $url      = $kind === 'soundcloud' ? $url : '';
+        // playlists, categories, SoundCloud and Deezer have no stream and no website of
+        // their own; SoundCloud and Deezer keep their address, but never post (no listening status)
+        $url      = $isLink ? $url : '';
         $mime     = 'audio/mpeg';
         $website  = '';
         $hashtags = '';
-        $social   = $kind === 'soundcloud' ? 0 : $social;
+        $social   = $isLink ? 0 : $social;
     }
 
     $errors = [];
@@ -219,6 +248,13 @@ function station_save(array $in, ?int $id = null): array
             $errors['stream_url'] = 'Bitte die Adresse eines Tracks auf soundcloud.com eingeben, etwa https://soundcloud.com/künstler/track.';
         }
         $url = $sc ?? $url;
+    }
+    if ($kind === 'deezer') {
+        $dz = deezer_url($url);
+        if ($dz === null) {
+            $errors['stream_url'] = 'Bitte den Link zu einer Playlist bei Deezer eingeben, etwa https://www.deezer.com/playlist/123 oder einen Teilen-Link von link.deezer.com.';
+        }
+        $url = $dz ?? $url;
     }
     if ($title === '' || mb_strlen($title) > 120) {
         $errors['title'] = 'Name fehlt oder ist länger als 120 Zeichen.';
@@ -307,7 +343,7 @@ function stations_assign(?int $categoryId, array $ids): void
 /**
  * The entries Sonos shows at the top level ($categoryId null) or inside a category:
  * active, playlists only with tracks, categories only with something to show,
- * never SoundCloud tracks (web app only).
+ * never SoundCloud or Deezer (web app only).
  * $rows: stations_all() in display order, $stats: playlist_stats().
  */
 function sonos_visible(array $rows, array $stats, ?int $categoryId): array
@@ -315,7 +351,7 @@ function sonos_visible(array $rows, array $stats, ?int $categoryId): array
     $out = [];
     foreach ($rows as $s) {
         $in = $s['category_id'] !== null ? (int) $s['category_id'] : null;
-        if (!$s['active'] || $in !== $categoryId || $s['kind'] === 'soundcloud') {
+        if (!$s['active'] || $in !== $categoryId || $s['kind'] === 'soundcloud' || $s['kind'] === 'deezer') {
             continue;
         }
         if ($s['kind'] === 'playlist' && ($stats[(int) $s['id']]['tracks'] ?? 0) === 0) {

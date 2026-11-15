@@ -6,7 +6,7 @@
  * an option. Everything active appears, in the order of the admin and of Sonos: the
  * top level as it is, a category's streams where the category stands. An inactive
  * category hides its streams, like in Sonos. The web app also asks for SoundCloud
- * tracks ($soundcloud), the playlist file and stations.json do not.
+ * tracks and Deezer links ($webapp), the playlist file and stations.json do not.
  */
 declare(strict_types=1);
 
@@ -18,9 +18,9 @@ declare(strict_types=1);
  *   (top-level streams and categories share one sequence of positions).
  * Stations come in listening order: what Sonos shows, categories opened in place.
  */
-function public_catalog(bool $soundcloud = false): array
+function public_catalog(bool $webapp = false): array
 {
-    $kinds    = $soundcloud ? ['stream', 'soundcloud'] : ['stream'];
+    $kinds    = $webapp ? ['stream', 'soundcloud', 'deezer'] : ['stream'];
     $byParent = [];
     foreach (stations_all(true) as $r) {
         $byParent[$r['category_id'] !== null ? (int) $r['category_id'] : 0][] = $r;

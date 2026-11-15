@@ -298,12 +298,12 @@
     t.dataset.id = s.id;
     t.tabIndex = 0;
     t.setAttribute('role', 'button');
-    const kindName = { playlist: ', Playlist', category: ', Kategorie', soundcloud: ', SoundCloud' }[s.kind] || '';
+    const kindName = { playlist: ', Playlist', category: ', Kategorie', soundcloud: ', SoundCloud', deezer: ', Deezer' }[s.kind] || '';
     t.setAttribute('aria-label', s.title + kindName + (s.active ? '' : ', inaktiv') + (empty ? ', leer' : ''));
     const a = art(s.logo_url, s.title);
-    if (s.kind === 'soundcloud') {
-      const kind = el('span', 'kind', '☁ SoundCloud');
-      kind.title = 'Nur in der Web-App, nicht in Sonos';
+    if (s.kind === 'soundcloud' || s.kind === 'deezer') {
+      const kind = el('span', 'kind', s.kind === 'deezer' ? '↗ Deezer' : '☁ SoundCloud');
+      kind.title = s.kind === 'deezer' ? 'Nur in der Web-App, führt zu Deezer' : 'Nur in der Web-App, nicht in Sonos';
       a.append(kind);
     } else if (s.kind !== 'stream') {
       const icon = s.kind === 'playlist' ? '♫ ' : '▦ ';
@@ -338,6 +338,7 @@
     const parts = [`${n('stream')} Sender`];
     if (n('playlist')) parts.push(n('playlist') === 1 ? '1 Playlist' : `${n('playlist')} Playlists`);
     if (n('soundcloud')) parts.push(n('soundcloud') === 1 ? '1 SoundCloud-Track' : `${n('soundcloud')} SoundCloud-Tracks`);
+    if (n('deezer')) parts.push(n('deezer') === 1 ? '1 Deezer-Playlist' : `${n('deezer')} Deezer-Playlists`);
     if (n('category')) parts.push(n('category') === 1 ? '1 Kategorie' : `${n('category')} Kategorien`);
     return parts.join(', ');
   }
@@ -458,7 +459,7 @@
       box.value = s.id;
       const text = el('span', 'track-text');
       const where = s.category_id ? 'jetzt in „' + (names[s.category_id] || '?') + '“' : 'jetzt direkt in der Liste';
-      const prefix = { playlist: 'Playlist, ', soundcloud: 'SoundCloud, ' }[s.kind] || '';
+      const prefix = { playlist: 'Playlist, ', soundcloud: 'SoundCloud, ', deezer: 'Deezer, ' }[s.kind] || '';
       text.append(el('span', 'track-title', s.title), el('span', 'track-sub', prefix + where));
       label.append(box, art(s.logo_url, s.title, 'thumb'), text);
       const li = el('li');
@@ -567,18 +568,26 @@
     form.reset();
     clearErrors(form);
     const isSc = ed.kind === 'soundcloud';
+    const isLink = isSc || ed.kind === 'deezer';   // web app only, an address elsewhere
     $$('.stream-only', form).forEach((n) => { n.hidden = isList; });
-    $$('.sc-only', form).forEach((n) => { n.hidden = !isSc; });
-    $('#active-label').textContent = isSc ? 'Aktiv, in der Web-App sichtbar' : 'Aktiv, in Sonos sichtbar';
+    $$('.link-only', form).forEach((n) => { n.hidden = !isLink; });
+    if (isLink) {
+      $('#link-label').textContent = isSc ? 'SoundCloud-Link' : 'Deezer-Link';
+      F('link_url').placeholder = isSc ? 'https://soundcloud.com/künstler/track' : 'https://link.deezer.com/s/… oder https://www.deezer.com/playlist/…';
+      $('#link-help').textContent = isSc
+        ? 'Die Adresse des Tracks auf soundcloud.com, auch ein Kurzlink aus der App (on.soundcloud.com). Name, Cover und Beschreibung legst du hier selbst fest. Der Track spielt nur in der Web-App im Player von SoundCloud, nicht in Sonos, und zählt nicht zum Hörstatus.'
+        : 'Der Link zur Playlist, auch der Teilen-Link aus der App (link.deezer.com). Gespeichert wird die reine Adresse, ohne Tracking und ohne deine Nutzernummer. Name, Cover und Beschreibung legst du hier selbst fest. In der Web-App führt ein Hinweis zu Deezer, in Sonos erscheint die Playlist nicht.';
+    }
+    $('#active-label').textContent = isLink ? 'Aktiv, in der Web-App sichtbar' : 'Aktiv, in Sonos sichtbar';
     $('#editor-title').textContent = s ? s.title
-      : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie', soundcloud: 'Neuer SoundCloud-Track' }[ed.kind] || 'Neuer Sender');
+      : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie', soundcloud: 'Neuer SoundCloud-Track', deezer: 'Neue Deezer-Playlist' }[ed.kind] || 'Neuer Sender');
     // the category field only appears when there are categories; unknown state keeps the stored one
     const hasCategories = state.stations.some((x) => x.kind === 'category');
     $('.cat-field', form).hidden = ed.kind === 'category' || !hasCategories;
     F('category_id').value = String((s ? s.category_id : categoryId) || '');
     F('title').value = s ? s.title : '';
-    F('stream_url').value = s && !isSc ? s.stream_url : '';
-    F('sc_url').value = s && isSc ? s.stream_url : '';
+    F('stream_url').value = s && !isLink ? s.stream_url : '';
+    F('link_url').value = s && isLink ? s.stream_url : '';
     F('mime').value = s && !isList ? s.mime : '';
     F('description').value = s ? s.description : '';
     F('website').value = s ? (s.website || '') : '';
@@ -586,7 +595,8 @@
     F('hashtags').value = s ? (s.hashtags || '') : '';
     F('active').checked = s ? s.active : true;
     F('is_playlist').value = s && s.is_playlist ? '1' : '0';
-    $('#smapi-id').textContent = !s ? '' : isSc ? `ID: ${s.smapi_id}, eigene Seite in der Web-App: /s/${s.smapi_id}`
+    $('#smapi-id').textContent = !s ? '' : ed.kind === 'deezer' ? `ID: ${s.smapi_id}`
+      : isSc ? `ID: ${s.smapi_id}, eigene Seite in der Web-App: /s/${s.smapi_id}`
       : `SMAPI-ID: ${s.smapi_id} (bleibt dauerhaft gleich, Sonos speichert sie in Favoriten)`;
     const del = $('#delete');
     del.hidden = !s;
@@ -596,14 +606,14 @@
     if (s && s.check_info && !isList) setProbe(s.check_ok, 'Letzter Test: ' + s.check_info);
     setHttps(s && !isList ? s.https_ok : null);
     stationImage.reset(s && s.has_logo ? s.logo_url : null);
-    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : isSc ? 'Kein Cover' : 'Kein Logo';
+    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : isLink ? 'Kein Cover' : 'Kein Logo';
     updateCount();
     dialog.showModal();
-    (isSc && !s ? F('sc_url') : F('title')).focus();
+    (isLink && !s ? F('link_url') : F('title')).focus();
   }
 
   function deleteLabel() {
-    return { playlist: 'Playlist löschen', category: 'Kategorie löschen', soundcloud: 'Track löschen' }[ed.kind] || 'Löschen';
+    return { playlist: 'Playlist löschen', category: 'Kategorie löschen', soundcloud: 'Track löschen', deezer: 'Playlist löschen' }[ed.kind] || 'Löschen';
   }
 
   function closeEditor() {
@@ -658,7 +668,7 @@
     btn.disabled = true;
     try {
       const isNew = !ed.station;
-      const url = (ed.kind === 'soundcloud' ? F('sc_url') : F('stream_url')).value.trim();
+      const url = (ed.kind === 'soundcloud' || ed.kind === 'deezer' ? F('link_url') : F('stream_url')).value.trim();
       const data = {
         id: ed.station ? ed.station.id : null,
         kind: ed.kind,
@@ -685,8 +695,8 @@
       if ((station.kind === 'playlist' || station.kind === 'category') && isNew && location.hash !== own) location.hash = own;
       else refreshView();
     } catch (err) {
-      // the address of a SoundCloud track has its own field
-      if (ed.kind === 'soundcloud' && err.fields && err.fields.stream_url) err.fields.sc_url = err.fields.stream_url;
+      // the address of a SoundCloud track or a Deezer playlist has its own field
+      if ((ed.kind === 'soundcloud' || ed.kind === 'deezer') && err.fields && err.fields.stream_url) err.fields.link_url = err.fields.stream_url;
       showErrors(form, err);
       toast(err.message, 'error');
     } finally {
@@ -704,6 +714,7 @@
         playlist: 'Playlist gelöscht, die Tracks bleiben in der Bibliothek',
         category: 'Kategorie gelöscht, ihre Einträge stehen wieder direkt in der Liste',
         soundcloud: 'SoundCloud-Track gelöscht',
+        deezer: 'Deezer-Playlist gelöscht',
       }[ed.kind] || 'Sender gelöscht');
       if (location.hash === '#' + ed.kind + '/' + ed.station.id) location.hash = '#stations';
       else refreshView();
@@ -1613,9 +1624,11 @@
   $('#add-playlist').addEventListener('click', () => openEditor(null, 'playlist'));
   $('#add-category').addEventListener('click', () => openEditor(null, 'category'));
   $('#add-soundcloud').addEventListener('click', () => openEditor(null, 'soundcloud'));
+  $('#add-deezer').addEventListener('click', () => openEditor(null, 'deezer'));
   $('#cat-edit').addEventListener('click', () => openEditor(state.category));
   $('#cat-add').addEventListener('click', () => openEditor(null, 'stream', state.category.id));
   $('#cat-add-sc').addEventListener('click', () => openEditor(null, 'soundcloud', state.category.id));
+  $('#cat-add-dz').addEventListener('click', () => openEditor(null, 'deezer', state.category.id));
   $('#cat-pick').addEventListener('click', openStationPicker);
   $$('[data-close]', stPicker).forEach((b) => b.addEventListener('click', () => stPicker.close()));
   $('#st-picker-form').addEventListener('submit', assignPicked);

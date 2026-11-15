@@ -379,6 +379,17 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .dnote { margin: 20px 0 0; font-size: 13px; color: var(--panelmuted); }
 .dkicker { margin: 0; font-size: 13px; color: var(--panelmuted); }
 .dlinks { display: flex; flex-direction: column; gap: 6px; font-weight: 640; }
+/* the website of a station: a globe (Europe and Africa) instead of the word */
+.site-link { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; }
+.site-link .globe { flex: none; fill: currentColor; }
+/* Deezer: a note, then the way there */
+.dz-note { font-size: 14px; color: var(--panelmuted); }
+.dz-actions { margin: 20px 0 0; }
+.dialog a.dz-go {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px;
+  background: var(--accent); color: var(--onaccent); font-weight: 600; text-decoration: none;
+}
+.dialog a.dz-go:hover { filter: brightness(1.08); }
 .info-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; padding-right: 36px; }
 .info-head .dh { margin: 4px 0 0; padding: 0; }
 .with-pill { display: flex; align-items: flex-start; gap: 10px; }

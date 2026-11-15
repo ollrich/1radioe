@@ -41,15 +41,15 @@ function webapp_levels(): array
     return $levels;
 }
 
-/** One station or SoundCloud track for the web app. $e: an entry of public_catalog()['stations']. */
+/** One station, SoundCloud track or Deezer link for the web app. $e: an entry of public_catalog()['stations']. */
 function webapp_station(array $e): array
 {
     $r = $e['row'];
-    if ($r['kind'] === 'soundcloud') {
-        // plays in SoundCloud's widget; the address is the track page on soundcloud.com
+    if ($r['kind'] === 'soundcloud' || $r['kind'] === 'deezer') {
+        // SoundCloud plays in its widget, Deezer only opens: the address is the page there
         return [
             'id'       => $r['smapi_id'],
-            'type'     => 'soundcloud',
+            'type'     => $r['kind'],
             'name'     => $r['title'],
             'num'      => sprintf('%02d', $e['sort']),
             'logo'     => logo_url($r['logo']),
@@ -136,6 +136,10 @@ function webapp_strings(string $lang): array
         'sc_text'     => 'Der Player von SoundCloud lädt erst nach deinem Klick. Dann setzt SoundCloud Cookies und erfährt deine IP-Adresse.',
         'sc_more'     => 'Mehr dazu',
         'sc_load'     => 'SoundCloud laden',
+        'dz_kicker'   => 'Playlist bei Deezer',
+        'dz_text'     => 'Diese Playlist spielt nicht hier, sondern bei Deezer. Der Knopf öffnet sie in einem neuen Tab oder in der Deezer-App.',
+        'dz_transfer' => 'Hörst du mit einem anderen Dienst? Mit Werkzeugen wie TuneMyMusic oder Soundiiz kannst du die Playlist dorthin übertragen, sie brauchen nur ihren Link.',
+        'dz_go'       => 'Zu Deezer',
         'unreachable' => 'Die Sender sind gerade nicht erreichbar. Bitte später noch einmal versuchen.',
         'no_stations' => 'Noch keine Sender.',
         'idle'        => 'Bereit',
@@ -179,6 +183,10 @@ function webapp_strings(string $lang): array
         'sc_text'     => "SoundCloud's player loads only after your click. SoundCloud then sets cookies and learns your IP address.",
         'sc_more'     => 'More about it',
         'sc_load'     => 'Load SoundCloud',
+        'dz_kicker'   => 'Playlist on Deezer',
+        'dz_text'     => 'This playlist does not play here but on Deezer. The button opens it in a new tab or in the Deezer app.',
+        'dz_transfer' => 'Using another service? Tools such as TuneMyMusic or Soundiiz can transfer the playlist there, all they need is its link.',
+        'dz_go'       => 'Open Deezer',
         'unreachable' => 'The stations cannot be reached right now. Please try again later.',
         'no_stations' => 'No stations yet.',
         'idle'        => 'Ready',

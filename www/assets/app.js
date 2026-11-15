@@ -34,8 +34,8 @@
   for (const [level, list] of Object.entries(levels)) {
     for (const it of list) items.set(it.id, Object.assign(it, { level }));
   }
-  // everything playable in a list: stations and SoundCloud tracks
-  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type !== 'category');
+  // everything playable in a list: stations and SoundCloud tracks (Deezer only opens a note)
+  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type === 'station' || x.type === 'soundcloud');
   const isSc = (it) => Boolean(it && it.type === 'soundcloud');
 
   const state = {
@@ -83,19 +83,25 @@
     + '<rect x="5.2" y="1.8" width="9" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>'
     + '<rect x="1.8" y="5.2" width="9" height="9" rx="2.2" fill="currentColor"/></svg>';
 
+  /* arrow out of the corner: this tile leads to Deezer, it does not play here */
+  const OUT = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+    + '<path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   /**
    * Fills a tile with the logo, or the initials if there is none (or it fails to load).
    * A category shows its own picture from the admin, without one the collage the server
-   * makes from the first logos inside (as in Sonos), and the stack on top.
+   * makes from the first logos inside (as in Sonos), and the stack on top. A Deezer
+   * entry gets an arrow out instead.
    */
   function fillTile(node, it) {
     const isCat = it.type === 'category';
+    const isOut = it.type === 'deezer';
     node.replaceChildren();
-    node.classList.toggle('cat', isCat);
+    node.classList.toggle('cat', isCat || isOut);
     const stack = () => {
-      if (!isCat) return;
+      if (!isCat && !isOut) return;
       const s = el('span', 'stack');
-      s.innerHTML = STACK;
+      s.innerHTML = isCat ? STACK : OUT;
       node.append(s);
     };
     if (it.logo) {
@@ -576,6 +582,10 @@
       setView(it.id);
       return;
     }
+    if (it.type === 'deezer') {
+      openDeezer(it);   // the radio keeps playing
+      return;
+    }
     if (state.cur && state.cur.id === it.id && isPlaying()) stop();
     else play(it, level);
   }
@@ -953,9 +963,26 @@
       site.href = it.website;
       let host = it.website;
       try { host = new URL(it.website).host.replace(/^www\./, ''); } catch { /* keep the address */ }
-      site.textContent = fill(T.website, { host });
+      $('[data-info="host"]', site).textContent = host;
+      site.setAttribute('aria-label', fill(T.website, { host }));   // the globe says it on screen
     }
     return true;
+  }
+
+  /** A Deezer entry: a note about where it plays, with the way there. */
+  function openDeezer(it) {
+    const d = document.getElementById('deezer');
+    if (!d || typeof d.showModal !== 'function') {
+      window.open(it.url, '_blank', 'noopener');
+      return;
+    }
+    fillTile($('[data-dz="art"]', d), it);
+    $('[data-dz="name"]', d).textContent = it.name;
+    const desc = $('[data-dz="desc"]', d);
+    desc.textContent = it.desc || '';
+    desc.hidden = !it.desc;
+    $('[data-dz="link"]', d).href = it.url;
+    if (!d.open) d.showModal();
   }
 
   function openDialog(id) {
@@ -1093,6 +1120,8 @@
     if (a.closest('dialog.drawer')) showPage(a.dataset.dialog);
     else openDialog(a.dataset.dialog);
   }));
+  const dzLink = $('[data-dz="link"]');
+  if (dzLink) dzLink.addEventListener('click', () => closeDialog(dzLink.closest('dialog')));
   $$('dialog').forEach((d) => {
     $$('[data-close]', d).forEach((b) => b.addEventListener('click', () => closeDialog(d)));
     // a click on the dark area around a dialog closes it
@@ -1319,7 +1348,7 @@
 
   // a station page (?s=<id>, the link in posts) puts that station in the player
   const start = data.start ? items.get(data.start) : null;
-  const first = (start && start.type !== 'category' ? start : null)
+  const first = (start && (start.type === 'station' || start.type === 'soundcloud') ? start : null)
     || stationsOf('root').find((x) => x.type === 'station') || [...items.values()].find((x) => x.type === 'station');
   if (first) {
     state.cur = first;
