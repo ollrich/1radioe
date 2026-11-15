@@ -51,6 +51,8 @@ foreach (array_keys(TEXT_NAMES) as $name) {
     } catch (Throwable) {
         $texts[$name] = text_clean(text_defaults()[$name][$lang]);
     }
+    // e-mail addresses only for the browser, not for address collectors (app.js decodes)
+    $texts[$name] = text_protect_mail($texts[$name], $lang);
 }
 
 $start = null;

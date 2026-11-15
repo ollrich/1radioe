@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.24.0 (15. November 2026)
+
+**E-Mail-Adressen geschützt**
+
+* E-Mail-Adressen in Über, Impressum und Datenverarbeitung stehen nicht mehr im HTML der Seite. Der Server ersetzt jede Adresse, ob `mailto:`-Link oder im Text, durch einen Platzhalter mit verschlüsselter Adresse (URL-kodiert, Base64, umgedreht), das Skript macht daraus beim Laden einen normalen `mailto:`-Link, im Fenster und im Menü. Adress-Sammler lesen ohne Skript und finden nichts, wie auf eichhof.me
+* Im Admin bleibt alles gleich, die Adresse wird normal eingetragen. Ein Link mit eigenem Text behält ihn, Betreff im `mailto:` bleibt erhalten
+* Ohne JavaScript steht an der Stelle „E-Mail-Adresse, sichtbar mit JavaScript“ (englisch „e-mail address, shown with JavaScript“)
+* Deezer-Hinweis auf Deutsch: „Der Button öffnet sie …“ statt „Der Knopf …“
+
 ## 1.23.0 (15. November 2026)
 
 **Lauftext für abgeschnittene Zeilen**

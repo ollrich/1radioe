@@ -6,6 +6,22 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  /* E-mail addresses in the texts (Impressum, Datenverarbeitung, Über): the server sends
+     them encoded (app/texts.php, text_protect_mail), so they are not in the HTML for
+     address collectors. Here they become normal mailto links, before anything copies the
+     texts (the menu on phones). Runs also when the stations could not be loaded. */
+  $$('.mail[data-m]').forEach((n) => {
+    let target = '';
+    try { target = decodeURIComponent(atob([...n.dataset.m].reverse().join(''))); } catch { return; }
+    const addr = target.replace(/^mailto:/i, '').split('?')[0];
+    if (!/^mailto:/i.test(target) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) return;
+    const a = document.createElement('a');
+    a.href = target;
+    if (n.dataset.keep) a.append(...n.childNodes);
+    else a.textContent = addr;
+    n.replaceWith(a);
+  });
+
   const dataEl = $('#r1-data');
   if (!dataEl) return;
   const data = JSON.parse(dataEl.textContent);

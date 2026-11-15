@@ -252,6 +252,45 @@ function text_inline(DOMNode $node): string
     return $inner;   // span, font, u and everything unknown: only the content
 }
 
+/**
+ * E-mail addresses out of the HTML, for the public page: every mailto link and every
+ * address in the text becomes a placeholder with the address encoded (URL-encoded,
+ * base64, reversed), which assets/app.js turns back into a normal mailto link. Address
+ * collectors read the page without scripts and find nothing; without JavaScript the
+ * placeholder says where the address went. $html: cleaned HTML from text_clean().
+ */
+function text_protect_mail(string $html, string $lang = 'de'): string
+{
+    $hint   = $lang === 'de' ? 'E-Mail-Adresse, sichtbar mit JavaScript' : 'e-mail address, shown with JavaScript';
+    $mail   = '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}';
+    $encode = static fn(string $target): string => strrev(base64_encode(rawurlencode($target)));
+    $holder = static function (string $target, ?string $label) use ($encode, $hint): string {
+        return '<span class="mail" data-m="' . htmlspecialchars($encode($target), ENT_QUOTES | ENT_HTML5, 'UTF-8') . '"'
+            . ($label !== null ? ' data-keep="1">' . $label : '>' . htmlspecialchars($hint, ENT_QUOTES | ENT_HTML5, 'UTF-8'))
+            . '</span>';
+    };
+    // mailto links: the label stays if it holds no address ("Schreib mir"), else the hint
+    $html = (string) preg_replace_callback('~<a href="(mailto:[^"]+)"[^>]*>(.*?)</a>~s', static function (array $m) use ($holder, $mail): string {
+        $target = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $label  = preg_match('~' . $mail . '~', strip_tags($m[2])) ? null : $m[2];
+        return $holder($target, $label);
+    }, $html);
+    // addresses in the text, outside links (a placeholder inside a link would nest links)
+    $out   = '';
+    $inA   = 0;
+    foreach (preg_split('~(<[^>]+>)~', $html, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [] as $part) {
+        if ($part[0] === '<') {
+            $inA += preg_match('~^<a[\s>]~i', $part) ? 1 : (preg_match('~^</a>~i', $part) ? -1 : 0);
+            $out .= $part;
+        } elseif ($inA > 0) {
+            $out .= $part;
+        } else {
+            $out .= (string) preg_replace_callback('~' . $mail . '~', static fn(array $m): string => $holder('mailto:' . html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8'), null), $part);
+        }
+    }
+    return $out;
+}
+
 /** A link target that may stay: http, https, mailto or relative on this site. */
 function text_href(string $href): ?string
 {
