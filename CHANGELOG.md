@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.23.0 (15. November 2026)
+
+**Lauftext für abgeschnittene Zeilen**
+
+* Eine abgeschnittene Zeile läuft auf Abruf bis zum Ende, ruht kurz und springt zurück: am Desktop beim Darüberfahren oder bei Tastaturfokus (Zeilen der Liste, Songzeilen auf der Bühne), solange er dauert. Auf dem Handy laufen die Zeile des gewählten Senders in der Liste und die im angedockten Player einmal, sobald er spielt, die Songzeilen einmal beim Öffnen des großen Players
+* Von selbst und dauerhaft bewegt sich nichts (WCAG 2.2.2), bei „Bewegung reduzieren“ gar nichts. Passt der Text, bewegt sich ebenfalls nichts
+* Behoben: In der Liste auf dem Handy und im angedockten Player fehlte das „…“ am Ende abgeschnittener Zeilen, der Text war einfach gekappt. Die Zeilen waren Flex-Container, an denen `text-overflow` nicht greift
+* Texte im Player werden nur noch neu gesetzt, wenn sie sich ändern, damit ein laufender Text nicht durch denselben Text zurückspringt
+
 ## 1.22.0 (15. November 2026)
 
 **Für Suchmaschinen offen**

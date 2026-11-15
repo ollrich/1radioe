@@ -336,7 +336,10 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .row .num { min-width: 22px; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
 .rn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rname { font-weight: 640; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rsub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+.rsub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* running text (app.js): the "…" gives way while a cut-off line runs */
+.mq-on { text-overflow: clip !important; }
+.mq { display: inline-block; white-space: nowrap; }
 .chev { transition: transform .2s ease; }
 .row[aria-expanded="true"] .chev { transform: rotate(180deg); }
 
@@ -347,7 +350,9 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   background: var(--panel); color: var(--panelfg); box-shadow: 0 12px 32px rgb(5 9 20 / .35);
 }
 .mini-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: transparent; border: 0; padding: 2px; text-align: left; cursor: pointer; min-height: 48px; }
-.mini .rsub { color: var(--panelmuted); }
+.mini .rsub { color: var(--panelmuted); display: flex; align-items: center; }
+/* the state, song or description next to the dot ends in "…" (a flex line cannot) */
+.mini .rsub [data-r1="state"] { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mini .ic { width: 48px; height: 48px; border-color: rgb(252 252 253 / .24); }
 .mini .ic-play { background: #1a80b6; color: #fcfcfd; border: 0; }
 
