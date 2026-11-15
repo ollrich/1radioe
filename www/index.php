@@ -131,7 +131,9 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <meta name="twitter:card" content="summary">
 <?php endif; ?>
 <title><?= $start !== null ? h($start['name']) . ' · ' : '' ?>1radiœ</title>
-<link rel="icon" href="assets/favicon.png?v=<?= $v ?>">
+<link rel="icon" href="assets/favicon.png?v=<?= $v ?>" sizes="128x128" type="image/png">
+<link rel="icon" href="assets/favicon.svg?v=<?= $v ?>" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=<?= $v ?>">
 <link rel="preload" href="assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/app.css?v=<?= $v ?>">
 <noscript><link rel="stylesheet" href="assets/nojs.css?v=<?= $v ?>"></noscript>
@@ -143,7 +145,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <?php endif; ?>
 <div class="page">
   <header class="top">
-    <a class="wm" href="./"><span class="sr"><?= h($L['home']) ?></span><span aria-hidden="true">1radi<span class="oe">œ</span></span></a>
+    <a class="wm" href="./"><span class="sr"><?= h($L['home']) ?></span><?= brand_wordmark() ?></a>
     <span class="top-actions">
 <?php if ($listener !== null): ?>
       <button type="button" class="listen-switch" data-listen-switch aria-pressed="true" data-js title="<?= h(sprintf($L['listen_title'], $listener['name'])) ?>">

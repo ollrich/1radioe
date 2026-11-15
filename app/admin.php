@@ -113,7 +113,9 @@ function render_page(string $title, string $body, array $scripts = [], string $b
         . '<meta name="robots" content="noindex, nofollow">'
         . '<meta name="theme-color" content="#0b1328">'
         . '<title>' . h($title) . ' · ' . h(APP_NAME) . '</title>'
-        . '<link rel="icon" href="assets/favicon.png?v=' . APP_VERSION . '">'
+        . '<link rel="icon" href="assets/favicon.png?v=' . APP_VERSION . '" sizes="128x128" type="image/png">'
+        . '<link rel="icon" href="assets/favicon.svg?v=' . APP_VERSION . '" type="image/svg+xml">'
+        . '<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=' . APP_VERSION . '">'
         . '<link rel="stylesheet" href="assets/vendor/cropper.min.css?v=' . APP_VERSION . '">'
         . '<link rel="stylesheet" href="assets/app.css?v=' . APP_VERSION . '">'
         . $js . '</head><body class="' . h($bodyClass) . '">' . $body . '</body></html>';
@@ -124,6 +126,6 @@ function render_page(string $title, string $body, array $scripts = [], string $b
 function render_card(string $title, string $content, array $scripts = []): never
 {
     render_page($title, '<main class="card-page"><div class="card">'
-        . '<img class="brand" src="assets/logo.png?v=' . APP_VERSION . '" alt="' . h(APP_NAME) . '" width="186" height="64">'
+        . '<div class="brand-wrap"><span class="sr">' . h(APP_NAME) . '</span>' . brand_wordmark('brand') . '</div>'
         . $content . '</div><p class="card-foot">' . h(APP_NAME) . ' ' . h(APP_VERSION) . '</p></main>', $scripts, 'is-card');
 }

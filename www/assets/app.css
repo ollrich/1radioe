@@ -71,8 +71,10 @@ button svg, a svg, label svg { fill: currentColor; flex: none; }
 
 .page { min-height: 100vh; max-width: 1200px; margin: 0 auto; padding: 28px 48px 20px; display: flex; flex-direction: column; gap: 24px; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.wm { font-weight: 900; font-stretch: 100%; letter-spacing: -.035em; line-height: 1; font-size: 34px; text-decoration: none; }
-.wm .oe { color: var(--accent); }
+/* the wordmark (app/brand.php): as high as the letters were in text at 34 px */
+.wm { display: block; line-height: 0; text-decoration: none; }
+.wm .wordmark { display: block; height: 27px; width: auto; fill: currentColor; }
+.wm .wordmark .oe { fill: var(--accent); }
 .top-actions { display: flex; align-items: center; gap: 10px; }
 
 /* only in Ollie's own browser: listening is recorded here, can be paused for the session */
@@ -474,7 +476,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 
 @media (max-width: 760px) {
   .page { padding: 20px 16px 128px; gap: 16px; }
-  .wm { font-size: 30px; }
+  .wm .wordmark { height: 24px; }
   .wide-only { display: none; }
   .listen-switch { padding: 0 10px; }
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
