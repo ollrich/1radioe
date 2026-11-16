@@ -263,6 +263,19 @@
     const dir = Number(a.dataset.scroll);
     scroller.scrollBy({ left: dir * Math.max(SLOT, scroller.clientWidth - 2 * SLOT) });
   }));
+  // the mouse wheel scrolls the scale sideways while it has room in that direction; at its
+  // end, and with a trackpad's own sideways swipe, the page behaves as usual
+  scroller.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    const max = scroller.scrollWidth - scroller.clientWidth;
+    if (max <= 1) return;
+    const step = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * scroller.clientWidth : e.deltaY;
+    if ((step < 0 && scroller.scrollLeft <= 0) || (step > 0 && scroller.scrollLeft >= max - 1)) return;
+    e.preventDefault();
+    scroller.style.scrollBehavior = 'auto';   // follow the wheel directly, no smooth lag
+    scroller.scrollLeft += step;
+    scroller.style.scrollBehavior = '';
+  }, { passive: false });
   let measureFrame = 0;
   scroller.addEventListener('scroll', () => {
     cancelAnimationFrame(measureFrame);
