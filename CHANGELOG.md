@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.24.3 (16. November 2026)
+
+* `http://1radioe.net` leitet jetzt auf HTTPS weiter (301), nur für GET und HEAD, damit POST-Anfragen von Sonos oder Home Assistant ihren Inhalt nicht verlieren
+* HSTS: HTTPS-Antworten tragen `Strict-Transport-Security: max-age=31536000`, ohne `includeSubDomains` und `preload`
+* Datenverarbeitung neu geschrieben (im Admin, nicht im Code): Verantwortlicher, keine Server-Logs, kein Tracking, nur die Lautstärke im Browser, Abspielen direkt beim Sender, Hörstatus, SoundCloud mit Einwilligung per Klick, Deezer und andere Links, E-Mail über mailbox.org, Verwaltung, Hosting bei All-Inkl, Rechte und Beschwerde. Deutsch und Englisch
+
 ## 1.24.2 (15. November 2026)
 
 * `rel="me"` für Ollies Mastodon-Profil (`https://norden.social/@olli`, Konstante `ME_LINKS` in `app/texts.php`): als `<link rel="me">` im Kopf der Web-App, auf Englisch und Deutsch. Damit kann Mastodon 1radioe.net im Profil als bestätigt anzeigen. Ein Link auf das Profil in den Texten aus dem Admin bekommt beim Speichern ebenfalls `rel="me"`
