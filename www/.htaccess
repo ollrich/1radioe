@@ -13,6 +13,12 @@ Options -Indexes -MultiViews
 # for PHP's built-in server, keep both in sync.
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Plain HTTP goes to HTTPS. Only GET and HEAD: a POST (Sonos, Home Assistant) would
+    # lose its body on a redirect, those clients use HTTPS anyway.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
     # German under /de/: every address works there as well, the page reads the language
     # from REQUEST_URI (which keeps /de/). /de gets its slash, so relative links stay right.
     RewriteRule ^de$ /de/ [R=301,L]
@@ -28,6 +34,12 @@ Options -Indexes -MultiViews
     RewriteRule ^s/([A-Za-z0-9._-]+)$ index.php?s=$1&go=1 [L]
     # Sonos playback reports: Reporting Endpoint …/report/v2.3, Sonos appends /timePlayed
     RewriteRule ^report/ report.php [L]
+</IfModule>
+
+# Browsers keep to HTTPS for a year once they were here (HSTS), only on HTTPS answers.
+# Without includeSubDomains and preload: other subdomains are not known to run HTTPS.
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on'"
 </IfModule>
 
 # Search engines may index the web app (robots.txt keeps them off the admin, the
