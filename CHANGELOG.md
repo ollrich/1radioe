@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.24.6 (16. November 2026)
+
+* Desktop: Der Tooltip eines Senders auf der Skala zeigt den vollen Namen und darunter die Beschreibung. Eine Kategorie zeigt ihre Beschreibung, ohne eine die Zahl der Sender
+
 ## 1.24.5 (16. November 2026)
 
 * Desktop: Das Mausrad über Lautsprecher und Lautstärkeregler stellt die Lautstärke ein, eine Rastung sind 5 %, nach oben lauter. Ein Trackpad regelt in kleinen Schritten. Die Seite scrollt dabei nicht mit

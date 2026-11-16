@@ -171,7 +171,10 @@
       const li = el('li');
       const b = el('button', 'st');
       b.type = 'button';
-      b.title = it.name;
+      // tooltip: the full name (it may be cut off under the logo) and the description;
+      // a category without one tells its number of stations
+      const more = it.desc || (it.type === 'category' ? countText(it.count) : '');
+      b.title = more ? `${it.name}\n${more}` : it.name;
       const tile = el('span', 'tile');
       fillTile(tile, it);
       const slot = el('span', 'pill-slot');
