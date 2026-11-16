@@ -747,6 +747,22 @@
       if (sc.frame) scSend('setVolume', volume);
       try { localStorage.setItem('r1.volume', String(volume)); } catch { /* not remembered */ }
     });
+    // the mouse wheel over the speaker and the slider sets the volume: one notch is 5 %,
+    // a trackpad moves it in small steps; up is louder
+    let wheelRest = 0;
+    input.closest('[data-volume]').addEventListener('wheel', (e) => {
+      if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      const px = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY;
+      wheelRest += -px / 20;
+      const step = Math.trunc(wheelRest);
+      if (!step) return;
+      wheelRest -= step;
+      const next = Math.min(100, Math.max(0, Number(input.value) + step));
+      if (next === Number(input.value)) return;
+      input.value = String(next);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, { passive: false });
   });
 
   /* ---------- SoundCloud ----------
