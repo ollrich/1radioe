@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.24.4 (16. November 2026)
+
+* Liste auf dem Handy: Eine Kategorie zeigt unter ihrem Namen ihre Beschreibung aus dem Admin, die Zahl der Sender nur noch, wenn sie keine Beschreibung hat. Screenreader hören die Zahl weiter
+* Desktop: Das Mausrad scrollt die Senderskala seitwärts, wenn nicht alle Sender sichtbar sind, solange sie in die Richtung noch Platz hat. Am Ende und beim seitlichen Wischen auf dem Trackpad verhält sich die Seite wie gewohnt
+
 ## 1.24.3 (16. November 2026)
 
 * `http://1radioe.net` leitet jetzt auf HTTPS weiter (301), nur für GET und HEAD, damit POST-Anfragen von Sonos oder Home Assistant ihren Inhalt nicht verlieren
