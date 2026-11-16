@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.24.4 (16. November 2026)
+
+* Liste auf dem Handy: Eine Kategorie zeigt unter ihrem Namen ihre Beschreibung aus dem Admin, die Zahl der Sender nur noch, wenn sie keine Beschreibung hat. Screenreader hören die Zahl weiter
+
 ## 1.24.3 (16. November 2026)
 
 * `http://1radioe.net` leitet jetzt auf HTTPS weiter (301), nur für GET und HEAD, damit POST-Anfragen von Sonos oder Home Assistant ihren Inhalt nicht verlieren

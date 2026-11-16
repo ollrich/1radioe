@@ -359,7 +359,8 @@
       const cur = Boolean(state.cur && state.cur.id === it.id && state.phase !== 'idle');
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
-      setText(sub, it.type === 'category' ? countText(it.count)
+      // a category shows its description, the number of stations only without one
+      setText(sub, it.type === 'category' ? (it.desc || countText(it.count))
         : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || phaseText(state.phase))
         : (it.desc || ''));
       // an open category shows the status at the station inside, not twice

@@ -34,6 +34,7 @@ function webapp_levels(): array
             'num'   => sprintf('%02d', $c['sort']),
             'logo'  => logo_url(category_cover($c['row'], $rows)),
             'count' => count($levels[$id] ?? []),
+            'desc'  => (string) $c['row']['description'],
         ];
     }
     ksort($root);
