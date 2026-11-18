@@ -116,7 +116,7 @@ function is_track_id(string $id): bool
 function smapi_listen(string $id, bool $playing): bool
 {
     try {
-        $s  = is_track_id($id) ? null : station_by_smapi($id);
+        $s  = is_track_id($id) || !listen_anonymous_allowed() ? null : station_by_smapi($id);
         $ok = $s !== null && listen_report($s, $playing);
     } catch (Throwable) {
         $ok = false;

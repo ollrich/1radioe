@@ -451,6 +451,8 @@ render_page('Sender', <<<HTML
       <div class="panel wide">
         <h2>Hörgeräte</h2>
         <p class="muted">Browser und Dienste wie Home Assistant, die deinen Hörstatus melden dürfen. Sie dürfen nur an <code>/api/listen</code> melden, nie die Verwaltung öffnen. Gespeichert ist nur eine Prüfsumme. Das Cookie eines Browsers gilt 180 Tage und verlängert sich bei Benutzung, ein Schlüssel gilt, bis du ihn widerrufst.</p>
+        <label class="switch" id="listen-keyed"><input type="checkbox"><span>Nur Meldungen mit Schlüssel annehmen</span></label>
+        <p class="muted small">Dann zählen nur Home Assistant, gemerkte Browser und Apps mit Schlüssel. Die anonymen Meldungen der Sonos-Lautsprecher (Start über 1radiœ, Reporting Endpoint) werden ignoriert, weil sie jeder vortäuschen könnte. Ohne Home Assistant zeigt 1radiœ dann keine Sonos-Wiedergabe mehr an.</p>
         <p id="listen-this"></p>
         <form class="banner-form" data-remember id="listen-remember" hidden>
           <input name="name" maxlength="80" required placeholder="Name, z. B. Firmenrechner" aria-label="Name des Geräts">

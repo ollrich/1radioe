@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.26.0 (18. November 2026)
+
+* Admin, Hörgeräte: Schalter „Nur Meldungen mit Schlüssel annehmen“. Ist er an, zählen für den Hörstatus nur Home Assistant, gemerkte Browser und Apps mit Schlüssel. Die anonymen Meldungen der Sonos-Lautsprecher (Start über `smapi.php`, Reporting Endpoint `report.php`) werden ignoriert, Wiedergabe und Antworten an Sonos bleiben unverändert. Schließt die Lücke, über die jeder einen Hörstatus und damit ein Posting hätte vortäuschen können. Standard aus, gespeichert in `r1_settings` (`listen.keyed_only`)
+
 ## 1.25.0 (18. November 2026)
 
 **Für Suchmaschinen und Link-Karten**
