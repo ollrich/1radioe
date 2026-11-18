@@ -140,7 +140,9 @@ Alle aktiven Sender, nie MP3-Playlists, Tracks, SoundCloud oder Deezer. Die Reih
 | `/api/stations.json` | alles für eine eigene App |
 | `/api/status` | laufende Sender |
 | `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
-| `/api/listen` | Meldungen des eigenen Browsers (Hör-Cookie) oder von Home Assistant (Schlüssel) |
+| `/api/listen` | Meldungen des eigenen Browsers (Hör-Cookie), von Home Assistant oder einer App (Schlüssel) |
+
+Alles, was eine eigene App braucht, mit Beispielen und Antwortcodes, steht in [API.md](API.md).
 
 Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
 
@@ -151,7 +153,7 @@ Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören �
   "version": "<Katalog-Stand>",
   "generated": "2026-11-12T16:00:00+01:00",
   "status_url": "https://1radioe.net/api/status",
-  "ping_url": "https://1radioe.net/api/ping",
+  "listen_url": "https://1radioe.net/api/listen",
   "nowplaying_url": "https://1radioe.net/api/nowplaying?id={id}",
   "categories": [ { "id": "jazz", "name": "Jazz", "sort": 3, "logo": null } ],
   "stations": [

@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.26.1 (18. November 2026)
+
+* Neue Datei `API.md`: die Schnittstellen für eine eigene App (Sender, Hörstatus lesen und melden, laufender Song) mit Beispielen, Feldern, Antwortcodes und Hinweisen
+* `stations.json` nennt statt `ping_url` (eine Adresse, die es nie gab) jetzt `listen_url` (`/api/listen`)
+
 ## 1.26.0 (18. November 2026)
 
 * Admin, Hörgeräte: Schalter „Nur Meldungen mit Schlüssel annehmen“. Ist er an, zählen für den Hörstatus nur Home Assistant, gemerkte Browser und Apps mit Schlüssel. Die anonymen Meldungen der Sonos-Lautsprecher (Start über `smapi.php`, Reporting Endpoint `report.php`) werden ignoriert, Wiedergabe und Antworten an Sonos bleiben unverändert. Schließt die Lücke, über die jeder einen Hörstatus und damit ein Posting hätte vortäuschen können. Standard aus, gespeichert in `r1_settings` (`listen.keyed_only`)
