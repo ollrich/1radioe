@@ -46,7 +46,7 @@ try {
         'version'    => $version,
         'generated'  => date(DATE_ATOM),
         'status_url' => $base . '/api/status',
-        'ping_url'   => $base . '/api/ping',
+        'listen_url' => $base . '/api/listen',
         'nowplaying_url' => $base . '/api/nowplaying?id={id}',
         'categories' => array_map(static fn($c) => [
             'id'   => $c['row']['smapi_id'],
