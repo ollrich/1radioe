@@ -124,7 +124,8 @@ function webapp_prefers_german(): bool
 function webapp_strings(string $lang): array
 {
     $de = [
-        'description' => 'Ollis Radiosender: hören im Browser, auf Sonos und in VLC.',
+        'title'       => '1radiœ · Ollis Radiosender',
+        'description' => 'Ollis persönliche Auswahl an Internetradios, von FIP bis BBC Radio 1. Hören im Browser, auf Sonos und in VLC, ohne Tracking.',
         'h1'          => '1radiœ: Ollis Radiosender',
         'menu'        => 'Menü',
         'menu_open'   => 'Menü öffnen',
@@ -172,7 +173,8 @@ function webapp_strings(string $lang): array
         'close_player' => 'Player schließen',
     ];
     $en = [
-        'description' => "Ollie's radio stations: listen in the browser, on Sonos and in VLC.",
+        'title'       => "1radiœ · Ollie's radio stations",
+        'description' => "Ollie's personal selection of internet radio stations, from FIP to BBC Radio 1. Listen in the browser, on Sonos and in VLC, no tracking.",
         'h1'          => "1radiœ: Ollie's radio stations",
         'menu'        => 'Menu',
         'menu_open'   => 'Open menu',

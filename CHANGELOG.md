@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.25.0 (18. November 2026)
+
+**Für Suchmaschinen und Link-Karten**
+
+* Startseite mit eigenem Titel („1radiœ · Ollis Radiosender“, englisch „1radiœ · Ollie's radio stations“) und ausführlicherer Beschreibung mit Senderbeispielen
+* Vorschaubild `assets/og-image.png` (1200 × 630 px, Wortmarke auf Navy, aus Mona Sans) für die Startseite, als große Karte (`summary_large_image`). Senderseiten behalten ihr Logo als kleine Karte
+* `canonical` je Sprache. Senderseiten (`?s=`) verweisen auf die Startseite ihrer Sprache, ihre Link-Karten bleiben
+* Senderseiten tragen die Senderbeschreibung jetzt auch in der Beschreibung für Suchmaschinen
+* `og:locale` (`de_DE`, `en_GB`) und ein Favicon in 192 px, weil Google Vielfache von 48 px will
+
 ## 1.24.6 (16. November 2026)
 
 * Desktop: Der Tooltip eines Senders auf der Skala zeigt den vollen Namen und darunter die Beschreibung. Eine Kategorie zeigt ihre Beschreibung, ohne eine die Zahl der Sender

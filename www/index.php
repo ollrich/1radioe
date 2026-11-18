@@ -64,11 +64,15 @@ foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
         }
     }
 }
+// search engines and link cards: the start page with its own title and share image; a
+// station page (?s=) with the station, its link card and the start page as canonical
+$home = base_url() . ($lang === 'de' ? '/de/' : '/');
 $og = [
-    'title'       => $start !== null ? $start['name'] : APP_NAME,
+    'title'       => $start !== null ? $start['name'] : $L['title'],
     'description' => $start !== null && $start['desc'] !== '' ? $start['desc'] : $L['description'],
-    'url'         => base_url() . ($lang === 'de' ? '/de' : '') . ($start !== null ? '/s/' . rawurlencode($start['id']) : '/'),
-    'image'       => $start['logo'] ?? null,
+    'url'         => $start !== null ? base_url() . ($lang === 'de' ? '/de' : '') . '/s/' . rawurlencode($start['id']) : $home,
+    'image'       => $start !== null ? ($start['logo'] ?? null) : base_url() . '/assets/og-image.png',
+    'large'       => $start === null,   // the wide share image; station logos are square
 ];
 
 $v    = h(APP_VERSION);
@@ -119,7 +123,8 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fcfcfd" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1328" media="(prefers-color-scheme: dark)">
-<meta name="description" content="<?= h($L['description']) ?>">
+<meta name="description" content="<?= h($og['description']) ?>">
+<link rel="canonical" href="<?= h($home) ?>">
 <link rel="alternate" hreflang="en" href="<?= h(base_url()) ?>/">
 <link rel="alternate" hreflang="de" href="<?= h(base_url()) ?>/de/">
 <?php foreach (ME_LINKS as $me): ?>
@@ -130,12 +135,19 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <meta property="og:title" content="<?= h($og['title']) ?>">
 <meta property="og:description" content="<?= h($og['description']) ?>">
 <meta property="og:url" content="<?= h($og['url']) ?>">
+<meta property="og:locale" content="<?= $lang === 'de' ? 'de_DE' : 'en_GB' ?>">
 <?php if ($og['image'] !== null): ?>
 <meta property="og:image" content="<?= h($og['image']) ?>">
-<meta name="twitter:card" content="summary">
+<?php if ($og['large']): ?>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="1radiœ">
 <?php endif; ?>
-<title><?= $start !== null ? h($start['name']) . ' · ' : '' ?>1radiœ</title>
+<meta name="twitter:card" content="<?= $og['large'] ? 'summary_large_image' : 'summary' ?>">
+<?php endif; ?>
+<title><?= $start !== null ? h($start['name']) . ' · 1radiœ' : h($L['title']) ?></title>
 <link rel="icon" href="assets/favicon.png?v=<?= $v ?>" sizes="128x128" type="image/png">
+<link rel="icon" href="assets/icon-192.png?v=<?= $v ?>" sizes="192x192" type="image/png">
 <link rel="icon" href="assets/favicon.svg?v=<?= $v ?>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=<?= $v ?>">
 <link rel="preload" href="assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
