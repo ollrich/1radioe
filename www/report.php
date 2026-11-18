@@ -93,7 +93,7 @@ foreach (array_slice($items, 0, REPORT_MAX_ITEMS) as $item) {
         }
     }
     $ok = false;
-    if ($station !== null) {
+    if ($station !== null && listen_anonymous_allowed()) {   // off: only reports with a key count
         try {
             $ok = listen_report($station, $playing);
         } catch (Throwable) {

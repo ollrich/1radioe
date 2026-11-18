@@ -149,9 +149,14 @@ try {
             $current = listen_current_device();
             $currentId = $current !== null ? (int) $current['id'] : null;
             json_out([
-                'devices' => array_map(static fn($d) => listen_device_public($d, $currentId), listen_devices()),
-                'this'    => $current !== null ? listen_device_public($current, $currentId) : null,
+                'devices'    => array_map(static fn($d) => listen_device_public($d, $currentId), listen_devices()),
+                'this'       => $current !== null ? listen_device_public($current, $currentId) : null,
+                'keyed_only' => !listen_anonymous_allowed(),
             ]);
+
+        case 'POST listen.keyed':
+            setting_set('listen.keyed_only', !empty($in['on']) ? '1' : '0');
+            json_out(['keyed_only' => !listen_anonymous_allowed()]);
 
         case 'POST listen.remember':
             $created = listen_device_create((string) ($in['name'] ?? ''), 'browser');

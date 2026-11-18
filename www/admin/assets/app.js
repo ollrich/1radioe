@@ -1198,6 +1198,18 @@
 
   // After login the admin offers to remember this browser for the listening status,
   // unless it already is or the offer was dismissed in this session.
+  $('#listen-keyed input').addEventListener('change', async (e) => {
+    const box = e.currentTarget;
+    try {
+      const res = await api('listen.keyed', { on: box.checked });
+      box.checked = res.keyed_only;
+      toast(res.keyed_only ? 'Nur noch Meldungen mit Schlüssel' : 'Sonos-Meldungen zählen wieder');
+    } catch (err) {
+      box.checked = !box.checked;
+      toast(err.message, 'error');
+    }
+  });
+
   async function loadDevices() {
     let data;
     try {
@@ -1205,6 +1217,7 @@
     } catch {
       return;
     }
+    $('#listen-keyed input').checked = Boolean(data.keyed_only);
     let dismissed = false;
     try { dismissed = sessionStorage.getItem('r1.listen.banner') === 'no'; } catch { /* not remembered */ }
     $('#listen-banner').hidden = Boolean(data.this) || dismissed;

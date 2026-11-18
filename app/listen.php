@@ -58,6 +58,16 @@ function listen_active(): array
  * token is stored, the token itself exists only in the cookie.
  */
 
+/**
+ * Anonymous reports from Sonos (smapi.php at the start, report.php while it plays) can
+ * be switched off in the admin: then only sources with a key count, Home Assistant, a
+ * remembered browser and a later app. Anybody could fake the anonymous ones.
+ */
+function listen_anonymous_allowed(): bool
+{
+    return setting('listen.keyed_only', '0') !== '1';
+}
+
 const LISTEN_COOKIE      = 'r1listen';
 const LISTEN_COOKIE_DAYS = 180;
 
