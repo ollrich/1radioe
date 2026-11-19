@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.28.1 (19. November 2026)
+
+* Web-App, YouTube: Neben dem Kanal läuft beim Video im Player die Zeit mit, etwa „Kanal · 12:34 / 1:02:03“, auf der Bühne, im großen und im kleinen Player und in der Liste. Sie folgt dem, was der Player alle Viertelsekunde meldet, also auch einem Sprung im Video, pausiert ebenso. Vor dem Laden und bei den anderen Videos steht weiter die Länge
+* Die Ziffern der Zeit haben eine Breite, damit die Zeile nicht zittert. Der Sperrbildschirm behält die feste Zeile
+
 ## 1.28.0 (19. November 2026)
 
 YouTube-Playlists in der Web-App:

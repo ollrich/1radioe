@@ -114,6 +114,8 @@ function webapp_youtube(array $row): array
             'logo'     => logo_url($v['image']),
             'thumb'    => $v['image'] ? logo_url(logo_thumb_name((string) $v['image'])) : null,
             'desc'     => implode(' · ', array_filter([(string) $v['channel'], youtube_length((int) $v['duration'])])),
+            'channel'  => (string) $v['channel'],   // while it plays, the time runs beside it (app.js)
+            'length'   => (int) $v['duration'],
             'website'  => $url,
             'country'  => '',
             'city'     => '',

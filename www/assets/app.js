@@ -995,7 +995,7 @@
    * follows. No listening status and no song lookups for YouTube. */
 
   const YT_ORIGIN = 'https://www.youtube-nocookie.com';
-  const yt = { ok: false, frame: null, video: '', ready: false, want: false, timer: 0, hello: 0, gone: 0 };
+  const yt = { ok: false, frame: null, video: '', ready: false, want: false, timer: 0, hello: 0, gone: 0, pos: null, dur: 0, line: '' };
   const ytBox = () => $(`[data-yt-box="${phone.matches ? 'sheet' : 'stage'}"]`);
   const ytSlot = () => $(`[data-yt-slot="${phone.matches ? 'sheet' : 'stage'}"]`);
 
@@ -1040,6 +1040,7 @@
     clearTimeout(yt.gone);
     yt.video = it.video;
     yt.want = autoplay;
+    Object.assign(yt, { pos: null, dur: 0, line: '' });
     if (yt.frame && yt.ready && yt.frame.parentElement === box) {
       ytSend(autoplay ? 'loadVideoById' : 'cueVideoById', [it.video]);   // the same player, no new consent to start
     } else {
@@ -1127,9 +1128,44 @@
     clearTimeout(yt.gone);
     clearInterval(yt.hello);
     if (yt.frame) yt.frame.remove();
-    Object.assign(yt, { frame: null, video: '', ready: false, want: false });
+    Object.assign(yt, { frame: null, video: '', ready: false, want: false, pos: null, dur: 0, line: '' });
     $$('[data-yt-box]').forEach((b) => { b.hidden = true; b.replaceChildren(); });
     $$('[data-yt-slot]').forEach((s) => { s.hidden = true; });
+  }
+
+  /** Seconds as on YouTube: 4:05, or 1:04:05 if the video is an hour or longer. */
+  function clock(sec, long) {
+    const s = Math.floor(sec);
+    const m = Math.floor(s / 60) % 60;
+    const h = Math.floor(s / 3600);
+    const ss = String(s % 60).padStart(2, '0');
+    return long || h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+  }
+
+  /** Channel and length of a video; for the one in the player the time runs: "Kanal · 12:34 / 1:02:03". */
+  function ytLine(it) {
+    if (!it || yt.video !== it.video || yt.pos === null) return it ? it.desc || '' : '';
+    const dur = it.length || yt.dur;   // the length of the list first, the player rounds it down
+    if (!dur) return it.desc || '';
+    const long = dur >= 3600;
+    return [it.channel, `${clock(Math.min(yt.pos, dur), long)} / ${clock(dur, long)}`].filter(Boolean).join(' · ');
+  }
+
+  /** The player reports where it is (also after a jump, also paused): the line follows. */
+  function ytTime(info) {
+    const v = info.videoData && info.videoData.video_id;
+    if (v && v !== yt.video) return;   // a last report about the video before
+    if (typeof info.duration === 'number' && info.duration > 0) yt.dur = info.duration;
+    if (typeof info.currentTime === 'number') {
+      // right after loading another video the old position may come once more: only from the start
+      if (yt.pos === null && !v && info.currentTime > 2) return;
+      yt.pos = Math.max(0, info.currentTime);
+    }
+    const line = ytLine(state.cur);
+    if (line !== yt.line) {
+      yt.line = line;
+      renderTrack();
+    }
   }
 
   /** A video came to its end: the next entry of the list if it is a video too, else stop. */
@@ -1170,6 +1206,7 @@
       ytGone();
       return;
     }
+    if (msg.event === 'infoDelivery' && msg.info && typeof msg.info === 'object') ytTime(msg.info);
     if (st === 1) {          // playing
       clearTimeout(yt.timer);
       yt.want = true;
@@ -1202,18 +1239,24 @@
 
   /* Media keys, Chrome's media controls, lock screen */
   const media = 'mediaSession' in navigator ? navigator.mediaSession : null;
+  let metaKey = '';
   function setMediaMetadata() {
     if (!media || !state.cur || typeof MediaMetadata === 'undefined') return;
     const it = state.cur;
     const cat = it.level !== 'root' ? items.get(it.level) : null;
     const type = it.logo && /\.png$/i.test(it.logo) ? 'image/png' : 'image/jpeg';
     const t = currentTrack();
-    media.metadata = new MediaMetadata({
+    const data = {
       title: t ? t.title : it.name,
-      artist: t ? (t.artist || it.name) : (currentDesc() || '1radiœ'),
+      // the fixed description: the running time of a video stays on the page
+      artist: t ? (t.artist || it.name) : (it.desc || '1radiœ'),
       album: t ? it.name : (cat ? cat.name : ''),
       artwork: it.logo ? [{ src: it.logo, sizes: isYt(it) ? '640x360' : '600x600', type }] : [],
-    });
+    };
+    const key = JSON.stringify(data);
+    if (key === metaKey) return;   // renderTrack runs every second while a video plays
+    metaKey = key;
+    media.metadata = new MediaMetadata(data);
   }
   if (media) {
     const handle = (action, fn) => { try { media.setActionHandler(action, fn); } catch { /* not supported */ } };
@@ -1608,7 +1651,8 @@
 
   /** The station's description from the admin: always under the name, until a song replaces it. */
   function currentDesc() {
-    return state.cur ? (state.cur.desc || '') : '';
+    if (!state.cur) return '';
+    return isYt(state.cur) ? ytLine(state.cur) : (state.cur.desc || '');
   }
 
   function renderTrack() {
