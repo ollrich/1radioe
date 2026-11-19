@@ -21,6 +21,11 @@ function admin_boot(): ?string
     $host  = strtolower((string) parse_url('http://' . ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST));
     $local = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     if (!is_https() && !$local) {
+        // the host as in called_endpoint(): letters, digits, dots and dashes, maybe a port
+        if (!preg_match('~^[a-z0-9.-]{1,100}(:\d{1,5})?$~i', (string) ($_SERVER['HTTP_HOST'] ?? ''))) {
+            http_response_code(400);
+            exit;
+        }
         header('Location: https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], true, 301);
         exit;
     }

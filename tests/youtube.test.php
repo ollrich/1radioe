@@ -46,7 +46,7 @@ $videos = [
 $entries = [
     ['kW33vGTzwK4', '2026-11-06T10:00:00Z'], ['mUkZhbct7Eo', '2026-11-04T10:00:00Z'], ['PRIVATE0001', '2026-11-03T10:00:00Z'],
     ['s9r5sBZR_cU', '2026-09-16T10:00:00Z'], ['NOEMBED0001', '2026-09-15T10:00:00Z'], ['UPCOMING001', '2026-09-14T10:00:00Z'],
-    ['djsItMOfCQA', '2026-12-01T10:00:00Z'], ['kW33vGTzwK4', '2025-01-01T10:00:00Z'],
+    ['djsItMOfCQA', '2026-12-01T10:00:00Z'], ['kW33vGTzwK4', '2026-11-20T10:00:00Z'],
 ];
 $calls = [];
 $api = static function (array $entries) use ($videos, &$calls): Closure {
@@ -97,7 +97,7 @@ $age   = static fn(int $list) => q('UPDATE r1_youtube_videos SET image_at = 0 WH
 check('fetch order, newest added first', array_column($fetched, 'video_id'), ['djsItMOfCQA', 'kW33vGTzwK4', 'mUkZhbct7Eo', 's9r5sBZR_cU']);
 check('fetch skipped', $skipped, 3);
 check('fetch pages', $calls, ['playlistItems', 'playlistItems#1', 'playlistItems#2', 'videos']);
-check('fetch duplicate keeps newest date', $fetched[1]['added_at'] ?? null, strtotime('2026-11-06T10:00:00Z'));
+check('fetch duplicate counts once, as added last', [$fetched[1]['video_id'] ?? null, $fetched[1]['added_at'] ?? null], ['kW33vGTzwK4', strtotime('2026-11-20T10:00:00Z')]);
 check('fetch duration', $fetched[0]['duration'] ?? null, 3720);
 
 // ---------- saving a playlist ----------

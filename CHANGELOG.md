@@ -1,5 +1,17 @@
 # Änderungen
 
+## 1.28.4 (19. November 2026)
+
+Kleinigkeiten aus der vierten Durchsicht, nichts davon sichtbar:
+
+* Upload: Prüfen und Anhängen eines Teils laufen unter einer Dateisperre. Kam derselbe Teil zweimal gleichzeitig an, hängten bisher beide an (die Datei war dann zu groß und der Upload scheiterte später). Jetzt kommt genau einer durch, der zweite bekommt „Upload unterbrochen“. Danach wird die Größe noch einmal geprüft (#72)
+* Hörstatus: Die aufgelösten Streams aller Playlist-Sender kommen mit einer Abfrage statt einer je Sender (#70)
+* `private_dir()` zeigt ohne `config.php` auf `1radioe-private/` im Checkout statt auf die Wurzel des Dateisystems (#73)
+* Reihenfolge speichern nimmt jeden Sender nur einmal, an seiner ersten Stelle. „Jetzt läuft“ wartet höchstens zwei Sekunden, wenn gerade ein anderer Aufruf denselben Sender liest, und liefert sonst den letzten bekannten Titel (bisher bis zu acht Sekunden). Die Weiterleitung des Admins auf HTTPS nimmt nur einen gültigen Hostnamen (#75)
+* Kommentar an der Sicherheitsrichtlinie der Web-App, warum `connect-src` HTTPS-Adressen erlauben muss: hls.js lädt HLS-Sender wie BBC Radio 1 in Firefox per Abruf (#74, bleibt so)
+* YouTube: Steht ein Video zweimal in der Playlist, zählt es weiter einmal, jetzt aber mit dem Datum, an dem es zuletzt hinzugefügt wurde (bisher das des ersten Eintrags). Gefunden beim abschließenden Durchsehen
+* Tests: neue Gruppe `stations` (Sender nach Stream-Adresse, aufgelöster Playlist und Titel, Reihenfolge mit Doppelten), `upload` prüft denselben Teil zweimal nacheinander und gleichzeitig aus zwei Prozessen. 127 Prüfungen
+
 ## 1.28.3 (19. November 2026)
 
 * YouTube: Die Bilder der Videos heißen jetzt `yt-<id>-<hash>.jpg` (und `-s.jpg`), der Hash kommt vom Bild. Bisher behielten sie beim Neuladen nach 25 Tagen ihren Namen; hatte sich das Bild auf YouTube geändert, zeigten Browser bis zu ein Jahr lang das alte (Dateien in `media/` sind ein Jahr im Cache) und das Raster der Playlist blieb alt. Jetzt gibt es einen neuen Namen und damit ein neues Raster, das alte Bild wird gelöscht, sobald keine Playlist es mehr zeigt. Vorhandene Bilder bekommen den neuen Namen beim nächsten Neuladen (#65)

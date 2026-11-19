@@ -171,9 +171,14 @@ function youtube_fetch(string $playlistId, ?callable $api = null): array
         $json = $api('playlistItems', $params);
         foreach ((array) ($json['items'] ?? []) as $pos => $item) {
             $vid = (string) ($item['contentDetails']['videoId'] ?? $item['snippet']['resourceId']['videoId'] ?? '');
-            if (preg_match('~^[A-Za-z0-9_-]{6,20}$~', $vid) && !isset($entries[$vid])) {
-                $added = strtotime((string) ($item['snippet']['publishedAt'] ?? '')) ?: 0;
+            if (!preg_match('~^[A-Za-z0-9_-]{6,20}$~', $vid)) {
+                continue;
+            }
+            $added = strtotime((string) ($item['snippet']['publishedAt'] ?? '')) ?: 0;
+            if (!isset($entries[$vid])) {
                 $entries[$vid] = ['added_at' => $added, 'order' => count($entries)];
+            } elseif ($added > $entries[$vid]['added_at']) {
+                $entries[$vid]['added_at'] = $added;   // a video added twice counts once, as added last
             }
         }
         $page = (string) ($json['nextPageToken'] ?? '');

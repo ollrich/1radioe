@@ -39,4 +39,33 @@ unlink(upload_dir() . "/$id.size");
 check('old upload chunk', $error(fn() => upload_chunk($id, 0, $part)), 'Teil passt nicht zur Größe der Datei, bitte erneut versuchen.');
 check('old upload finish', $error(fn() => upload_finish($id, 'x.mp3')), 'Upload unvollständig, bitte erneut versuchen.');
 check('unknown upload', $error(fn() => upload_chunk('../../etc', 0, $part)), 'Upload nicht gefunden, bitte erneut versuchen.');
+
+// the same part twice in a row: the second one is refused
+$id = upload_start(8);
+file_put_contents($part, 'abcd');
+check('part once', upload_chunk($id, 0, $part), 4);
+check('same part again', $error(fn() => upload_chunk($id, 0, $part)), 'Upload unterbrochen, bitte erneut versuchen.');
+check('size after the double', filesize(upload_dir() . "/$id.part"), 4);
+
+// the same part twice at the same time, from two processes: exactly one gets in (#72)
+$id = upload_start(6);
+file_put_contents($part, 'abcdef');
+$code = 'require ' . var_export(dirname(__DIR__) . '/app/bootstrap.php', true) . ';'
+    . 'try { echo upload_chunk($argv[1], 0, $argv[2]); } catch (InputError $e) { echo "refused"; }';
+$procs = [];
+$out   = [];
+for ($i = 0; $i < 2; $i++) {   // R1_CONFIG from the runner goes along to the children
+    $procs[$i] = proc_open([PHP_BINARY, '-r', $code, '--', $id, $part], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[$i]);
+}
+for ($i = 0; $i < 2; $i++) {
+    $out[$i] = trim((string) stream_get_contents($pipes[$i][1])) . trim((string) stream_get_contents($pipes[$i][2]));
+    proc_close($procs[$i]);
+}
+sort($out);
+check('two at once: one in, one refused', $out, ['6', 'refused']);
+check('two at once: size', filesize(upload_dir() . "/$id.part"), 6);
+check('two at once: content', file_get_contents(upload_dir() . "/$id.part"), 'abcdef');
 @unlink($part);
+
+// the private folder is the one of the config (#73)
+check('private folder', private_dir(), dirname((string) config_path()));
