@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.27.2 (19. November 2026)
+
+* Web-App: „Alle Sender“ steht auf der obersten Ebene in derselben Pille wie der Weg zurück aus einer Kategorie. Bisher war es dort reiner Text, beim Öffnen einer Kategorie sprang die Seite um die Höhe der Pille
+* Admin auf dem Handy: Die fünf Reiter passen in die Breite (weniger Abstand, etwas kleinere Schrift), auch auf 360 px breiten Handys. Bei großer Schrift auf dem Handy scrollt die Leiste seitlich, statt aus dem Bild zu laufen, der aktuelle Reiter bleibt sichtbar
+
 ## 1.27.1 (19. November 2026)
 
 Aus einer zweiten Durchsicht (Issues #53 bis #60):
