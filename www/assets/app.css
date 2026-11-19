@@ -86,7 +86,9 @@ button svg, a svg, label svg { fill: currentColor; flex: none; }
 .listen-switch[aria-pressed="false"] .pill i { animation: none; transform: scaleY(.3); opacity: .5; }
 main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 48px; }
 /* only without JavaScript (nojs.css shows it), the menu has these links */
-.foot { display: none; justify-content: flex-end; gap: 20px; font-size: 13px; }
+/* with JavaScript only the keys at the right edge, the links are in the menu (nojs.css shows them) */
+.foot { display: flex; justify-content: flex-end; align-items: center; gap: 20px; font-size: 13px; }
+.foot a { display: none; }
 .foot a { color: var(--muted); text-underline-offset: 3px; padding: 12px 0; }
 .notice { text-align: center; color: var(--muted); }
 .menu-btn {
@@ -260,7 +262,6 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 /* "Zuletzt von Olli gehört": small and quiet, the name starts the station */
 .lastheard { margin: 0; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .picker-head .lastheard { margin-left: auto; }
-.picker-head .lastheard:not([hidden]) + .tipwrap { margin-left: 0; }
 .lastheard-st { padding: 0; border: 0; background: none; font: inherit; color: var(--fg); cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .lastheard-st:hover { text-decoration-color: currentColor; }
 .lastheard-st:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
@@ -335,6 +336,9 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
    .below; the hidden tooltip must not widen the page either). Focus shows it only from the
    keyboard, a click leaves the focus there when the dialog closes */
 .infowrap { position: relative; display: inline-flex; flex: none; }
+/* the keys in the footer: above the button, right edges in line, the arrow points down at it */
+.tip-up { top: auto; bottom: calc(100% + 10px); right: 0; transform: none; }
+.tip-up::after { top: 100%; left: auto; right: 17px; transform: none; border-left-color: transparent; border-top-color: var(--tipbg); }
 .tip-side { right: auto; left: calc(100% + 8px); }
 .tip-side::after { left: auto; right: 100%; border-left-color: transparent; border-right-color: var(--tipbg); }
 .tip-side.below { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
@@ -516,7 +520,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .listen-switch { padding: 0 10px; }
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { justify-content: flex-start; gap: 0; }
-  .stage, .picker-head, .scale-row { display: none; }
+  .stage, .picker-head, .scale-row, .foot .tipwrap { display: none; }
   .lastheard-list:not([hidden]) { display: block; margin: 0 10px 10px; }
   /* "Alle Sender" has no counterpart on phones (categories open in place):
      only screen readers keep it, as the heading of the list */
