@@ -16,7 +16,6 @@ Options -Indexes -MultiViews
     # Plain HTTP goes to HTTPS. Only GET and HEAD: a POST (Sonos, Home Assistant) would
     # lose its body on a redirect, those clients use HTTPS anyway.
     RewriteCond %{HTTPS} !=on
-    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
     # German under /de/: every address works there as well, the page reads the language

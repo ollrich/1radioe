@@ -532,7 +532,11 @@ function upload_chunk_size(): int
     return max(262144, min(2 * 1024 * 1024, $limit));
 }
 
-/** Starts a chunked upload. Returns its id. Also removes uploads older than a day. */
+/**
+ * Starts a chunked upload of $size bytes. Returns its id. Next to <id>.part, <id>.size
+ * keeps the announced size: chunks may not go beyond it and upload_finish() imports
+ * only a file that reached it. Also removes uploads older than a day.
+ */
 function upload_start(int $size): string
 {
     if ($size <= 0 || $size > TRACK_MAX_BYTES) {
@@ -541,16 +545,23 @@ function upload_start(int $size): string
     if (!is_dir(upload_dir()) && !@mkdir(upload_dir(), 0755, true)) {
         throw new InputError([], 'Ordner 1radioe-private/tmp fehlt und kann nicht angelegt werden.');
     }
-    foreach (glob(upload_dir() . '/*.part') ?: [] as $old) {
+    foreach (array_merge(glob(upload_dir() . '/*.part') ?: [], glob(upload_dir() . '/*.size') ?: []) as $old) {
         if (filemtime($old) < time() - 86400) {
             @unlink($old);
         }
     }
-    $id = bin2hex(random_bytes(16));
-    if (@file_put_contents(upload_dir() . '/' . $id . '.part', '') === false) {
+    $id   = bin2hex(random_bytes(16));
+    $base = upload_dir() . '/' . $id;
+    if (@file_put_contents($base . '.part', '') === false || @file_put_contents($base . '.size', (string) $size) === false) {
         throw new InputError([], 'Ordner 1radioe-private/tmp ist nicht beschreibbar.');
     }
     return $id;
+}
+
+/** Size announced at the start of an upload (see upload_start()), 0 if unknown. */
+function upload_expected(string $path): int
+{
+    return (int) @file_get_contents(substr($path, 0, -strlen('.part')) . '.size');
 }
 
 function upload_path(string $id): string
@@ -569,8 +580,8 @@ function upload_chunk(string $id, int $offset, string $tmpFile): int
     if (filesize($path) !== $offset) {
         throw new InputError([], 'Upload unterbrochen, bitte erneut versuchen.');
     }
-    if ($offset + filesize($tmpFile) > TRACK_MAX_BYTES) {
-        throw new InputError([], 'Dateien dürfen höchstens 300 MB groß sein.');
+    if ($offset + filesize($tmpFile) > upload_expected($path)) {
+        throw new InputError([], 'Teil passt nicht zur Größe der Datei, bitte erneut versuchen.');
     }
     $in     = fopen($tmpFile, 'rb');
     $out    = fopen($path, 'ab');
@@ -584,14 +595,20 @@ function upload_chunk(string $id, int $offset, string $tmpFile): int
     return (int) filesize($path);
 }
 
-/** Completes an upload and imports it as a track. */
+/** Completes an upload and imports it as a track, only if all announced bytes arrived. */
 function upload_finish(string $id, string $name): array
 {
-    $path = upload_path($id);
+    $path     = upload_path($id);
+    $expected = upload_expected($path);
     try {
+        clearstatcache(true, $path);
+        if ($expected <= 0 || filesize($path) !== $expected) {
+            throw new InputError([], 'Upload unvollständig, bitte erneut versuchen.');
+        }
         return track_import($path, $name);
     } finally {
         @unlink($path);
+        @unlink(substr($path, 0, -strlen('.part')) . '.size');
     }
 }
 
