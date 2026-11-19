@@ -4,6 +4,7 @@
 (() => {
   'use strict';
 
+  const SCRIPT_SRC = document.currentScript ? document.currentScript.src : new URL('assets/app.js', location.href).href;
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
   /* E-mail addresses in the texts (Impressum, Datenverarbeitung, Über): the server sends
@@ -44,6 +45,9 @@
   const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   const countText = (n) => (n === 1 ? T.count1 : fill(T.countN, { n }));
   const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
+  // the page's title from the server (the site, or the station of a station page); the tab
+  // names the station only while it plays, search engines keep this one
+  const PAGE_TITLE = document.title;
 
   /** Every station and category by id; stations know their level ('root' or a category id). */
   const items = new Map();
@@ -429,7 +433,8 @@
     else if (phase !== 'connecting') listenStop(false);
     if (phase === 'live' && radio && (now.id !== state.cur.id || !now.timer)) pollNow();
     else if (!radio || (phase !== 'live' && phase !== 'connecting')) stopNow();
-    document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ` : '1radiœ';
+    document.title = isPlaying() && state.cur ? `${state.cur.name} · 1radiœ`
+      : state.cur && data.start && state.cur.id !== data.start ? (T.title || PAGE_TITLE) : PAGE_TITLE;
     if (media) media.playbackState = isPlaying() ? 'playing' : phase === 'paused' ? 'paused' : 'none';
     renderTrack();
     announce();
@@ -523,7 +528,8 @@
      stored on this server (assets/vendor) and loaded only then. It fetches the playlist
      and its pieces from the station and hands them to <audio>. Every other stream and
      every other browser plays straight from <audio> as before. */
-  const HLS_LIB = 'assets/vendor/hls.light.min.js?v=1.7.4';
+  // next to this script, the same address on / and /de/
+  const HLS_LIB = new URL('vendor/hls.light.min.js?v=1.7.4', SCRIPT_SRC).href;
   let hls = null;
   let hlsLoading = null;
   let hlsRun = 0;   // a newer connect or a stop cancels a start that is still loading

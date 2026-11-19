@@ -458,6 +458,8 @@ function station_delete(int $id): void
     }
     station_set_logo($id, null);
     q('DELETE FROM r1_playlist_tracks WHERE playlist_id = ?', [$id]);
+    q('DELETE FROM r1_listen_status WHERE station_id = ?', [$id]);
+    q('DELETE FROM r1_now_playing WHERE station_id = ?', [$id]);
     q('DELETE FROM r1_stations WHERE id = ?', [$id]);
     catalog_bump();
 }

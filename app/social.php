@@ -317,8 +317,10 @@ function social_tags_text(string $input): string
     return implode(' ', array_map(static fn($t) => '#' . $t, social_tags($input)));
 }
 
-/** Address of the station page that posts link to: 1radioe.net/s/<smapi_id>. */
-/** German posts link to the German page (/de/s/…), all others to the English one. */
+/**
+ * Address of the station page that posts link to: 1radioe.net/s/<smapi_id>. German
+ * posts link to the German page (/de/s/…), all others to the English one.
+ */
 function social_link(array $s, array $station, int $levels = 0, string $lang = 'en'): string
 {
     return social_site_url($s, $levels) . ($lang === 'de' ? '/de' : '') . '/s/' . rawurlencode((string) $station['smapi_id']);
@@ -518,7 +520,7 @@ function bsky_session(array $b): array
 /** Uploads the station logo for the link card; null if there is none or it fails. */
 function bsky_thumb(string $pds, string $auth, array $station): ?array
 {
-    $file = (string) ($station['logo'] ?? '');
+    $file = basename((string) ($station['logo'] ?? ''));
     $path = media_dir() . '/' . $file;
     if ($file === '' || !is_file($path) || filesize($path) > SOCIAL_THUMB_MAX) {
         return null;

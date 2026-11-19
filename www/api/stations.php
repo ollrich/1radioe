@@ -5,7 +5,7 @@
  * Only streams, no tracks and no MP3 playlists. "version" is the catalog marker that
  * changes with every change in the admin; together with the resolved stream addresses
  * it makes the ETag, so a client can ask with If-None-Match and gets 304 when
- * nothing changed. Field names are documented in the README.
+ * nothing changed. Field names are documented in API.md.
  */
 declare(strict_types=1);
 

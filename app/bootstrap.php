@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.26.1';
+const APP_VERSION = '1.26.2';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -228,7 +228,7 @@ function client_ip(): string
 
 /**
  * The address Sonos called: host without port, and path, e.g. "1radioe.net/smapi.php",
- * or "eichhof.co/1radioe/smapi.php" when an old address includes the SMAPI file.
+ * or "example.org/1radioe/smapi.php" for an installation in a subfolder.
  * $path: default the running script; report.php passes the requested path.
  */
 function called_endpoint(?string $path = null): string

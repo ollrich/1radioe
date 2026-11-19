@@ -1196,8 +1196,7 @@
 
   /* ---------- Listening devices ---------- */
 
-  // After login the admin offers to remember this browser for the listening status,
-  // unless it already is or the offer was dismissed in this session.
+  // only reports with a key (Home Assistant, remembered browsers, the app), no anonymous Sonos reports
   $('#listen-keyed input').addEventListener('change', async (e) => {
     const box = e.currentTarget;
     try {
@@ -1210,6 +1209,8 @@
     }
   });
 
+  // After login the admin offers to remember this browser for the listening status,
+  // unless it already is or the offer was dismissed in this session.
   async function loadDevices() {
     let data;
     try {
@@ -1289,7 +1290,7 @@
       toast((err.fields && err.fields.name) || err.message, 'error');
     }
   }));
-  // a key for Home Assistant: shown once, as the line for secrets.yaml
+  // a key for the app or Home Assistant: shown once, alone and as the line for secrets.yaml
   $('#listen-key').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.currentTarget;
@@ -1297,6 +1298,7 @@
     try {
       const { device, key } = await api('listen.key', { name });
       $('#listen-key-name').textContent = device.name;
+      $('#listen-key-plain').textContent = key;
       $('#listen-key-line').textContent = `radioe_listen_token: ${key}`;
       $('#listen-key-box').hidden = false;
       toast(`Schlüssel für „${device.name}“ erzeugt`);
@@ -1305,9 +1307,9 @@
       toast((err.fields && err.fields.name) || err.message, 'error');
     }
   });
-  $('#listen-key-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText($('#listen-key-line').textContent); toast('Kopiert'); } catch { toast('Kopieren nicht möglich', 'error'); }
-  });
+  $$('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($(b.dataset.copy).textContent); toast('Kopiert'); } catch { toast('Kopieren nicht möglich', 'error'); }
+  }));
   $('#listen-banner-dismiss').addEventListener('click', () => {
     $('#listen-banner').hidden = true;
     try { sessionStorage.setItem('r1.listen.banner', 'no'); } catch { /* not remembered */ }
