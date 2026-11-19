@@ -28,7 +28,14 @@ jobs:
         shell: bash
         run: |
           node --version
-          find www -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n 1 node --check
+          # ES modules (the web app and the admin, import/export) as modules, the rest as scripts
+          find www -name '*.js' -not -path '*/vendor/*' -print0 | while IFS= read -r -d '' f; do
+            if grep -qE '^(import|export) ' "$f"; then
+              cp "$f" "$RUNNER_TEMP/check.mjs" && node --check "$RUNNER_TEMP/check.mjs" || { echo "::error file=$f::syntax"; exit 1; }
+            else
+              node --check "$f" || exit 1
+            fi
+          done
 
   # tests/run.php: YouTube sync and pictures, uploads, addresses; no network, no secrets
   test:

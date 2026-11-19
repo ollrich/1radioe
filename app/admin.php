@@ -104,12 +104,25 @@ function media_missing(): array
     return $missing;
 }
 
-/** Outputs a complete HTML page. $scripts are file names in assets/. */
+/**
+ * Outputs a complete HTML page. $scripts are file names in assets/. app.js is the admin
+ * itself, ES modules with the version in the path (www/.htaccess maps assets/v…/ to
+ * assets/): its parts in assets/app/ load relative to it and carry the version too, and
+ * are preloaded to save the round trips of the imports. The rest are classic scripts.
+ */
 function render_page(string $title, string $body, array $scripts = [], string $bodyClass = ''): never
 {
     $csrf = session_status() === PHP_SESSION_ACTIVE ? csrf_token() : '';
     $js   = '';
     foreach ($scripts as $file) {
+        if ($file === 'app.js') {
+            $base = 'assets/v' . h(APP_VERSION) . '/';
+            $js  .= '<script type="module" src="' . $base . 'app.js"></script>';
+            foreach (glob(WEB_ROOT . '/admin/assets/app/*.js') ?: [] as $mod) {
+                $js .= '<link rel="modulepreload" href="' . $base . 'app/' . h(basename($mod)) . '">';
+            }
+            continue;
+        }
         $js .= '<script src="assets/' . h($file) . '?v=' . APP_VERSION . '" defer></script>';
     }
     echo '<!doctype html><html lang="de"><head><meta charset="utf-8">'

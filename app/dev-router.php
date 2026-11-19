@@ -22,6 +22,18 @@ const DEV_ROUTES = [
 ];
 
 $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+// scripts with the version in the path, as in .htaccess: assets/v1.30.0/… is assets/…
+if (preg_match('~^(?:/de)?(/admin)?/assets/v[0-9][0-9.]*/(.+)$~', $path, $m)) {
+    $real = dirname(__DIR__) . '/www' . $m[1] . '/assets/' . $m[2];
+    if (!is_file($real) || str_contains($m[2], '..')) {
+        http_response_code(404);
+        return true;
+    }
+    $types = ['js' => 'text/javascript', 'css' => 'text/css', 'png' => 'image/png', 'svg' => 'image/svg+xml', 'woff2' => 'font/woff2'];
+    header('Content-Type: ' . ($types[strtolower(pathinfo($real, PATHINFO_EXTENSION))] ?? 'application/octet-stream'));
+    readfile($real);
+    return true;
+}
 // German under /de/, as in .htaccess: REQUEST_URI keeps /de/, the rest works as without it
 if ($path === '/de') {
     header('Location: /de/', true, 301);
