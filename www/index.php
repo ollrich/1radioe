@@ -154,7 +154,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <link rel="icon" href="<?= $root ?>assets/icon-192.png?v=<?= $v ?>" sizes="192x192" type="image/png">
 <link rel="icon" href="<?= $root ?>assets/favicon.svg?v=<?= $v ?>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="<?= $root ?>assets/apple-touch-icon.png?v=<?= $v ?>">
-<link rel="preload" href="<?= $root ?>assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="<?= $root ?>assets/fonts/R1Sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= $root ?>assets/app.css?v=<?= $v ?>">
 <noscript><link rel="stylesheet" href="<?= $root ?>assets/nojs.css?v=<?= $v ?>"></noscript>
 <script src="<?= $root ?>assets/app.js?v=<?= $v ?>" defer></script>

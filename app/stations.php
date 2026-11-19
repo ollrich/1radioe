@@ -421,6 +421,7 @@ function station_set_logo(int $id, ?string $file): void
     $old = station_find($id);
     if ($old !== null && $old['logo'] && $old['logo'] !== $file) {
         @unlink(media_dir() . '/' . basename($old['logo']));
+        @unlink(media_dir() . '/' . logo_thumb_name($old['logo']));   // the web app's small picture
     }
     q('UPDATE r1_stations SET logo = ?, updated_at = ? WHERE id = ?', [$file, now_sql(), $id]);
     catalog_bump();
@@ -501,10 +502,12 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
 }
 
 /**
- * The address Sonos should play. Direct streams and HLS are returned as stored.
- * Playlists (.pls, .m3u) are resolved to their first stream and cached for 6 hours.
- * On failure, the last known address is used (retry after 10 minutes), or as a
- * last resort the playlist address itself.
+ * The address to play. Direct streams and HLS are returned as stored. Playlists (.pls,
+ * .m3u) are resolved to their first stream and cached for 6 hours. Once that is over,
+ * the known address is answered at once and the playlist is fetched again after the
+ * response (only by one request), so no visitor and no speaker waits for a station's
+ * server. Without a known address, or on a server that cannot answer first, it is
+ * fetched right away as before.
  */
 function station_playback_url(array $s): string
 {
@@ -517,11 +520,30 @@ function station_playback_url(array $s): string
     if ($hit !== null && (int) $hit['until_ts'] > time()) {
         return $hit['stream'];
     }
+    if ($hit !== null && can_answer_first()) {
+        // claim the refresh for two minutes; parallel requests keep the known address
+        $claimed = q('UPDATE r1_playlist_cache SET until_ts = ? WHERE url_hash = ? AND until_ts = ?',
+            [time() + 120, $key, (int) $hit['until_ts']])->rowCount() === 1;
+        if ($claimed) {
+            $known = (string) $hit['stream'];
+            after_response('playlist ' . $key, static fn() => playlist_resolve($url, $known));
+        }
+        return $hit['stream'];
+    }
+    return playlist_resolve($url, $hit['stream'] ?? null);
+}
+
+/**
+ * Fetches a playlist and caches its first stream for 6 hours. On failure the known
+ * address stays (retry after 10 minutes), or as a last resort the playlist address.
+ */
+function playlist_resolve(string $url, ?string $known): string
+{
     $res    = http_get($url, 65536, 4);
     $stream = $res['ok'] ? playlist_first_url($res['body']) : null;
     $until  = time() + ($stream !== null ? 6 * 3600 : 600);
-    $stream ??= $hit['stream'] ?? $url;
+    $stream ??= $known ?? $url;
     q('INSERT INTO r1_playlist_cache (url_hash, stream, until_ts) VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE stream = ?, until_ts = ?', [$key, $stream, $until, $stream, $until]);
+       ON DUPLICATE KEY UPDATE stream = ?, until_ts = ?', [hash('sha256', $url), $stream, $until, $stream, $until]);
     return $stream;
 }

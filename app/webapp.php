@@ -26,13 +26,15 @@ function webapp_levels(): array
     }
     $rows = $catalog['categories'] ? stations_all(true) : [];
     foreach ($catalog['categories'] as $c) {
-        $id = $c['row']['smapi_id'];
+        $id    = $c['row']['smapi_id'];
+        $cover = category_cover($c['row'], $rows);
         $root[$c['sort']] = [
             'id'    => $id,
             'type'  => 'category',
             'name'  => $c['row']['title'],
             'num'   => sprintf('%02d', $c['sort']),
-            'logo'  => logo_url(category_cover($c['row'], $rows)),
+            'logo'  => logo_url($cover),
+            'thumb' => logo_url(logo_thumb($cover)),
             'count' => count($levels[$id] ?? []),
             'desc'  => (string) $c['row']['description'],
         ];
@@ -59,6 +61,7 @@ function webapp_station(array $e): array
             'name'     => $r['title'],
             'num'      => sprintf('%02d', $e['sort']),
             'logo'     => logo_url($r['logo']),
+            'thumb'    => logo_url(logo_thumb($r['logo'])),
             'desc'     => $r['description'],
             'website'  => $url,
             'country'  => (string) ($r['country'] ?? ''),
@@ -75,6 +78,7 @@ function webapp_station(array $e): array
         'name'     => $r['title'],
         'num'      => sprintf('%02d', $e['sort']),
         'logo'     => logo_url($r['logo']),
+        'thumb'    => logo_url(logo_thumb($r['logo'])),
         'desc'     => $r['description'],
         'website'  => (string) ($r['website'] ?? ''),
         'country'  => (string) ($r['country'] ?? ''),

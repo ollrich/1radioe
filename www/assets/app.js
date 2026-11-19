@@ -111,7 +111,8 @@
    * Fills a tile with the logo, or the initials if there is none (or it fails to load).
    * A category shows its own picture from the admin, without one the collage the server
    * makes from the first logos inside (as in Sonos), and the stack on top. A Deezer
-   * entry gets an arrow out instead.
+   * entry gets an arrow out instead. Small tiles take the small picture (192 px), only
+   * the big one in the player the full logo (600 px).
    */
   function fillTile(node, it) {
     const isCat = it.type === 'category';
@@ -124,8 +125,9 @@
       s.innerHTML = isCat ? STACK : OUT;
       node.append(s);
     };
-    if (it.logo) {
-      node.append(image(it.logo, () => {
+    const src = node.classList.contains('tile-xl') ? it.logo : (it.thumb || it.logo);
+    if (src) {
+      node.append(image(src, () => {
         node.textContent = initials(it.name);
         stack();
       }));
