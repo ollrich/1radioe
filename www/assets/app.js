@@ -526,7 +526,7 @@
   let lastTime = 0;
   let lastProgress = 0;
 
-  /* HLS (.m3u8) in browsers that cannot play it in <audio>, Firefox above all: hls.js,
+  /* HLS in browsers that cannot play it in <audio>, Firefox above all: hls.js,
      stored on this server (assets/vendor) and loaded only then. It fetches the playlist
      and its pieces from the station and hands them to <audio>. Every other stream and
      every other browser plays straight from <audio> as before. */
@@ -536,10 +536,11 @@
   let hlsLoading = null;
   let hlsRun = 0;   // a newer connect or a stop cancels a start that is still loading
 
-  function needsHlsJs(url) {
+  /** HLS by the format from the admin (the stream test reads the playlist), else by .m3u8. */
+  function needsHlsJs(st) {
     let path = '';
-    try { path = new URL(url, location.href).pathname; } catch { return false; }
-    return /\.m3u8$/i.test(path) && !audio.canPlayType('application/vnd.apple.mpegurl') && 'MediaSource' in window;
+    try { path = new URL(st.url, location.href).pathname; } catch { return false; }
+    return (st.hls === true || /\.m3u8$/i.test(path)) && !audio.canPlayType('application/vnd.apple.mpegurl') && 'MediaSource' in window;
   }
 
   function loadHlsJs() {
@@ -628,7 +629,7 @@
     setPhase('connecting');
     lastProgress = Date.now();
     dropHls();
-    if (needsHlsJs(state.cur.url)) {
+    if (needsHlsJs(state.cur)) {
       connectHls(state.cur.url);
       return;
     }
@@ -1028,7 +1029,15 @@
         keepalive: true,
         headers: { 'Content-Type': 'application/json', 'X-1radioe': '1' },
         body,
-      }).catch(() => { /* the status expires by itself */ });
+      }).then((res) => {
+        if (res.status === 401) {
+          // this browser's key was revoked in the admin: stop reporting
+          data.listen = false;
+          clearInterval(listen.timer);
+          listen.timer = 0;
+        }
+        if (!res.ok) pollStatus();   // show what the server knows instead
+      }).catch(() => pollStatus());
     }
     // show it here right away instead of waiting for the next status poll
     if (on) state.active.add(id);

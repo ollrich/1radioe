@@ -37,22 +37,57 @@ function net_resolve(string $host): string
     return $ips[0];
 }
 
-/** Resolves a (possibly relative) redirect target against the current URL. */
+/**
+ * Resolves a (possibly relative) redirect target against the current URL, the way
+ * browsers do (RFC 3986, 5.2): "?x" keeps the path and swaps the query, "a" goes next
+ * to the current file or into the current folder ("/live/" and "a" give "/live/a"),
+ * "./" and "../" are folded. http_get() checks the result again like any address
+ * (http or https only, no private networks).
+ */
 function net_absolute(string $base, string $location): string
 {
-    if (preg_match('~^https?://~i', $location)) {
+    $location = explode('#', $location, 2)[0];   // a fragment never goes to the server
+    if (preg_match('~^[a-z][a-z0-9+.-]*:~i', $location)) {
         return $location;
     }
-    $p      = parse_url($base);
-    $origin = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
+    $p = parse_url($base);
     if (str_starts_with($location, '//')) {
         return $p['scheme'] . ':' . $location;
     }
-    if (str_starts_with($location, '/')) {
-        return $origin . $location;
+    $origin = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
+    $path   = ($p['path'] ?? '') === '' ? '/' : $p['path'];
+    if ($location === '') {
+        return $origin . $path . (isset($p['query']) ? '?' . $p['query'] : '');
     }
-    $dir = rtrim(str_replace('\\', '/', dirname($p['path'] ?? '/')), '/');
-    return $origin . $dir . '/' . $location;
+    if ($location[0] === '?') {
+        return $origin . $path . $location;
+    }
+    [$ref, $query] = array_pad(explode('?', $location, 2), 2, null);
+    if ($ref[0] !== '/') {
+        $ref = substr($path, 0, (int) strrpos($path, '/') + 1) . $ref;
+    }
+    return $origin . net_dot_segments($ref) . ($query !== null ? '?' . $query : '');
+}
+
+/** Folds "." and ".." in an absolute path: "/a/b/../c" becomes "/a/c", "/a/b/.." becomes "/a/". */
+function net_dot_segments(string $path): string
+{
+    $segments = explode('/', substr($path, 1));
+    $last     = count($segments) - 1;
+    $out      = [];
+    foreach ($segments as $i => $segment) {
+        if ($segment === '.' || $segment === '..') {
+            if ($segment === '..') {
+                array_pop($out);
+            }
+            if ($i === $last) {
+                $out[] = '';   // ends in a folder, keep its slash
+            }
+            continue;
+        }
+        $out[] = $segment;
+    }
+    return '/' . implode('/', $out);
 }
 
 /**

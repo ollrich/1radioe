@@ -1,5 +1,16 @@
 # Änderungen
 
+## 1.27.1 (19. November 2026)
+
+Aus einer zweiten Durchsicht (Issues #53 bis #60):
+
+* Weiterleitungen beim Stream-Test, beim Auflösen von Playlists und beim Laden von Logos: Relative Ziele löst der Server jetzt auf wie ein Browser. `?token=x` behält den Pfad, bisher fiel der Dateiname weg. Endet die Adresse auf `/`, landet ein relatives Ziel in diesem Ordner statt einen darüber. `./` und `../` werden zusammengefasst (#58)
+* HLS ohne `.m3u8` in der Adresse: Die Web-App lädt hls.js jetzt auch, wenn der Stream-Test HLS erkannt hat und die Adresse anders endet (`hls` in den Daten der Seite). Betrifft heute keinen Sender (#55)
+* Hörstatus im eigenen Browser: Lehnt der Server eine Meldung ab, holt die Seite sofort den Status vom Server, statt bis zu 30 Sekunden „läuft“ zu zeigen. Ist der Schlüssel des Browsers im Admin widerrufen, meldet die Seite nichts mehr (#59)
+* MP3-Upload: Der Server merkt sich beim Start die Größe der Datei (`<id>.size` neben `<id>.part`). Teile darüber hinaus lehnt er ab, importiert wird nur eine vollständige Datei (#54)
+* HTTPS: `is_https()` und die Weiterleitung in `www/.htaccess` werten `X-Forwarded-Proto` nicht mehr aus. Den Header kann jeder schicken, und bei All-Inkl kümmert sich Apache selbst um TLS (#53)
+* GitHub Actions prüft bei jedem PR und jedem Push auf `main` die Syntax aller PHP-Dateien (`php -l`) und der JavaScript-Dateien (`node --check`), siehe `.github/workflows/lint.yml` (#60)
+
 ## 1.27.0 (19. November 2026)
 
 Aus dem Code-Audit, schnelleres Laden:

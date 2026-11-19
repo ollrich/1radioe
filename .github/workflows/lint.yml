@@ -1,0 +1,30 @@
+# 1radiœ: syntax check for every pull request and every push to main. A merge to main
+# goes live at once (webhook), so a typo should show up here before that. Uses the PHP
+# and Node.js of the GitHub runner, no further actions besides checkout.
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP syntax (php -l)
+        shell: bash
+        run: |
+          php -v | head -n 1
+          find app www config.sample.php -name '*.php' -print0 | xargs -0 -n 1 php -l
+
+      - name: JavaScript syntax (node --check), without the bundled libraries
+        shell: bash
+        run: |
+          node --version
+          find www -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n 1 node --check

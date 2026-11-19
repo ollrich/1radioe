@@ -85,6 +85,8 @@ function webapp_station(array $e): array
         'city'     => (string) ($r['city'] ?? ''),
         'url'      => $url,
         'https'    => is_https_url($url),
+        // HLS as found by the stream test, also for addresses without .m3u8 (app.js, hls.js)
+        'hls'      => $r['mime'] === 'application/vnd.apple.mpegURL',
         'category' => $e['category']['smapi_id'] ?? null,
     ];
 }
