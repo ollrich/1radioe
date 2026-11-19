@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.28.2 (19. November 2026)
+
+* Web-App: Titel und Beschreibung nennen neben dem Radio auch DJ-Mixe und Konzerte („1radiœ · Ollis Radio, Mixe und Konzerte“, „1radiœ · Ollie's radio, mixes and concerts“), für Browser, Suchmaschinen und die Vorschau beim Teilen. Die Beschreibung sagt, dass alles im Browser spielt und das Radio auch auf Sonos und in VLC
+* Vorgabetext „Über 1radiœ“ (gilt nur, solange im Admin nichts gespeichert ist): DJ-Mixe, Konzerte und Deezer-Playlists im ersten Absatz, YouTube neben SoundCloud bei den externen Diensten
+* Vorgabetext „Datenverarbeitung“ ebenso: eigener Abschnitt zu YouTube (YouTube API Services, täglicher Abgleich über die Data API, Player erst nach dem Klick über youtube-nocookie.com, Links zur Datenschutzerklärung von Google und zu den Nutzungsbedingungen von YouTube), SoundCloud ist nicht mehr die einzige Ausnahme (#66). Live stand der Abschnitt schon seit 1.28.0 im Admin
+
 ## 1.28.1 (19. November 2026)
 
 * Web-App, YouTube: Neben dem Kanal läuft beim Video im Player die Zeit mit, etwa „Kanal · 12:34 / 1:02:03“, auf der Bühne, im großen und im kleinen Player und in der Liste. Sie folgt dem, was der Player alle Viertelsekunde meldet, also auch einem Sprung im Video, pausiert ebenso. Vor dem Laden und bei den anderen Videos steht weiter die Länge

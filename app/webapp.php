@@ -166,9 +166,9 @@ function webapp_prefers_german(): bool
 function webapp_strings(string $lang): array
 {
     $de = [
-        'title'       => '1radiœ · Ollis Radiosender',
-        'description' => 'Ollis persönliche Auswahl an Internetradios, von FIP bis BBC Radio 1. Hören im Browser, auf Sonos und in VLC, ohne Tracking.',
-        'h1'          => '1radiœ: Ollis Radiosender',
+        'title'       => '1radiœ · Ollis Radio, Mixe und Konzerte',
+        'description' => 'Ollis persönliche Auswahl an Internetradios, von FIP bis BBC Radio 1, dazu DJ-Mixe und Konzerte. Alles im Browser, das Radio auch auf Sonos und in VLC. Ohne Tracking.',
+        'h1'          => '1radiœ: Ollis Radio, Mixe und Konzerte',
         'menu'        => 'Menü',
         'menu_open'   => 'Menü öffnen',
         'pages'       => 'Seiten',
@@ -219,9 +219,9 @@ function webapp_strings(string $lang): array
         'close_player' => 'Player schließen',
     ];
     $en = [
-        'title'       => "1radiœ · Ollie's radio stations",
-        'description' => "Ollie's personal selection of internet radio stations, from FIP to BBC Radio 1. Listen in the browser, on Sonos and in VLC, no tracking.",
-        'h1'          => "1radiœ: Ollie's radio stations",
+        'title'       => "1radiœ · Ollie's radio, mixes and concerts",
+        'description' => "Ollie's personal selection of internet radio stations, from FIP to BBC Radio 1, plus DJ mixes and concerts. All in the browser, the radio also on Sonos and in VLC. No tracking.",
+        'h1'          => "1radiœ: Ollie's radio, mixes and concerts",
         'menu'        => 'Menu',
         'menu_open'   => 'Open menu',
         'pages'       => 'Pages',
