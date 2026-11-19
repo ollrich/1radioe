@@ -49,7 +49,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 * **Umleitungen:** Viele Streams leiten weiter, FluxFM etwa bei jedem Abruf auf einen anderen Server. Die App spielt immer die Adresse aus `stations.json`, nie eine umgeleitete, die sie sich gemerkt hat.
 * **`logo`**: 600 × 600 px, JPEG oder PNG, oder `null`. Der Dateiname ändert sich mit jedem neuen Logo, `sha256` erlaubt einen Abgleich ohne Download. Kategorien ohne eigenes Bild haben ein Raster aus vier Logos.
 * **`description`, `website`, `country`, `city`**: leer bzw. `null`, wenn nichts eingetragen ist. `country` ist ein ISO-3166-Code (`GB`, `FR`, `DE`), den Namen setzt die App in ihrer Sprache ein.
-* **Nicht enthalten:** MP3-Playlists und Tracks (nur für Sonos), SoundCloud-Einträge und Deezer-Links (nur in der Web-App, ihre Bedingungen erlauben kein Abspielen in einer Radio-App).
+* **Nicht enthalten:** MP3-Playlists und Tracks (nur für Sonos), SoundCloud-Einträge, Deezer-Links und YouTube-Playlists (nur in der Web-App, ihre Bedingungen erlauben kein Abspielen in einer Radio-App, YouTube keinen Ton ohne Bild).
 * **Zwischenspeichern:** Die Antwort trägt `Cache-Control: no-cache` und einen `ETag`. Mit `If-None-Match: <etag>` kommt `304 Not Modified`, solange sich nichts geändert hat. `version` ändert sich bei jeder Änderung im Admin.
 
 ## Hörstatus lesen: `GET /api/status`

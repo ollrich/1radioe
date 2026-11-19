@@ -189,10 +189,11 @@ render_page('Sender', <<<HTML
         <button class="btn ghost" id="add-playlist">Playlist hinzufügen</button>
         <button class="btn ghost" id="add-soundcloud">SoundCloud hinzufügen</button>
         <button class="btn ghost" id="add-deezer">Deezer hinzufügen</button>
+        <button class="btn ghost" id="add-youtube">YouTube hinzufügen</button>
         <button class="btn primary" id="add-station">Sender hinzufügen</button>
       </div>
     </div>
-    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender, die Playlist oder die Kategorie. Kategorien erscheinen in Sonos als Ordner. Ausgegraute Einträge sind inaktiv oder leer und in Sonos nicht sichtbar. SoundCloud-Tracks und Deezer-Playlists gibt es nur in der Web-App.</p>
+    <p class="hint">Vorschau der Liste wie in der Sonos-App. Reihenfolge per Drag &amp; Drop ändern, Klick öffnet den Sender, die Playlist oder die Kategorie. Kategorien erscheinen in Sonos als Ordner. Ausgegraute Einträge sind inaktiv oder leer und in Sonos nicht sichtbar. SoundCloud-Tracks, Deezer- und YouTube-Playlists gibt es nur in der Web-App.</p>
     <div id="grid" class="grid" aria-live="polite"></div>
     <div id="empty" class="empty" hidden>
       <p>Noch keine Sender angelegt.</p>
@@ -519,6 +520,11 @@ render_page('Sender', <<<HTML
         <div class="link-only" hidden>
           <label><span id="link-label">Link</span><input name="link_url" type="url" maxlength="1000"><small class="err" data-err="link_url"></small></label>
           <p class="muted small" id="link-help"></p>
+        </div>
+        <div class="yt-only" hidden>
+          <p class="probe" id="yt-state" hidden></p>
+          <p class="row" id="yt-sync-row" hidden><button type="button" class="btn ghost small" id="yt-sync">Jetzt abgleichen</button></p>
+          <label>API-Schlüssel <small class="muted" id="yt-key-hint"></small><input name="yt_key" type="password" maxlength="100" autocomplete="new-password" spellcheck="false"><small class="muted">Einer für alle YouTube-Playlists, verschlüsselt gespeichert. Anlegen in der Google Cloud Console: Projekt anlegen, unter „APIs und Dienste“ die YouTube Data API v3 aktivieren, unter „Anmeldedaten“ einen API-Schlüssel erstellen und ihn auf diese API beschränken.</small><small class="err" data-err="yt_key"></small></label>
         </div>
         <label class="stream-only">Website des Senders <small class="muted">für „Über den Sender“ in der Web-App</small><input name="website" type="url" maxlength="500" placeholder="https://…"><small class="err" data-err="website"></small></label>
         <div class="origin-fields">

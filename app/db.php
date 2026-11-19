@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 9;   // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)  9: origin (1.21)
+const SCHEMA_VERSION = 10;  // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)  9: origin (1.21)  10: YouTube (1.28)
 
 function db(): PDO
 {
@@ -240,6 +240,25 @@ function db_migrate_locked(): void
         if (!q("SHOW COLUMNS FROM r1_stations LIKE 'country'")->fetch()) {
             db()->exec("ALTER TABLE r1_stations ADD COLUMN country CHAR(2) NOT NULL DEFAULT '' AFTER website, ADD COLUMN city VARCHAR(80) NOT NULL DEFAULT '' AFTER country");
         }
+    }
+    if ($current < 10) {
+        // 1.28: the videos of a YouTube playlist (r1_stations kind = 'youtube'), filled by
+        // the daily sync (app/youtube.php). list_id is the playlist's row in r1_stations.
+        db()->exec("CREATE TABLE IF NOT EXISTS r1_youtube_videos (
+            id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            list_id  INT UNSIGNED NOT NULL,
+            video_id VARCHAR(20)  NOT NULL,
+            title    VARCHAR(200) NOT NULL,
+            channel  VARCHAR(120) NOT NULL DEFAULT '',
+            added_at INT UNSIGNED NOT NULL DEFAULT 0,
+            duration INT UNSIGNED NOT NULL DEFAULT 0,
+            pos      INT          NOT NULL DEFAULT 0,
+            image    VARCHAR(64)  NULL,
+            image_at INT UNSIGNED NOT NULL DEFAULT 0,
+            UNIQUE KEY uq_video (list_id, video_id),
+            KEY k_pos (list_id, pos),
+            KEY k_video (video_id)
+        ) $opts");
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {

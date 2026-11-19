@@ -12,7 +12,7 @@
   const MAX_TRACK = 300 * 1024 * 1024;
   const CHUNK = 2 * 1024 * 1024;
 
-  const state = { stations: [], mimes: {}, playlist: null, category: null, tracks: [] };
+  const state = { stations: [], mimes: {}, playlist: null, category: null, tracks: [], youtube: { key: false, store: true } };
 
   /* ---------- Helpers ---------- */
 
@@ -291,17 +291,30 @@
     return n === 1 ? '1 Eintrag' : `${n} Einträge`;
   }
 
+  function videoCount(n) {
+    return n === 1 ? '1 Video' : `${n} Videos`;
+  }
+
   function tile(s) {
-    const size = s.kind === 'playlist' ? s.tracks : s.kind === 'category' ? membersOf(s.id).length : 1;
+    const size = s.kind === 'playlist' ? s.tracks : s.kind === 'category' ? membersOf(s.id).length : s.kind === 'youtube' ? s.videos : 1;
     const empty = s.kind !== 'stream' && size === 0;
     const t = el('div', 'tile' + (s.active ? '' : ' inactive') + (empty ? ' is-empty' : '') + (s.kind !== 'stream' ? ' is-' + s.kind : ''));
     t.dataset.id = s.id;
     t.tabIndex = 0;
     t.setAttribute('role', 'button');
-    const kindName = { playlist: ', Playlist', category: ', Kategorie', soundcloud: ', SoundCloud', deezer: ', Deezer' }[s.kind] || '';
+    const kindName = { playlist: ', Playlist', category: ', Kategorie', soundcloud: ', SoundCloud', deezer: ', Deezer', youtube: ', YouTube-Playlist' }[s.kind] || '';
     t.setAttribute('aria-label', s.title + kindName + (s.active ? '' : ', inaktiv') + (empty ? ', leer' : ''));
     const a = art(s.logo_url, s.title);
-    if (s.kind === 'soundcloud' || s.kind === 'deezer') {
+    if (s.kind === 'youtube') {
+      const kind = el('span', 'kind', '▶ ' + (empty ? 'leer' : videoCount(size)));
+      kind.title = 'YouTube-Playlist, nur in der Web-App, gleicht sich täglich mit YouTube ab';
+      a.append(kind);
+      if (s.check_ok === false) {
+        const dot = el('span', 'dot fail');
+        dot.title = 'Letzter Abgleich: ' + s.check_info;
+        a.append(dot);
+      }
+    } else if (s.kind === 'soundcloud' || s.kind === 'deezer') {
       const kind = el('span', 'kind', s.kind === 'deezer' ? '↗ Deezer' : '☁ SoundCloud');
       kind.title = s.kind === 'deezer' ? 'Nur in der Web-App, führt zu Deezer' : 'Nur in der Web-App, nicht in Sonos';
       a.append(kind);
@@ -339,6 +352,7 @@
     if (n('playlist')) parts.push(n('playlist') === 1 ? '1 Playlist' : `${n('playlist')} Playlists`);
     if (n('soundcloud')) parts.push(n('soundcloud') === 1 ? '1 SoundCloud-Track' : `${n('soundcloud')} SoundCloud-Tracks`);
     if (n('deezer')) parts.push(n('deezer') === 1 ? '1 Deezer-Playlist' : `${n('deezer')} Deezer-Playlists`);
+    if (n('youtube')) parts.push(n('youtube') === 1 ? '1 YouTube-Playlist' : `${n('youtube')} YouTube-Playlists`);
     if (n('category')) parts.push(n('category') === 1 ? '1 Kategorie' : `${n('category')} Kategorien`);
     return parts.join(', ');
   }
@@ -389,6 +403,7 @@
     try {
       const data = await api('state');
       state.stations = data.stations;
+      if (data.youtube) state.youtube = data.youtube;
       fillCategorySelect();
       if (!Object.keys(state.mimes).length) {
         state.mimes = data.mimes;
@@ -472,7 +487,8 @@
     const names = Object.fromEntries(state.stations.filter((s) => s.kind === 'category').map((x) => [x.id, x.title]));
     const list = $('#st-picker-list');
     list.replaceChildren();
-    const candidates = state.stations.filter((s) => s.kind !== 'category' && s.category_id !== c.id);
+    // YouTube playlists are stacks of their own and stay on the top level
+    const candidates = state.stations.filter((s) => s.kind !== 'category' && s.kind !== 'youtube' && s.category_id !== c.id);
     if (!candidates.length) list.append(el('li', 'muted', 'Alle Sender und Playlists sind schon in dieser Kategorie.'));
     for (const s of candidates) {
       const label = el('label', 'pick');
@@ -590,22 +606,35 @@
     form.reset();
     clearErrors(form);
     const isSc = ed.kind === 'soundcloud';
-    const isLink = isSc || ed.kind === 'deezer';   // web app only, an address elsewhere
+    const isYt = ed.kind === 'youtube';
+    const isLink = isSc || isYt || ed.kind === 'deezer';   // web app only, an address elsewhere
     $$('.stream-only', form).forEach((n) => { n.hidden = isList; });
     $$('.link-only', form).forEach((n) => { n.hidden = !isLink; });
+    $$('.yt-only', form).forEach((n) => { n.hidden = !isYt; });
     if (isLink) {
-      $('#link-label').textContent = isSc ? 'SoundCloud-Link' : 'Deezer-Link';
-      F('link_url').placeholder = isSc ? 'https://soundcloud.com/künstler/track' : 'https://link.deezer.com/s/… oder https://www.deezer.com/playlist/…';
+      $('#link-label').textContent = isSc ? 'SoundCloud-Link' : isYt ? 'YouTube-Playlist' : 'Deezer-Link';
+      F('link_url').placeholder = isSc ? 'https://soundcloud.com/künstler/track'
+        : isYt ? 'https://www.youtube.com/playlist?list=PL…'
+        : 'https://link.deezer.com/s/… oder https://www.deezer.com/playlist/…';
       $('#link-help').textContent = isSc
         ? 'Die Adresse des Tracks auf soundcloud.com, auch ein Kurzlink aus der App (on.soundcloud.com). Name, Cover und Beschreibung legst du hier selbst fest. Der Track spielt nur in der Web-App im Player von SoundCloud, nicht in Sonos, und zählt nicht zum Hörstatus.'
-        : 'Der Link zur Playlist, auch der Teilen-Link aus der App (link.deezer.com). Gespeichert wird die reine Adresse, ohne Tracking und ohne deine Nutzernummer. Name, Cover und Beschreibung legst du hier selbst fest. In der Web-App führt ein Hinweis zu Deezer, in Sonos erscheint die Playlist nicht.';
+        : isYt
+          ? 'Die Adresse der Playlist auf YouTube, öffentlich oder nicht gelistet. In der Web-App wird sie ein Stapel wie eine Kategorie, das zuletzt hinzugefügte Video zuerst. Der Server gleicht einmal am Tag ab: neue Videos kommen dazu, private, gelöschte und nicht einbettbare fallen weg. Name, Beschreibung und Cover legst du hier selbst fest, ohne Cover zeigt der Stapel die ersten vier Videos. Die Videos spielen nur in der Web-App, sichtbar im Player von YouTube, nicht in Sonos und ohne Hörstatus.'
+          : 'Der Link zur Playlist, auch der Teilen-Link aus der App (link.deezer.com). Gespeichert wird die reine Adresse, ohne Tracking und ohne deine Nutzernummer. Name, Cover und Beschreibung legst du hier selbst fest. In der Web-App führt ein Hinweis zu Deezer, in Sonos erscheint die Playlist nicht.';
+    }
+    if (isYt) {
+      F('yt_key').value = '';
+      F('yt_key').placeholder = state.youtube.key ? '••••••••  gespeichert' : '';
+      $('#yt-key-hint').textContent = !state.youtube.store ? 'zum Speichern fehlt secret_key in config.php'
+        : state.youtube.key ? 'gespeichert, leer lassen zum Behalten' : 'fehlt noch';
+      ytState(s);
     }
     $('#active-label').textContent = isLink ? 'Aktiv, in der Web-App sichtbar' : 'Aktiv, in Sonos sichtbar';
     $('#editor-title').textContent = s ? s.title
-      : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie', soundcloud: 'Neuer SoundCloud-Track', deezer: 'Neue Deezer-Playlist' }[ed.kind] || 'Neuer Sender');
+      : ({ playlist: 'Neue Playlist', category: 'Neue Kategorie', soundcloud: 'Neuer SoundCloud-Track', deezer: 'Neue Deezer-Playlist', youtube: 'Neue YouTube-Playlist' }[ed.kind] || 'Neuer Sender');
     // the category field only appears when there are categories; unknown state keeps the stored one
     const hasCategories = state.stations.some((x) => x.kind === 'category');
-    $('.cat-field', form).hidden = ed.kind === 'category' || !hasCategories;
+    $('.cat-field', form).hidden = ed.kind === 'category' || isYt || !hasCategories;
     F('category_id').value = String((s ? s.category_id : categoryId) || '');
     F('title').value = s ? s.title : '';
     F('stream_url').value = s && !isLink ? s.stream_url : '';
@@ -621,7 +650,7 @@
     F('hashtags').value = s ? (s.hashtags || '') : '';
     F('active').checked = s ? s.active : true;
     F('is_playlist').value = s && s.is_playlist ? '1' : '0';
-    $('#smapi-id').textContent = !s ? '' : ed.kind === 'deezer' ? `ID: ${s.smapi_id}`
+    $('#smapi-id').textContent = !s ? '' : ed.kind === 'deezer' || isYt ? `ID: ${s.smapi_id}`
       : isSc ? `ID: ${s.smapi_id}, eigene Seite in der Web-App: /s/${s.smapi_id}`
       : `SMAPI-ID: ${s.smapi_id} (bleibt dauerhaft gleich, Sonos speichert sie in Favoriten)`;
     const del = $('#delete');
@@ -632,14 +661,46 @@
     if (s && s.check_info && !isList) setProbe(s.check_ok, 'Letzter Test: ' + s.check_info);
     setHttps(s && !isList ? s.https_ok : null);
     stationImage.reset(s && s.has_logo ? s.logo_url : null);
-    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos' : isLink ? 'Kein Cover' : 'Kein Logo';
+    $('[data-ie="placeholder"]', dialog).textContent = ed.kind === 'category' ? 'Ohne Bild: Raster aus den ersten vier Logos'
+      : isYt ? 'Ohne Bild: Raster aus den ersten vier Videos' : isLink ? 'Kein Cover' : 'Kein Logo';
     updateCount();
     dialog.showModal();
     (isLink && !s ? F('link_url') : F('title')).focus();
   }
 
   function deleteLabel() {
-    return { playlist: 'Playlist löschen', category: 'Kategorie löschen', soundcloud: 'Track löschen', deezer: 'Playlist löschen' }[ed.kind] || 'Löschen';
+    return { playlist: 'Playlist löschen', category: 'Kategorie löschen', soundcloud: 'Track löschen', deezer: 'Playlist löschen', youtube: 'Playlist löschen' }[ed.kind] || 'Löschen';
+  }
+
+  /** Result of the last sync of a YouTube playlist, and the button for the next one. */
+  function ytState(s) {
+    const p = $('#yt-state');
+    p.hidden = !(s && s.check_info);
+    $('#yt-sync-row').hidden = !s;
+    if (!p.hidden) {
+      const when = s.checked_at ? ', ' + new Date(s.checked_at.replace(' ', 'T')).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+      p.className = 'probe ' + (s.check_ok ? 'ok' : 'fail');
+      p.textContent = (s.check_ok ? '✓ Abgeglichen: ' : '✗ Abgleich fehlgeschlagen: ') + s.check_info + when;
+    }
+  }
+
+  async function syncYoutube() {
+    if (!ed.station) return;
+    const btn = $('#yt-sync');
+    btn.disabled = true;
+    btn.textContent = 'Gleiche ab …';
+    try {
+      const { result, station } = await api('youtube.sync', { id: ed.station.id });
+      ed.station = station;
+      ytState(station);
+      toast(result.ok ? 'Abgeglichen: ' + result.info : result.info, result.ok ? '' : 'error');
+      refreshView();
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Jetzt abgleichen';
+    }
   }
 
   function closeEditor() {
@@ -694,7 +755,13 @@
     btn.disabled = true;
     try {
       const isNew = !ed.station;
-      const url = (ed.kind === 'soundcloud' || ed.kind === 'deezer' ? F('link_url') : F('stream_url')).value.trim();
+      const isLink = ed.kind === 'soundcloud' || ed.kind === 'deezer' || ed.kind === 'youtube';
+      const url = (isLink ? F('link_url') : F('stream_url')).value.trim();
+      // a new API key first: the playlist is synced right after saving
+      if (ed.kind === 'youtube' && F('yt_key').value.trim()) {
+        ({ youtube: state.youtube } = await api('youtube.key', { key: F('yt_key').value.trim() }));
+        F('yt_key').value = '';
+      }
       const data = {
         id: ed.station ? ed.station.id : null,
         kind: ed.kind,
@@ -718,13 +785,14 @@
       const img = await stationImage.commit('logo.upload', 'logo.remove', station.id);
       if (img) station = img.station;
       closeEditor();
-      toast('Gespeichert');
+      if (station.kind === 'youtube' && station.check_ok === false) toast('Gespeichert, aber der Abgleich klappt nicht: ' + station.check_info, 'error');
+      else toast(station.kind === 'youtube' && station.check_info ? 'Gespeichert, ' + station.check_info : 'Gespeichert');
       const own = '#' + station.kind + '/' + station.id;
       if ((station.kind === 'playlist' || station.kind === 'category') && isNew && location.hash !== own) location.hash = own;
       else refreshView();
     } catch (err) {
-      // the address of a SoundCloud track or a Deezer playlist has its own field
-      if ((ed.kind === 'soundcloud' || ed.kind === 'deezer') && err.fields && err.fields.stream_url) err.fields.link_url = err.fields.stream_url;
+      // the address of a SoundCloud track, a Deezer or a YouTube playlist has its own field
+      if (['soundcloud', 'deezer', 'youtube'].includes(ed.kind) && err.fields && err.fields.stream_url) err.fields.link_url = err.fields.stream_url;
       showErrors(form, err);
       toast(err.message, 'error');
     } finally {
@@ -743,6 +811,7 @@
         category: 'Kategorie gelöscht, ihre Einträge stehen wieder direkt in der Liste',
         soundcloud: 'SoundCloud-Track gelöscht',
         deezer: 'Deezer-Playlist gelöscht',
+        youtube: 'YouTube-Playlist gelöscht',
       }[ed.kind] || 'Sender gelöscht');
       if (location.hash === '#' + ed.kind + '/' + ed.station.id) location.hash = '#stations';
       else refreshView();
@@ -1668,6 +1737,8 @@
   $('#add-category').addEventListener('click', () => openEditor(null, 'category'));
   $('#add-soundcloud').addEventListener('click', () => openEditor(null, 'soundcloud'));
   $('#add-deezer').addEventListener('click', () => openEditor(null, 'deezer'));
+  $('#add-youtube').addEventListener('click', () => openEditor(null, 'youtube'));
+  $('#yt-sync').addEventListener('click', syncYoutube);
   $('#cat-edit').addEventListener('click', () => openEditor(state.category));
   $('#cat-add').addEventListener('click', () => openEditor(null, 'stream', state.category.id));
   $('#cat-add-sc').addEventListener('click', () => openEditor(null, 'soundcloud', state.category.id));

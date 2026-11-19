@@ -27,16 +27,21 @@ function webapp_levels(): array
     $rows = $catalog['categories'] ? stations_all(true) : [];
     foreach ($catalog['categories'] as $c) {
         $id    = $c['row']['smapi_id'];
-        $cover = category_cover($c['row'], $rows);
+        $isYt  = !empty($c['youtube']);
+        if ($isYt) {
+            $levels[$id] = webapp_youtube($c['row']);
+        }
+        $cover = $isYt ? youtube_cover($c['row']) : category_cover($c['row'], $rows);
         $root[$c['sort']] = [
-            'id'    => $id,
-            'type'  => 'category',
-            'name'  => $c['row']['title'],
-            'num'   => sprintf('%02d', $c['sort']),
-            'logo'  => logo_url($cover),
-            'thumb' => logo_url(logo_thumb($cover)),
-            'count' => count($levels[$id] ?? []),
-            'desc'  => (string) $c['row']['description'],
+            'id'     => $id,
+            'type'   => 'category',
+            'name'   => $c['row']['title'],
+            'num'    => sprintf('%02d', $c['sort']),
+            'logo'   => logo_url($cover),
+            'thumb'  => logo_url(logo_thumb($cover)),
+            'count'  => count($levels[$id] ?? []),
+            'desc'   => (string) $c['row']['description'],
+            'videos' => $isYt,   // counts videos, not stations
         ];
     }
     ksort($root);
@@ -89,6 +94,35 @@ function webapp_station(array $e): array
         'hls'      => $r['mime'] === 'application/vnd.apple.mpegURL',
         'category' => $e['category']['smapi_id'] ?? null,
     ];
+}
+
+/**
+ * The videos of a YouTube playlist for the web app, in its order. They play in YouTube's
+ * player (app.js); the picture is the 16:9 one, tiles cut a square out of it.
+ */
+function webapp_youtube(array $row): array
+{
+    $out = [];
+    foreach (youtube_videos((int) $row['id']) as $i => $v) {
+        $url = youtube_watch_url((string) $v['video_id']);
+        $out[] = [
+            'id'       => 'yt.' . $v['video_id'],   // a dot never occurs in the ids of stations
+            'type'     => 'youtube',
+            'video'    => (string) $v['video_id'],
+            'name'     => $v['title'],
+            'num'      => sprintf('%02d', $i + 1),
+            'logo'     => logo_url($v['image']),
+            'thumb'    => $v['image'] ? logo_url(logo_thumb_name((string) $v['image'])) : null,
+            'desc'     => implode(' · ', array_filter([(string) $v['channel'], youtube_length((int) $v['duration'])])),
+            'website'  => $url,
+            'country'  => '',
+            'city'     => '',
+            'url'      => $url,
+            'https'    => true,
+            'category' => $row['smapi_id'],
+        ];
+    }
+    return $out;
 }
 
 /**
@@ -154,6 +188,10 @@ function webapp_strings(string $lang): array
         'sc_text'     => 'Der Player von SoundCloud lädt erst nach deinem Klick. Dann setzt SoundCloud Cookies und erfährt deine IP-Adresse.',
         'sc_more'     => 'Mehr dazu',
         'sc_load'     => 'SoundCloud laden',
+        'yt_title'    => 'Spielt über YouTube',
+        'yt_text'     => 'Das Video lädt erst nach deinem Klick, von youtube-nocookie.com. Dann erfährt Google deine IP-Adresse und kann Daten in deinem Browser speichern. Beim Abspielen gelten die Nutzungsbedingungen von YouTube.',
+        'yt_terms'    => 'Nutzungsbedingungen',
+        'yt_load'     => 'YouTube laden',
         'dz_kicker'   => 'Playlist bei Deezer',
         'dz_text'     => 'Diese Playlist spielt nicht hier, sondern bei Deezer. Der Button öffnet sie in einem neuen Tab oder in der Deezer-App.',
         'dz_transfer' => 'Hörst du mit einem anderen Dienst? Bei Deezer kannst du die Playlist auch in deine Musik-App exportieren, etwa zu Spotify, YouTube Music oder Apple Music.',
@@ -203,6 +241,10 @@ function webapp_strings(string $lang): array
         'sc_text'     => "SoundCloud's player loads only after your click. SoundCloud then sets cookies and learns your IP address.",
         'sc_more'     => 'More about it',
         'sc_load'     => 'Load SoundCloud',
+        'yt_title'    => 'Plays via YouTube',
+        'yt_text'     => "The video loads only after your click, from youtube-nocookie.com. Google then learns your IP address and may store data in your browser. Playing it means agreeing to YouTube's Terms of Service.",
+        'yt_terms'    => 'Terms of Service',
+        'yt_load'     => 'Load YouTube',
         'dz_kicker'   => 'Playlist on Deezer',
         'dz_text'     => 'This playlist does not play here but on Deezer. The button opens it in a new tab or in the Deezer app.',
         'dz_transfer' => 'Using another service? On Deezer you can also export the playlist to your music app, such as Spotify, YouTube Music or Apple Music.',
@@ -249,6 +291,10 @@ function webapp_script_strings(string $lang): array
             'listenOff' => 'Erfassung pausiert',
             'scPlaying' => 'Spielt',
             'scFrame'   => 'Player von SoundCloud',
+            'ytFrame'   => 'Player von YouTube',
+            'ytGone'    => 'Video nicht verfügbar',
+            'videos1'   => '1 Video',
+            'videosN'   => '{n} Videos',
         ];
     }
     return [
@@ -266,6 +312,10 @@ function webapp_script_strings(string $lang): array
         'listenOff' => 'Recording paused',
         'scPlaying' => 'Playing',
         'scFrame'   => 'SoundCloud player',
+        'ytFrame'   => 'YouTube player',
+        'ytGone'    => 'Video not available',
+        'videos1'   => '1 video',
+        'videosN'   => '{n} videos',
     ];
 }
 
@@ -279,8 +329,8 @@ function webapp_json(array $data): string
 function webapp_headers(): void
 {
     $media = media_origin(0);
-    // frame-src: SoundCloud's player, loaded only after a click in the web app (see app.js)
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; frame-src https://w.soundcloud.com; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    // frame-src: the players of SoundCloud and YouTube, loaded only after a click in the web app (see app.js)
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; frame-src https://w.soundcloud.com https://www.youtube-nocookie.com; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     // the browser talks to the stations' servers directly; they need not know where it came from

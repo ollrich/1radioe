@@ -14,6 +14,9 @@
  * A Deezer entry (kind = 'deezer') is a link to a playlist on deezer.com, web app only as
  * well: it does not play there, a note leads to Deezer.
  *
+ * A YouTube playlist (kind = 'youtube', top level only) is a stack in the web app whose
+ * videos come from YouTube once a day (app/youtube.php); stream_url is the playlist.
+ *
  * Each station has a stable "smapi_id". Sonos stores it in favorites and alarms,
  * so it is created once from the title and never changes afterwards.
  */
@@ -224,8 +227,8 @@ function station_save(array $in, ?int $id = null): array
     $mime        = (string) ($in['mime'] ?? '');
     $active      = !empty($in['active']) ? 1 : 0;
     $existing    = $id !== null ? station_find($id) : null;
-    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category', 'soundcloud', 'deezer'], true) ? $in['kind'] : 'stream');
-    $isLink      = $kind === 'soundcloud' || $kind === 'deezer';   // web app only, an address elsewhere
+    $kind        = $existing['kind'] ?? (in_array($in['kind'] ?? '', ['playlist', 'category', 'soundcloud', 'deezer', 'youtube'], true) ? $in['kind'] : 'stream');
+    $isLink      = in_array($kind, ['soundcloud', 'deezer', 'youtube'], true);   // web app only, an address elsewhere
     // website: kept as it is when the field is not sent (e.g. by an older admin)
     $website     = array_key_exists('website', $in) ? trim((string) $in['website']) : (string) ($existing['website'] ?? '');
     // posting (1.9): kept as they are when not sent
@@ -263,6 +266,13 @@ function station_save(array $in, ?int $id = null): array
         }
         $url = $dz ?? $url;
     }
+    if ($kind === 'youtube') {
+        $yt = youtube_playlist_id($url);
+        if ($yt === null) {
+            $errors['stream_url'] = 'Bitte die Adresse einer Playlist auf YouTube eingeben, etwa https://www.youtube.com/playlist?list=PL…';
+        }
+        $url = $yt !== null ? youtube_playlist_url($yt) : $url;
+    }
     if ($title === '' || mb_strlen($title) > 120) {
         $errors['title'] = 'Name fehlt oder ist länger als 120 Zeichen.';
     }
@@ -290,8 +300,9 @@ function station_save(array $in, ?int $id = null): array
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
     }
     // category: kept as it is when the field is not sent, categories themselves never nest
+    // (nor do YouTube playlists, which are stacks of their own)
     $categoryId = $existing !== null && $existing['category_id'] !== null ? (int) $existing['category_id'] : null;
-    if ($kind === 'category') {
+    if ($kind === 'category' || $kind === 'youtube') {
         $categoryId = null;
     } elseif (array_key_exists('category_id', $in)) {
         $categoryId = (int) $in['category_id'] ?: null;
@@ -348,7 +359,7 @@ function stations_assign(?int $categoryId, array $ids): void
         throw new InputError([], 'Kategorie nicht gefunden.');
     }
     foreach (array_unique(array_map('intval', $ids)) as $id) {
-        q("UPDATE r1_stations SET category_id = ?, sort = ? WHERE id = ? AND kind <> 'category'", [$categoryId, station_next_sort(), $id]);
+        q("UPDATE r1_stations SET category_id = ?, sort = ? WHERE id = ? AND kind NOT IN ('category', 'youtube')", [$categoryId, station_next_sort(), $id]);
     }
     catalog_bump();
 }
@@ -356,7 +367,7 @@ function stations_assign(?int $categoryId, array $ids): void
 /**
  * The entries Sonos shows at the top level ($categoryId null) or inside a category:
  * active, playlists only with tracks, categories only with something to show,
- * never SoundCloud or Deezer (web app only).
+ * never SoundCloud, Deezer or YouTube (web app only).
  * $rows: stations_all() in display order, $stats: playlist_stats().
  */
 function sonos_visible(array $rows, array $stats, ?int $categoryId): array
@@ -364,7 +375,7 @@ function sonos_visible(array $rows, array $stats, ?int $categoryId): array
     $out = [];
     foreach ($rows as $s) {
         $in = $s['category_id'] !== null ? (int) $s['category_id'] : null;
-        if (!$s['active'] || $in !== $categoryId || $s['kind'] === 'soundcloud' || $s['kind'] === 'deezer') {
+        if (!$s['active'] || $in !== $categoryId || in_array($s['kind'], ['soundcloud', 'deezer', 'youtube'], true)) {
             continue;
         }
         if ($s['kind'] === 'playlist' && ($stats[(int) $s['id']]['tracks'] ?? 0) === 0) {
@@ -453,6 +464,11 @@ function station_delete(int $id): void
     if ($s['kind'] === 'category') {
         // the content stays and moves back to the top level
         q('UPDATE r1_stations SET category_id = NULL WHERE category_id = ?', [$id]);
+    }
+    if ($s['kind'] === 'youtube') {
+        youtube_forget($id);   // its videos and their pictures
+    }
+    if ($s['kind'] === 'category' || $s['kind'] === 'youtube') {
         foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $collage) {
             @unlink($collage);
         }
@@ -474,6 +490,9 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         $rows ??= stations_all();
         $cover = category_cover($s, $rows);
     }
+    if ($s['kind'] === 'youtube') {
+        $cover = youtube_cover($s);
+    }
     return [
         'id'          => (int) $s['id'],
         'smapi_id'    => $s['smapi_id'],
@@ -481,6 +500,7 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'category_id' => $s['category_id'] !== null ? (int) $s['category_id'] : null,
         'has_logo'    => logo_url($s['logo'], 1) !== null,
         'tracks'      => $stats[(int) $s['id']]['tracks'] ?? 0,
+        'videos'      => $s['kind'] === 'youtube' ? (int) q('SELECT COUNT(*) FROM r1_youtube_videos WHERE list_id = ?', [(int) $s['id']])->fetchColumn() : 0,
         'duration'    => $stats[(int) $s['id']]['duration'] ?? 0,
         'title'       => $s['title'],
         'description' => $s['description'],

@@ -189,7 +189,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 
 /* ---------- Player in the middle (wide screens) ---------- */
 
-.stage { display: flex; align-items: center; justify-content: center; gap: 56px; }
+.stage { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 28px 56px; }
 .stage-art { position: relative; flex: none; }
 .stage-info { display: flex; flex-direction: column; gap: 18px; width: 440px; min-width: 0; }
 .kicker { margin: 0; font-size: 14px; color: var(--muted); }
@@ -241,6 +241,15 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .sc-slot:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 16px; }
 /* SoundCloud's player brings its own buttons; the docked player on phones keeps ours */
 .sc-cur .stage .controls, .sc-cur .sheet .controls { display: none; }
+
+/* YouTube: the video stands where a station shows its logo, 16:9 and never below
+   200 px high (YouTube's minimum for its player); nothing lies on top of it */
+.yt-box { display: none; position: relative; overflow: hidden; width: 441px; aspect-ratio: 16 / 9; min-height: 200px; border-radius: 22px; background: #000; }
+.yt-cur .yt-box:not([hidden]) { display: block; }
+.yt-cur .stage-art .tile-xl, .yt-cur .stage-art .numchip { display: none; }
+.yt-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.yt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.sheet .yt-box { width: min(calc(100vw - 32px), 440px); border-radius: 18px; }
 @media (prefers-reduced-motion: reduce) { .sc-load.nudge { animation: none; } }
 
 /* ---------- Scale ---------- */
@@ -481,6 +490,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .page { padding: 24px 28px 16px; }
   .stage { gap: 36px; }
   .tile-xl { width: 200px; height: 200px; border-radius: 26px; font-size: 54px; }
+  .yt-box { width: 356px; }
   .stage-info { width: 380px; }
   .stage-name { font-size: 44px; }
   .stage-name.is-long { font-size: 36px; }
