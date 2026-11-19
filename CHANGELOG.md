@@ -9,6 +9,7 @@ Kleinigkeiten aus der vierten Durchsicht, nichts davon sichtbar:
 * `private_dir()` zeigt ohne `config.php` auf `1radioe-private/` im Checkout statt auf die Wurzel des Dateisystems (#73)
 * Reihenfolge speichern nimmt jeden Sender nur einmal, an seiner ersten Stelle. „Jetzt läuft“ wartet höchstens zwei Sekunden, wenn gerade ein anderer Aufruf denselben Sender liest, und liefert sonst den letzten bekannten Titel (bisher bis zu acht Sekunden). Die Weiterleitung des Admins auf HTTPS nimmt nur einen gültigen Hostnamen (#75)
 * Kommentar an der Sicherheitsrichtlinie der Web-App, warum `connect-src` HTTPS-Adressen erlauben muss: hls.js lädt HLS-Sender wie BBC Radio 1 in Firefox per Abruf (#74, bleibt so)
+* YouTube: Steht ein Video zweimal in der Playlist, zählt es weiter einmal, jetzt aber mit dem Datum, an dem es zuletzt hinzugefügt wurde (bisher das des ersten Eintrags). Gefunden beim abschließenden Durchsehen
 * Tests: neue Gruppe `stations` (Sender nach Stream-Adresse, aufgelöster Playlist und Titel, Reihenfolge mit Doppelten), `upload` prüft denselben Teil zweimal nacheinander und gleichzeitig aus zwei Prozessen. 127 Prüfungen
 
 ## 1.28.3 (19. November 2026)
