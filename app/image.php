@@ -88,11 +88,14 @@ function image_has_alpha(GdImage $img): bool
 /**
  * Cover for a category without its own picture: up to four logos in a 2 x 2 grid,
  * stored once as cat<id>-<hash>.jpg (a new set of logos gives a new file).
- * One logo is used as it is. Returns the file name.
+ * One logo is used as it is. Each cell takes the square middle of its picture, so the
+ * 16:9 pictures of YouTube videos fit too (a single one fills the whole square).
+ * Returns the file name.
  */
 function category_collage(int $id, array $logos): string
 {
-    if (count($logos) === 1 || !function_exists('imagecreatetruecolor')) {
+    $wide = str_starts_with($logos[0], 'yt-');
+    if ((count($logos) === 1 && !$wide) || !function_exists('imagecreatetruecolor')) {
         return $logos[0];
     }
     $name = 'cat' . $id . '-' . substr(sha1(implode(',', $logos)), 0, 12) . '.jpg';
@@ -100,18 +103,22 @@ function category_collage(int $id, array $logos): string
         return $name;
     }
     $cells = match (count($logos)) {
+        1       => [0],
         2       => [0, 1, 1, 0],
         3       => [0, 1, 2, 0],
         default => [0, 1, 2, 3],
     };
-    $half = intdiv(LOGO_SIZE, 2);
+    $cell = count($cells) === 1 ? LOGO_SIZE : intdiv(LOGO_SIZE, 2);
     $dst  = imagecreatetruecolor(LOGO_SIZE, LOGO_SIZE);
     imagefill($dst, 0, 0, imagecolorallocate($dst, 11, 19, 40));   // navy behind transparent logos
     $images = [];
     foreach ($cells as $n => $i) {
         $images[$i] ??= @imagecreatefromstring((string) @file_get_contents(media_dir() . '/' . $logos[$i]));
         if ($images[$i] !== false) {
-            imagecopyresampled($dst, $images[$i], ($n % 2) * $half, intdiv($n, 2) * $half, 0, 0, $half, $half, imagesx($images[$i]), imagesy($images[$i]));
+            $w    = imagesx($images[$i]);
+            $h    = imagesy($images[$i]);
+            $side = min($w, $h);
+            imagecopyresampled($dst, $images[$i], ($n % 2) * $cell, intdiv($n, 2) * $cell, intdiv($w - $side, 2), intdiv($h - $side, 2), $cell, $cell, $side, $side);
         }
     }
     foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $old) {

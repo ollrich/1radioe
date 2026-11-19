@@ -39,11 +39,13 @@
     holdsCur: 'enthält den aktuellen Sender', play: 'Abspielen', pause: 'Pause',
     noDesc: 'Keine Beschreibung.', website: 'Website: {host}', listenOn: 'Hören wird erfasst', listenOff: 'Erfassung pausiert',
     scPlaying: 'Spielt', scFrame: 'Player von SoundCloud',
+    ytFrame: 'Player von YouTube', ytGone: 'Video nicht verfügbar', videos1: '1 Video', videosN: '{n} Videos',
   }, data.text || {});
   const TEXT = T.phase;
   const LISTENING = T.listening;
   const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
-  const countText = (n) => (n === 1 ? T.count1 : fill(T.countN, { n }));
+  // a category counts stations, a YouTube playlist videos
+  const countText = (n, it) => (it && it.videos ? (n === 1 ? T.videos1 : fill(T.videosN, { n })) : n === 1 ? T.count1 : fill(T.countN, { n }));
   const NOW_EVERY = 25000;                                 // how often the song title is asked for while playing
   // the page's title from the server (the site, or the station of a station page); the tab
   // names the station only while it plays, search engines keep this one
@@ -54,9 +56,12 @@
   for (const [level, list] of Object.entries(levels)) {
     for (const it of list) items.set(it.id, Object.assign(it, { level }));
   }
-  // everything playable in a list: stations and SoundCloud tracks (Deezer only opens a note)
-  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type === 'station' || x.type === 'soundcloud');
+  // everything playable in a list: stations, SoundCloud tracks and YouTube videos (Deezer only opens a note)
+  const stationsOf = (level) => (levels[level] || []).filter((x) => x.type === 'station' || x.type === 'soundcloud' || x.type === 'youtube');
   const isSc = (it) => Boolean(it && it.type === 'soundcloud');
+  const isYt = (it) => Boolean(it && it.type === 'youtube');
+  // plays in a player of its own (SoundCloud, YouTube), not as radio in <audio>
+  const isOwn = (it) => isSc(it) || isYt(it);
 
   const state = {
     view: 'root',        // level shown on the scale
@@ -69,8 +74,9 @@
     touched: false,      // the visitor started something: from now on changes are announced
   };
   const isPlaying = () => state.phase === 'live' || state.phase === 'connecting';
-  // SoundCloud is not live radio: "Spielt" instead of "Live"
-  const phaseText = (phase) => (phase === 'live' && isSc(state.cur) ? T.scPlaying : TEXT[phase]);
+  // SoundCloud and YouTube are not live radio: "Spielt" instead of "Live"
+  const phaseText = (phase) => (phase === 'live' && isOwn(state.cur) ? T.scPlaying
+    : phase === 'error' && isYt(state.cur) ? T.ytGone : TEXT[phase]);
 
   /* ---------- Helpers ---------- */
 
@@ -154,7 +160,7 @@
 
   function label(it) {
     let text = it.type === 'category'
-      ? `${it.num} ${fill(T.category, { name: it.name })}, ${countText(it.count)}`
+      ? `${it.num} ${fill(T.category, { name: it.name })}, ${countText(it.count, it)}`
       : `${it.num} ${it.name}`;
     if (it.type !== 'category' && state.cur && state.cur.id === it.id) text += ', ' + phaseText(state.phase);
     if (it.type === 'category' && holdsCur(it)) text += ', ' + T.holdsCur;
@@ -179,7 +185,7 @@
       b.type = 'button';
       // tooltip: the full name (it may be cut off under the logo) and the description;
       // a category without one tells its number of stations
-      const more = it.desc || (it.type === 'category' ? countText(it.count) : '');
+      const more = it.desc || (it.type === 'category' ? countText(it.count, it) : '');
       b.title = more ? `${it.name}\n${more}` : it.name;
       const tile = el('span', 'tile');
       fillTile(tile, it);
@@ -383,7 +389,7 @@
       row.setAttribute('aria-current', String(cur));
       row.setAttribute('aria-label', label(it));
       // a category shows its description, the number of stations only without one
-      setText(sub, it.type === 'category' ? (it.desc || countText(it.count))
+      setText(sub, it.type === 'category' ? (it.desc || countText(it.count, it))
         : cur ? (trackLine(currentTrack()) || (state.phase === 'live' && currentDesc()) || phaseText(state.phase))
         : (it.desc || ''));
       // an open category shows the status at the station inside, not twice
@@ -408,6 +414,9 @@
     $$('[data-r1="level"]').forEach((n) => { n.textContent = cat ? cat.name : T.all; });
     // SoundCloud's player has its own buttons: the stage and the full player hide theirs
     document.documentElement.classList.toggle('sc-cur', isSc(it));
+    // YouTube: the video (or its picture) takes the place of the logo
+    document.documentElement.classList.toggle('yt-cur', isYt(it));
+    if (isYt(it)) ytPicture(it);
     placeInfoTip();   // the button moves with the length of the name
     setMediaMetadata();
   }
@@ -423,7 +432,7 @@
 
   function setPhase(phase) {
     state.phase = phase;
-    const radio = !isSc(state.cur);
+    const radio = !isOwn(state.cur);
     // the docked player's line is set by renderTrack below (song, description or state)
     $$('[data-r1="state"]').forEach((n) => { if (!n.closest('.mini')) setText(n, phaseText(phase)); });
     $$('[data-r1="dot"]').forEach((n) => { n.className = 'dot ' + phase; });
@@ -602,6 +611,7 @@
     mqPick = it.id;
     if (listen.id && listen.id !== it.id) listenStop(false);   // switching stations ends the old one
     const fromSc = isSc(state.cur);
+    const fromYt = isYt(state.cur);
     // the buttons disappear for SoundCloud; a keyboard focus on them must not get lost
     const focusOnButtons = document.activeElement instanceof Element && Boolean(document.activeElement.closest('.controls'));
     state.cur = it;
@@ -609,10 +619,16 @@
     renderPlayer();
     if (isSc(it)) {
       hangUp();          // the radio stops, SoundCloud plays in its own player
+      if (fromYt) ytClose();
       scShow(it, true);
       if (focusOnButtons) scFocus();
+    } else if (isYt(it)) {
+      hangUp();          // the radio stops, YouTube plays in its own player
+      if (fromSc) scClose();
+      ytShow(it, true);
     } else {
       if (fromSc) scClose();
+      if (fromYt) ytClose();
       connect(true);
     }
     reveal(false);
@@ -622,6 +638,10 @@
   function connect(fresh) {
     if (isSc(state.cur)) {
       scPlay();
+      return;
+    }
+    if (isYt(state.cur)) {
+      ytPlay();
       return;
     }
     clearTimeout(retryTimer);
@@ -644,6 +664,10 @@
       scPause();
       return;
     }
+    if (isYt(state.cur)) {
+      ytPause();
+      return;
+    }
     setPhase(state.cur ? 'paused' : 'idle');
     hangUp();
   }
@@ -658,7 +682,7 @@
   }
 
   function failed(code) {
-    if (!isPlaying() || isSc(state.cur)) return;
+    if (!isPlaying() || isOwn(state.cur)) return;
     // code 4: format or address not playable here, a long retry would not help
     const limit = code === 4 ? 2 : RETRY.length;
     if (state.retry >= limit) {
@@ -703,7 +727,7 @@
   }
 
   audio.addEventListener('playing', () => {
-    if (isSc(state.cur)) return;
+    if (isOwn(state.cur)) return;
     state.retry = 0;
     lastProgress = Date.now();
     setPhase('live');
@@ -714,19 +738,19 @@
       lastProgress = Date.now();
     }
   });
-  audio.addEventListener('waiting', () => { if (state.phase === 'live' && !isSc(state.cur)) setPhase('connecting'); });
+  audio.addEventListener('waiting', () => { if (state.phase === 'live' && !isOwn(state.cur)) setPhase('connecting'); });
   audio.addEventListener('error', () => failed(audio.error ? audio.error.code : 0));
   audio.addEventListener('ended', () => failed(0));   // live radio does not end: reconnect
   // paused from outside, e.g. headphones unplugged or the system took the audio
-  audio.addEventListener('pause', () => { if (state.phase === 'live' && !isSc(state.cur)) stop(); });
+  audio.addEventListener('pause', () => { if (state.phase === 'live' && !isOwn(state.cur)) stop(); });
 
   // watchdog: no progress for a while means the connection is gone
   setInterval(() => {
-    if (!isPlaying() || retryTimer || isSc(state.cur)) return;
+    if (!isPlaying() || retryTimer || isOwn(state.cur)) return;
     const quiet = Date.now() - lastProgress;
     if ((state.phase === 'live' && quiet > 12000) || (state.phase === 'connecting' && quiet > 20000)) failed(0);
   }, 3000);
-  window.addEventListener('online', () => { if (state.cur && !isSc(state.cur) && (isPlaying() || state.phase === 'error')) connect(true); });
+  window.addEventListener('online', () => { if (state.cur && !isOwn(state.cur) && (isPlaying() || state.phase === 'error')) connect(true); });
 
   /* Volume, remembered in this browser only. iOS does not let pages change it. */
   const canVolume = (() => {
@@ -758,6 +782,7 @@
       audio.volume = volume / 100;
       showVolume();
       if (sc.frame) scSend('setVolume', volume);
+      if (yt.frame) ytSend('setVolume', [volume]);
       try { localStorage.setItem('r1.volume', String(volume)); } catch { /* not remembered */ }
     });
     // the mouse wheel over the speaker and the slider sets the volume: one notch is 5 %,
@@ -959,6 +984,222 @@
     }
   });
 
+  /* ---------- YouTube ----------
+   * A video of a YouTube playlist plays in YouTube's own player (an iframe from
+   * youtube-nocookie.com), never in <audio>, and visible where a station shows its logo:
+   * YouTube allows no sound without the picture and nothing on top of its player. It
+   * loads only after a click on "YouTube laden", for this visit. The page steers the
+   * player with postMessage, the protocol of YouTube's IFrame API, without loading that
+   * script; our buttons stay. On phones it plays in the full player, closing that pauses
+   * it (a hidden player must not play). A video that is gone shows so and the next one
+   * follows. No listening status and no song lookups for YouTube. */
+
+  const YT_ORIGIN = 'https://www.youtube-nocookie.com';
+  const yt = { ok: false, frame: null, video: '', ready: false, want: false, timer: 0, hello: 0, gone: 0 };
+  const ytBox = () => $(`[data-yt-box="${phone.matches ? 'sheet' : 'stage'}"]`);
+  const ytSlot = () => $(`[data-yt-slot="${phone.matches ? 'sheet' : 'stage'}"]`);
+
+  function ytSend(func, args = []) {
+    if (!yt.frame || !yt.frame.contentWindow) return;
+    yt.frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args, id: 1, channel: 'widget' }), YT_ORIGIN);
+  }
+
+  /** The picture of the video in every place that does not hold the player. */
+  function ytPicture(it) {
+    $$('[data-yt-box]').forEach((b) => {
+      if (yt.frame && yt.frame.parentElement === b) return;
+      b.replaceChildren();
+      if (it.logo) b.append(image(it.logo, () => b.replaceChildren()));
+    });
+  }
+
+  /** The place of a video: picture and note, or the player once allowed. */
+  function ytShow(it, start) {
+    const box = ytBox();
+    $$('[data-yt-box]').forEach((b) => { b.hidden = b !== box; });
+    if (start) $('[data-r1="mini"]').hidden = false;
+    if (!yt.ok) {
+      const slot = ytSlot();
+      $$('[data-yt-slot]').forEach((s) => { s.hidden = s !== slot; });
+      clearTimeout(yt.timer);
+      setPhase('idle');
+      if (start && phone.matches) openDialog('sheet');   // the note is in the full player
+      return;
+    }
+    $$('[data-yt-slot]').forEach((s) => { s.hidden = true; });
+    if (yt.frame && yt.video === it.video && yt.frame.parentElement === box) {
+      if (start) ytPlay();
+      else setPhase('paused');
+      return;
+    }
+    ytLoad(it, start);
+  }
+
+  function ytLoad(it, autoplay) {
+    const box = ytBox();
+    clearTimeout(yt.gone);
+    yt.video = it.video;
+    yt.want = autoplay;
+    if (yt.frame && yt.ready && yt.frame.parentElement === box) {
+      ytSend(autoplay ? 'loadVideoById' : 'cueVideoById', [it.video]);   // the same player, no new consent to start
+    } else {
+      if (!yt.frame) {
+        yt.frame = el('iframe', 'yt-frame');
+        yt.frame.title = T.ytFrame;
+        yt.frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        // the page sends no referrer, YouTube's player needs one: only the origin goes along
+        yt.frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      }
+      yt.ready = false;
+      const q = new URLSearchParams({ enablejsapi: '1', origin: location.origin, autoplay: autoplay ? '1' : '0', playsinline: '1', rel: '0', iv_load_policy: '3' });
+      yt.frame.onload = ytHello;   // once the player is there, not before
+      yt.frame.src = `${YT_ORIGIN}/embed/${encodeURIComponent(it.video)}?${q}`;
+      box.replaceChildren(yt.frame);
+    }
+    if (phone.matches && autoplay) openDialog('sheet');   // visible while it plays
+    setPhase(autoplay ? 'connecting' : 'paused');
+    if (autoplay) ytWatch();
+  }
+
+  /** Asks the player for its events until it answers (what YouTube's own script does). */
+  function ytHello() {
+    clearInterval(yt.hello);
+    let tries = 0;
+    const hello = () => {
+      if (yt.ready || !yt.frame || ++tries > 40) {
+        clearInterval(yt.hello);
+        return;
+      }
+      const w = yt.frame.contentWindow;
+      let blank = false;   // still the empty page before YouTube's (readable, ours): wait
+      try { blank = Boolean(w && w.location.href); } catch { /* YouTube's page, as wanted */ }
+      if (w && !blank) w.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), YT_ORIGIN);
+    };
+    hello();
+    yt.hello = setInterval(hello, 250);
+  }
+
+  function ytPlay() {
+    if (!yt.ok) {
+      ytAsk();
+      return;
+    }
+    if (!yt.frame || yt.video !== state.cur.video || yt.frame.parentElement !== ytBox()) {
+      ytLoad(state.cur, true);
+      return;
+    }
+    if (phone.matches) openDialog('sheet');
+    yt.want = true;
+    setPhase('connecting');
+    ytSend('playVideo');
+    ytWatch();
+  }
+
+  function ytPause() {
+    clearTimeout(yt.timer);
+    clearTimeout(yt.gone);
+    yt.want = false;
+    ytSend('pauseVideo');
+    setPhase(yt.frame ? 'paused' : 'idle');
+  }
+
+  /** Browsers may refuse to start a player from outside: then a tap on YouTube's own button starts it. */
+  function ytWatch() {
+    clearTimeout(yt.timer);
+    yt.timer = setTimeout(() => {
+      if (isYt(state.cur) && state.phase === 'connecting') setPhase('paused');
+    }, 8000);
+  }
+
+  /** Play without permission yet: point at the button that loads the player. */
+  function ytAsk() {
+    if (phone.matches) openDialog('sheet');
+    const b = $('[data-yt-load]', ytSlot());
+    if (!b) return;
+    b.classList.remove('nudge');
+    void b.offsetWidth;   // restart the animation
+    b.classList.add('nudge');
+    b.focus();
+  }
+
+  function ytClose() {
+    clearTimeout(yt.timer);
+    clearTimeout(yt.gone);
+    clearInterval(yt.hello);
+    if (yt.frame) yt.frame.remove();
+    Object.assign(yt, { frame: null, video: '', ready: false, want: false });
+    $$('[data-yt-box]').forEach((b) => { b.hidden = true; b.replaceChildren(); });
+    $$('[data-yt-slot]').forEach((s) => { s.hidden = true; });
+  }
+
+  /** A video came to its end: the next entry of the list if it is a video too, else stop. */
+  function ytNext() {
+    const list = stationsOf(state.curLevel);
+    const i = list.findIndex((x) => x.id === state.cur.id);
+    const next = i >= 0 ? list[i + 1] : null;
+    if (next && isYt(next)) play(next, state.curLevel);
+    else ytPause();
+  }
+
+  /** The player cannot play this video (private, deleted, not embeddable here): say so, then the next. */
+  function ytGone() {
+    clearTimeout(yt.timer);
+    clearTimeout(yt.gone);
+    setPhase('error');
+    const it = state.cur;
+    yt.gone = setTimeout(() => { if (state.cur === it) ytNext(); }, 3000);
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.origin !== YT_ORIGIN || !yt.frame || e.source !== yt.frame.contentWindow) return;
+    let msg = null;
+    try { msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+    if (!msg || typeof msg.event !== 'string') return;
+    if (!yt.ready) {   // the first answer: the player listens now
+      yt.ready = true;
+      clearInterval(yt.hello);
+      ytSend('addEventListener', ['onStateChange']);
+      ytSend('addEventListener', ['onError']);
+      ytSend('setVolume', [volume]);
+    }
+    if (!isYt(state.cur)) return;
+    let st = null;
+    if (msg.event === 'onStateChange' && typeof msg.info === 'number') st = msg.info;
+    else if (msg.event === 'infoDelivery' && msg.info && typeof msg.info.playerState === 'number') st = msg.info.playerState;
+    else if (msg.event === 'onError') {
+      ytGone();
+      return;
+    }
+    if (st === 1) {          // playing
+      clearTimeout(yt.timer);
+      yt.want = true;
+      if (state.phase !== 'live') setPhase('live');
+    } else if (st === 2) {   // paused, also by YouTube's own button
+      if (isPlaying()) {
+        yt.want = false;
+        setPhase('paused');
+      }
+    } else if (st === 0 && state.phase !== 'error') {   // ended
+      ytNext();
+    }
+  });
+
+  $$('[data-yt-load]').forEach((b) => b.addEventListener('click', () => {
+    yt.ok = true;
+    if (isYt(state.cur)) ytShow(state.cur, true);
+  }));
+  // closing the full player on a phone hides the video: then it must not play on
+  const sheetEl = $('#sheet');
+  if (sheetEl) sheetEl.addEventListener('close', () => { if (isYt(state.cur) && phone.matches && isPlaying()) ytPause(); });
+  // the player moves with the layout: it starts again from its picture, paused
+  phone.addEventListener('change', () => {
+    if (!isYt(state.cur)) return;
+    const it = state.cur;
+    ytClose();
+    renderPlayer();
+    ytShow(it, false);
+  });
+
   /* Media keys, Chrome's media controls, lock screen */
   const media = 'mediaSession' in navigator ? navigator.mediaSession : null;
   function setMediaMetadata() {
@@ -971,7 +1212,7 @@
       title: t ? t.title : it.name,
       artist: t ? (t.artist || it.name) : (currentDesc() || '1radiœ'),
       album: t ? it.name : (cat ? cat.name : ''),
-      artwork: it.logo ? [{ src: it.logo, sizes: '600x600', type }] : [],
+      artwork: it.logo ? [{ src: it.logo, sizes: isYt(it) ? '640x360' : '600x600', type }] : [],
     });
   }
   if (media) {
@@ -1393,7 +1634,7 @@
     clearTimeout(now.timer);
     now.timer = 0;
     const it = state.cur;
-    if (!it || state.phase !== 'live' || isSc(it)) return;
+    if (!it || state.phase !== 'live' || isOwn(it)) return;
     let track = now.id === it.id ? now.track : null;
     try {
       const res = await fetch('api/nowplaying?id=' + encodeURIComponent(it.id), { credentials: 'omit' });
@@ -1515,7 +1756,7 @@
 
   // a station page (?s=<id>, the link in posts) puts that station in the player
   const start = data.start ? items.get(data.start) : null;
-  const first = (start && (start.type === 'station' || start.type === 'soundcloud') ? start : null)
+  const first = (start && (start.type === 'station' || start.type === 'soundcloud' || start.type === 'youtube') ? start : null)
     || stationsOf('root').find((x) => x.type === 'station') || [...items.values()].find((x) => x.type === 'station');
   if (first) {
     state.cur = first;
@@ -1527,6 +1768,7 @@
     renderPlayer();
     if (first === start) $('[data-r1="mini"]').hidden = false;   // on phones: one tap to play
     if (isSc(first)) scShow(first, false);
+    if (isYt(first)) ytShow(first, false);
   }
   renderList();
   renderScale();

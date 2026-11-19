@@ -1,5 +1,18 @@
 # Änderungen
 
+## 1.28.0 (19. November 2026)
+
+YouTube-Playlists in der Web-App:
+
+* Neu im Admin: „YouTube hinzufügen“ mit der Adresse einer Playlist. In der Web-App wird sie ein Stapel wie eine Kategorie, das zuletzt hinzugefügte Video zuerst, mit Kanal und Länge. Name, Beschreibung und Cover kommen aus dem Admin, ohne Cover ein Raster aus den ersten vier Videos
+* Abgleich mit der YouTube Data API v3 einmal am Tag, nach der Antwort eines Seitenaufrufs, oder sofort mit „Jetzt abgleichen“. Private, gelöschte, nicht einbettbare und entfernte Videos fallen weg, bei einem Fehler bleibt die letzte Liste und der Editor nennt den Grund. Der API-Schlüssel steht verschlüsselt in der Datenbank wie die Zugänge fürs Posting
+* Das Video spielt im Player von YouTube (`youtube-nocookie.com`) an der Stelle des Logos, 16:9 und mindestens 200 px hoch, wie YouTube es verlangt. Erst nach einem Klick auf „YouTube laden“, mit Link zu den Nutzungsbedingungen. Unsere Knöpfe und die Lautstärke steuern ihn über `postMessage`, ohne Skript von Google. Am Ende eines Videos folgt das nächste, ein nicht mehr verfügbares wird nach drei Sekunden übersprungen. Auf dem Handy pausiert es, wenn der große Player zugeht
+* Bilder der Videos liegen in `media/` (`yt-<id>.jpg`, 640 × 360 px, und `-s.jpg`, 256 × 144 px), der Abgleich holt sie nach 25 Tagen neu (YouTube erlaubt solche Daten höchstens 30 Tage)
+* Sonos, `streams.m3u` und `stations.json` lassen YouTube aus, kein Hörstatus, kein Posting
+* Neue Tabelle `r1_youtube_videos` (Schema 10), legt die App beim nächsten Aufruf selbst an
+* Kategorie-Raster nehmen die quadratische Mitte jedes Bildes, damit auch 16:9-Bilder passen
+* Die Bühne bricht um, wenn Bild und Text nebeneinander keinen Platz haben
+
 ## 1.27.2 (19. November 2026)
 
 * Web-App: „Alle Sender“ steht auf der obersten Ebene in derselben Pille wie der Weg zurück aus einer Kategorie. Bisher war es dort reiner Text, beim Öffnen einer Kategorie sprang die Seite um die Höhe der Pille

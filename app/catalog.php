@@ -6,7 +6,8 @@
  * an option. Everything active appears, in the order of the admin and of Sonos: the
  * top level as it is, a category's streams where the category stands. An inactive
  * category hides its streams, like in Sonos. The web app also asks for SoundCloud
- * tracks and Deezer links ($webapp), the playlist file and stations.json do not.
+ * tracks, Deezer links and YouTube playlists ($webapp), the playlist file and
+ * stations.json do not.
  */
 declare(strict_types=1);
 
@@ -14,7 +15,8 @@ declare(strict_types=1);
  * Returns ['stations' => [...], 'categories' => [...]].
  * Station entries: ['row' => station row, 'category' => category row or null,
  *   'sort' => position within its level, 1-based].
- * Category entries: ['row' => category row, 'sort' => position on the top level]
+ * Category entries: ['row' => category row, 'sort' => position on the top level,
+ *   'youtube' => true for a YouTube playlist, whose videos are in r1_youtube_videos]
  *   (top-level streams and categories share one sequence of positions).
  * Stations come in listening order: what Sonos shows, categories opened in place.
  */
@@ -28,9 +30,15 @@ function public_catalog(bool $webapp = false): array
     $stations   = [];
     $categories = [];
     $pos        = 0;
+    $videos     = null;
     foreach ($byParent[0] ?? [] as $r) {
         if (in_array($r['kind'], $kinds, true)) {
             $stations[] = ['row' => $r, 'category' => null, 'sort' => ++$pos];
+        } elseif ($webapp && $r['kind'] === 'youtube') {
+            $videos ??= youtube_counts();
+            if (($videos[(int) $r['id']] ?? 0) > 0) {
+                $categories[] = ['row' => $r, 'sort' => ++$pos, 'youtube' => true];
+            }
         } elseif ($r['kind'] === 'category') {
             $inner = array_values(array_filter($byParent[(int) $r['id']] ?? [], static fn($x) => in_array($x['kind'], $kinds, true)));
             if (!$inner) {

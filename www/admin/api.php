@@ -37,6 +37,12 @@ $in     = $isPost && str_starts_with((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 
 $in     = is_array($in) ? $in : [];
 $id     = isset($in['id']) && $in['id'] !== '' && $in['id'] !== null ? (int) $in['id'] : null;
 
+/** Whether a YouTube API key is stored and whether one can be stored (secret_key in config.php). */
+function youtube_state(): array
+{
+    return ['key' => youtube_has_key(), 'store' => social_key() !== null];
+}
+
 /** Station list for the admin. */
 function state_stations(): array
 {
@@ -102,6 +108,7 @@ try {
             json_out([
                 'stations' => state_stations(),
                 'mimes'    => MIME_TYPES,
+                'youtube'  => youtube_state(),
             ]);
 
         case 'GET system':
@@ -196,8 +203,22 @@ try {
             json_out(['log' => $rows]);
 
         case 'POST station.save':
-            $saved = station_save($in, $id);
+            $before = $id !== null ? station_find($id) : null;
+            $saved  = station_save($in, $id);
+            // a new YouTube playlist (or another address) fills itself right away
+            if ($saved['kind'] === 'youtube' && ($before === null || $before['stream_url'] !== $saved['stream_url'] || $saved['checked_at'] === null)) {
+                youtube_sync((int) $saved['id']);
+                $saved = station_find((int) $saved['id']);
+            }
             json_out(['station' => station_public($saved)]);
+
+        case 'POST youtube.key':
+            youtube_key_save((string) ($in['key'] ?? ''));
+            json_out(['youtube' => youtube_state()]);
+
+        case 'POST youtube.sync':
+            $result = youtube_sync((int) $id);
+            json_out(['result' => $result, 'station' => station_public(station_find((int) $id) ?? throw new InputError([], 'Nicht gefunden.'))]);
 
         /* ----- Track library ----- */
 

@@ -38,6 +38,7 @@ try {
     db_migrate();
     $levels   = webapp_levels();
     $listener = listen_current_device();
+    youtube_refresh_due();   // once a day, after the response
 } catch (Throwable $e) {
     error_log('1radioe web app: ' . $e->getMessage());
     http_response_code(503);
@@ -58,7 +59,7 @@ foreach (array_keys(TEXT_NAMES) as $name) {
 $start = null;
 foreach ($sid !== null ? ($levels ?? []) : [] as $list) {
     foreach ($list as $item) {
-        if (in_array($item['type'], ['station', 'soundcloud'], true) && $item['id'] === $sid) {
+        if (in_array($item['type'], ['station', 'soundcloud', 'youtube'], true) && $item['id'] === $sid) {
             $start = $item;
             break 2;
         }
@@ -104,6 +105,19 @@ function nojs_list(array $levels): string
         }
     }
     return '<ul class="nojs-list">' . $html . '</ul>';
+}
+
+/**
+ * Note before YouTube's player loads: what happens, the terms of YouTube, a button.
+ * The player itself goes where the logo stands (.yt-box), app.js puts it there.
+ */
+function yt_slot(string $where, array $L): string
+{
+    return '<div class="sc-slot yt-slot" data-yt-slot="' . $where . '" tabindex="-1" hidden><div class="sc-card">'
+        . '<p class="sc-title">' . h($L['yt_title']) . '</p>'
+        . '<p class="sc-text">' . h($L['yt_text']) . ' <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">' . h($L['yt_terms']) . '</a> · <a href="#datenverarbeitung" data-sc-more>' . h($L['sc_more']) . '</a></p>'
+        . '<button type="button" class="sc-load" data-yt-load>' . h($L['yt_load']) . '</button>'
+        . '</div></div>';
 }
 
 /** Place for SoundCloud's player: first a note with a button, the player only after the click. */
@@ -187,6 +201,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     <section class="stage" aria-label="Player" data-js>
       <div class="stage-art">
         <span class="tile tile-xl" data-r1="art"></span>
+        <div class="yt-box" data-yt-box="stage" hidden></div>
         <span class="numchip" data-r1="num" aria-hidden="true"></span>
       </div>
       <div class="stage-info">
@@ -200,6 +215,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         </div>
         <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
         <?= sc_slot('stage', $L) ?>
+        <?= yt_slot('stage', $L) ?>
         <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
         <div class="controls">
           <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
@@ -267,11 +283,13 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
   <div class="sheet-body">
     <div class="stage-art">
       <span class="tile tile-xl" data-r1="art"></span>
+      <div class="yt-box" data-yt-box="sheet" hidden></div>
       <span class="numchip" data-r1="num" aria-hidden="true"></span>
     </div>
     <h2 class="disp sheet-name" data-r1="name"></h2>
     <p class="track" data-r1="track" hidden><span class="track-title" data-r1="track-title"></span><span class="track-artist" data-r1="track-artist"></span></p>
     <?= sc_slot('sheet', $L) ?>
+    <?= yt_slot('sheet', $L) ?>
     <p class="state"><span class="state-main"><span class="dot" data-r1="dot" aria-hidden="true"></span><span data-r1="state"><?= h($L['idle']) ?></span></span><span class="pill" data-r1="pill" role="img" aria-label="<?= h($L['listening']) ?>" hidden><i></i><i></i><i></i></span></p>
     <div class="controls">
       <button type="button" class="ic" data-act="prev" aria-label="<?= h($L['prev']) ?>"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 6.2v11.6a.9.9 0 0 1-1.4.75L9.8 12.75a.9.9 0 0 1 0-1.5l7.8-5.8A.9.9 0 0 1 19 6.2z"/></svg></button>
