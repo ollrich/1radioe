@@ -13,8 +13,9 @@
  */
 declare(strict_types=1);
 
-const LISTEN_TTL      = 150;   // seconds a report keeps a station "playing"
-const LISTEN_INTERVAL = 60;    // how often sources report while playing
+const LISTEN_TTL       = 150;   // seconds a report keeps a station "playing"
+const LISTEN_INTERVAL  = 60;    // how often sources report while playing
+const LISTEN_HEARD_MIN = 300;   // a session counts as "heard" from five minutes on, zapping does not
 
 /**
  * Records a report: $playing true means "läuft", false means "aus".
@@ -49,6 +50,21 @@ function listen_active(): array
     return q("SELECT s.smapi_id FROM r1_listen_status l JOIN r1_stations s ON s.id = l.station_id
               WHERE l.stopped = 0 AND l.last_seen > ? AND s.active = 1 AND s.kind = 'stream'
               ORDER BY s.sort, s.id", [time() - LISTEN_TTL])->fetchAll(PDO::FETCH_COLUMN);
+}
+
+/**
+ * SMAPI id of the station Ollie heard last, for "Zuletzt von Olli gehört" in the web app:
+ * the newest session of at least LISTEN_HEARD_MIN that is over (off or timed out), or
+ * null. A station playing right now does not count, its bars show it. Only what
+ * r1_listen_status keeps anyway: the last session of each station, no history.
+ */
+function listen_last(): ?string
+{
+    $id = q("SELECT s.smapi_id FROM r1_listen_status l JOIN r1_stations s ON s.id = l.station_id
+             WHERE s.active = 1 AND s.kind = 'stream' AND l.since > 0 AND l.last_seen >= l.since + ?
+               AND (l.stopped = 1 OR l.last_seen <= ?)
+             ORDER BY l.last_seen DESC LIMIT 1", [LISTEN_HEARD_MIN, time() - LISTEN_TTL])->fetchColumn();
+    return is_string($id) && $id !== '' ? $id : null;
 }
 
 /* ---------- Devices allowed to report: listening cookie (browser) and keys (Home Assistant, app) ----------

@@ -328,7 +328,7 @@
       a.append(kind);
     } else {
       const dot = el('span', 'dot ' + (s.check_ok === null ? 'unknown' : s.check_ok ? 'ok' : 'fail'));
-      dot.title = s.check_info ? 'Letzter Test: ' + s.check_info : 'Noch nicht getestet';
+      dot.title = s.check_info ? 'Letzter Test: ' + s.check_info + testedAt(s) : 'Noch nicht getestet';
       a.append(dot);
       if (s.https_ok === false) {
         const http = el('span', 'badge http', 'HTTP');
@@ -349,6 +349,11 @@
   }
 
   /** "3 Sender, 1 Playlist, 2 Kategorien" */
+  /** ", 19.11.26, 12:52": when a stream was tested last (by hand or by the daily test on the server). */
+  function testedAt(s) {
+    return s.checked_at ? ', ' + new Date(s.checked_at.replace(' ', 'T')).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  }
+
   function describe(list) {
     const n = (k) => list.filter((s) => s.kind === k).length;
     const parts = [`${n('stream')} Sender`];
@@ -363,7 +368,12 @@
   function renderGrid() {
     $('#grid').replaceChildren(...state.stations.filter((s) => !s.category_id).map(tile));
     const active = state.stations.filter((s) => s.active).length;
-    $('#summary').textContent = state.stations.length ? `${describe(state.stations)}, davon ${active} aktiv` : '';
+    // the server tests the active streams once a day; a red dot stays until a test works again
+    const broken = state.stations.filter((s) => s.kind === 'stream' && s.active && s.check_ok === false).length;
+    $('#summary').textContent = state.stations.length
+      ? `${describe(state.stations)}, davon ${active} aktiv` + (broken ? `, ${broken === 1 ? '1 Stream' : broken + ' Streams'} mit Problem (roter Punkt)` : '')
+      : '';
+    $('#check-all').title = 'Der Server prüft die aktiven Streams außerdem täglich von selbst';
     $('#empty').hidden = state.stations.length > 0;
     $('#check-all').hidden = !state.stations.some((s) => s.kind === 'stream');
     if (state.category && location.hash === '#category/' + state.category.id) renderCategory();

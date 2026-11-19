@@ -257,6 +257,14 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 /* ---------- Scale ---------- */
 
 .picker-head { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-bottom: 6px; }
+/* "Zuletzt von Olli gehört": small and quiet, the name starts the station */
+.lastheard { margin: 0; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-head .lastheard { margin-left: auto; }
+.picker-head .lastheard:not([hidden]) + .tipwrap { margin-left: 0; }
+.lastheard-st { padding: 0; border: 0; background: none; font: inherit; color: var(--fg); cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.lastheard-st:hover { text-decoration-color: currentColor; }
+.lastheard-st:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.lastheard-list { display: none; }
 .crumbs { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 640; }
 .crumbs .sep { color: var(--muted); font-weight: 400; }
 .crumbs .pillbtn { min-height: 36px; padding: 0 12px 0 8px; font-size: 14px; font-weight: 400; }
@@ -509,6 +517,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { justify-content: flex-start; gap: 0; }
   .stage, .picker-head, .scale-row { display: none; }
+  .lastheard-list:not([hidden]) { display: block; margin: 0 10px 10px; }
   /* "Alle Sender" has no counterpart on phones (categories open in place):
      only screen readers keep it, as the heading of the list */
   .list-title { display: block; position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

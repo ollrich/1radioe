@@ -1,8 +1,10 @@
 <?php
 /**
- * GET /api/status: which stations Ollie is listening to right now.
- * {"active": ["<smapi_id>", ...], "ttl": 150}
- * Public and uncached. Says nothing about device, source or place, only the stations.
+ * GET /api/status: which stations Ollie is listening to right now, and the one he heard
+ * last (a session of five minutes or more that is over), for "Zuletzt von Olli gehört".
+ * {"active": ["<smapi_id>", ...], "last": "<smapi_id>" or null, "ttl": 150}
+ * Public and uncached. Says nothing about device, source, place or time, only the stations.
+ * Also starts the daily test of a few streams, after the response.
  */
 declare(strict_types=1);
 
@@ -15,8 +17,9 @@ if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
 }
 try {
     db_migrate();
-    json_out(['active' => listen_active(), 'ttl' => LISTEN_TTL]);
+    stations_check_due();
+    json_out(['active' => listen_active(), 'last' => listen_last(), 'ttl' => LISTEN_TTL]);
 } catch (Throwable $e) {
     error_log('1radioe status: ' . $e->getMessage());
-    json_out(['active' => [], 'ttl' => LISTEN_TTL, 'error' => 'unavailable'], 503);
+    json_out(['active' => [], 'last' => null, 'ttl' => LISTEN_TTL, 'error' => 'unavailable'], 503);
 }

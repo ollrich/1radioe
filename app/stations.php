@@ -439,6 +439,75 @@ function station_set_check(int $id, bool $ok, string $info, ?bool $https = null)
         [$ok ? 1 : 0, mb_substr($info, 0, 255), $https === null ? null : ($https ? 1 : 0), now_sql(), $id]);
 }
 
+/* ---------- Daily test of the streams ----------
+ * The same test as "Alle Streams prüfen" in the admin, on the server once a day for each
+ * active stream, so a broken or moved stream shows its red dot before a listener finds
+ * it. No cron on the host: a few streams per request (web app, api/status), after the
+ * response, each claimed by one request only (as the YouTube sync). */
+
+const STATION_CHECK_EVERY = 86400;   // a working stream once a day
+const STATION_CHECK_RETRY = 7200;    // a failed one again after two hours, it may be back
+const STATION_CHECK_BATCH = 3;       // streams per request; one test takes up to 8 s, with HTTPS 16 s
+
+/** Claims the streams that are due and tests them after the response. */
+function stations_check_due(): void
+{
+    $claimed = stations_check_claim(time());
+    if ($claimed) {
+        after_response('stations check', static function () use ($claimed): void {
+            foreach ($claimed as $id => $url) {
+                station_check_run($id, $url);
+            }
+        });
+    }
+}
+
+/**
+ * The active streams that are due, at most STATION_CHECK_BATCH, never tested first, then
+ * the oldest test. Each is claimed by setting checked_at, so a request at the same time
+ * takes others. Returns [station id => stream address].
+ */
+function stations_check_claim(int $now): array
+{
+    $rows = q("SELECT id, stream_url, checked_at FROM r1_stations
+               WHERE kind = 'stream' AND active = 1
+                 AND (checked_at IS NULL OR checked_at < IF(check_ok = 0, ?, ?))
+               ORDER BY checked_at IS NOT NULL, checked_at, id
+               LIMIT " . STATION_CHECK_BATCH,
+        [date('Y-m-d H:i:s', $now - STATION_CHECK_RETRY), date('Y-m-d H:i:s', $now - STATION_CHECK_EVERY)])->fetchAll();
+    $claimed = [];
+    foreach ($rows as $r) {
+        if (q('UPDATE r1_stations SET checked_at = ? WHERE id = ? AND checked_at <=> ?', [now_sql(), (int) $r['id'], $r['checked_at']])->rowCount() === 1) {
+            $claimed[(int) $r['id']] = (string) $r['stream_url'];
+        }
+    }
+    return $claimed;
+}
+
+/**
+ * Tests one stream and stores the result, as the admin's test does. A failed test is
+ * repeated once right away: a short hiccup should not turn the dot red. Nothing is
+ * stored if the address was changed in the meantime. $probe stands in for the network
+ * in tests: fn(string $url): array as probe_stream() plus probe_https().
+ */
+function station_check_run(int $id, string $url, ?callable $probe = null): ?array
+{
+    $probe ??= static function (string $u): array {
+        $r = probe_stream($u);
+        return $r + probe_https($u, $r);
+    };
+    $result = $probe($url);
+    if (empty($result['ok'])) {
+        $result = $probe($url);
+    }
+    $station = station_find($id);
+    if ($station === null || $station['stream_url'] !== $url) {
+        return null;
+    }
+    station_set_check($id, !empty($result['ok']), (string) ($result['info'] ?? ''), $result['https'] ?? null);
+    return $result;
+}
+
 function station_set_logo(int $id, ?string $file): void
 {
     $old = station_find($id);
