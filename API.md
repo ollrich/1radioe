@@ -1,6 +1,6 @@
 # 1radiœ: Schnittstellen für eine App
 
-Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.26.1, 18. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
+Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.26.2, 19. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
 
 ## Überblick
 
@@ -70,7 +70,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 
 ## Hörstatus melden: `POST /api/listen`
 
-Nur mit Schlüssel. Ollie erzeugt ihn im Admin unter **System, Hörgeräte, Schlüssel erzeugen** (Name zum Beispiel „Android“). Er wird genau einmal angezeigt, die App speichert ihn verschlüsselt (Android Keystore). Widerrufen lässt er sich dort jederzeit.
+Nur mit Schlüssel. Ollie erzeugt ihn im Admin unter **System, Hörgeräte, Schlüssel erzeugen** (Name zum Beispiel „Android“). Er wird genau einmal angezeigt, allein (für die App) und als Zeile für Home Assistant. Die App speichert ihn verschlüsselt (Android Keystore). Widerrufen lässt er sich dort jederzeit.
 
 ```http
 POST /api/listen

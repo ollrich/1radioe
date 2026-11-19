@@ -76,9 +76,12 @@ $og = [
 ];
 
 $v    = h(APP_VERSION);
+// files from the site's root: /de/ uses the very same addresses, so the browser's cache
+// holds them once for both languages (relative, /de/assets/… would be other files)
+$root = h(rtrim((string) parse_url(base_url(), PHP_URL_PATH), '/') . '/');
 $data = $levels !== null ? webapp_json(['levels' => $levels, 'ttl' => LISTEN_TTL, 'listen' => $listener !== null, 'interval' => LISTEN_INTERVAL,
     'start' => $start['id'] ?? null, 'lang' => $lang,
-    'text' => ['listening' => $L['listening'], 'listeningTo' => $L['listening_to'], 'and' => $L['and']] + webapp_script_strings($lang)]) : '';
+    'text' => ['title' => $L['title'], 'listening' => $L['listening'], 'listeningTo' => $L['listening_to'], 'and' => $L['and']] + webapp_script_strings($lang)]) : '';
 // the other language, with the station of a station page
 $langLinks = [
     'en' => ($lang === 'de' ? '../' : './') . '?lang=en',
@@ -127,6 +130,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <link rel="canonical" href="<?= h($home) ?>">
 <link rel="alternate" hreflang="en" href="<?= h(base_url()) ?>/">
 <link rel="alternate" hreflang="de" href="<?= h(base_url()) ?>/de/">
+<link rel="alternate" hreflang="x-default" href="<?= h(base_url()) ?>/">
 <?php foreach (ME_LINKS as $me): ?>
 <link rel="me" href="<?= h($me) ?>">
 <?php endforeach; ?>
@@ -146,14 +150,14 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <meta name="twitter:card" content="<?= $og['large'] ? 'summary_large_image' : 'summary' ?>">
 <?php endif; ?>
 <title><?= $start !== null ? h($start['name']) . ' · 1radiœ' : h($L['title']) ?></title>
-<link rel="icon" href="assets/favicon.png?v=<?= $v ?>" sizes="128x128" type="image/png">
-<link rel="icon" href="assets/icon-192.png?v=<?= $v ?>" sizes="192x192" type="image/png">
-<link rel="icon" href="assets/favicon.svg?v=<?= $v ?>" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=<?= $v ?>">
-<link rel="preload" href="assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/app.css?v=<?= $v ?>">
-<noscript><link rel="stylesheet" href="assets/nojs.css?v=<?= $v ?>"></noscript>
-<script src="assets/app.js?v=<?= $v ?>" defer></script>
+<link rel="icon" href="<?= $root ?>assets/favicon.png?v=<?= $v ?>" sizes="128x128" type="image/png">
+<link rel="icon" href="<?= $root ?>assets/icon-192.png?v=<?= $v ?>" sizes="192x192" type="image/png">
+<link rel="icon" href="<?= $root ?>assets/favicon.svg?v=<?= $v ?>" type="image/svg+xml">
+<link rel="apple-touch-icon" href="<?= $root ?>assets/apple-touch-icon.png?v=<?= $v ?>">
+<link rel="preload" href="<?= $root ?>assets/fonts/MonaSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?= $root ?>assets/app.css?v=<?= $v ?>">
+<noscript><link rel="stylesheet" href="<?= $root ?>assets/nojs.css?v=<?= $v ?>"></noscript>
+<script src="<?= $root ?>assets/app.js?v=<?= $v ?>" defer></script>
 </head>
 <body>
 <?php if ($data !== ''): ?>

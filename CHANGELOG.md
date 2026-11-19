@@ -1,5 +1,19 @@
 # Änderungen
 
+## 1.26.2 (19. November 2026)
+
+Aus dem Code-Audit, kleine Fehler und Aufräumen:
+
+* Web-App: Der Seitentitel bleibt der vom Server („1radiœ · Ollie's radio stations“, auf einer Senderseite der Sender). Bisher setzte das Skript ihn beim Laden und nach jeder Pause auf „1radiœ“, Suchmaschinen sahen dann den kurzen Titel. Während ein Sender spielt, nennt der Tab weiter den Sender
+* Web-App ohne JavaScript: Der Hinweis zu Deezer erscheint nicht mehr als leerer Abschnitt unten auf der Seite
+* Web-App: Skript, Stylesheet, Schrift und Icons kommen unter `/de/` von denselben Adressen wie auf der englischen Seite (`/assets/…` statt relativ). Wer die Sprache wechselt, lädt sie nicht noch einmal
+* Browser-Cache: Dateien mit `?v=` in `assets/` und `admin/assets/` dürfen ein Jahr im Cache bleiben (sie bekommen mit jeder Version eine neue Adresse), alle anderen dort eine Woche. Bisher kamen sie ohne Angabe, Browser fragten dann oft neu nach
+* `hreflang="x-default"` zeigt auf die englische Startseite
+* Admin, Hörgeräte: Ein neuer Schlüssel erscheint allein (für die App) und als Zeile für `secrets.yaml` (Home Assistant), beide mit eigenem Kopieren-Button
+* Texte im Admin: Links mit Backslash werden verworfen, Browser lesen `/\beispiel.de` als fremde Seite
+* Ein gelöschter Sender lässt keine Zeilen für Hörstatus und Song mehr in der Datenbank zurück
+* Aufgeräumt: veraltete Kommentare, zwei unbenutzte CSS-Regeln
+
 ## 1.26.1 (18. November 2026)
 
 * Neue Datei `API.md`: die Schnittstellen für eine eigene App (Sender, Hörstatus lesen und melden, laufender Song) mit Beispielen, Feldern, Antwortcodes und Hinweisen

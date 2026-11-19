@@ -1,0 +1,7 @@
+# 1radiœ: browser cache for the files of the web app. Addresses with ?v= (app.js, app.css,
+# icons, hls.js) change with every version, so browsers may keep them for a year without
+# asking again. Everything else (the font, the share image) for a week.
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{QUERY_STRING} =~ /(^|&)v=/"
+    Header set Cache-Control "public, max-age=604800" "expr=%{QUERY_STRING} !~ /(^|&)v=/"
+</IfModule>

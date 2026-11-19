@@ -6,7 +6,8 @@
  * LISTEN_TTL and no "off" came after it, so a source that vanishes without saying so
  * (battery, closed tab, crash) times out by itself.
  *
- * Sources: Sonos via SMAPI, later the web player (listening cookie) and an own app.
+ * Sources: Sonos (SMAPI and playback reports), the web player in a remembered browser
+ * (listening cookie), Home Assistant and the app (key).
  * Stored per station: time of the last report and whether "off" followed. Nothing
  * else, by design: no source, device, IP address or Sonos household.
  */
@@ -50,18 +51,20 @@ function listen_active(): array
               ORDER BY s.sort, s.id", [time() - LISTEN_TTL])->fetchAll(PDO::FETCH_COLUMN);
 }
 
-/* ---------- Devices allowed to report: listening cookie (browser) and later app tokens ----------
+/* ---------- Devices allowed to report: listening cookie (browser) and keys (Home Assistant, app) ----------
  *
  * After logging in to the admin, Ollie can let a browser remember that it may report
  * the listening status. It gets a long-lived cookie with a random token, which allows
  * POST /api/listen and nothing else: it never opens the admin. Only the SHA-256 of the
- * token is stored, the token itself exists only in the cookie.
+ * token is stored, the token itself exists only in the cookie. A key for Home Assistant
+ * or the app (kind "app") works the same way through the header X-1radioe-Token; it is
+ * shown once in the admin and stored only as its SHA-256 as well.
  */
 
 /**
  * Anonymous reports from Sonos (smapi.php at the start, report.php while it plays) can
  * be switched off in the admin: then only sources with a key count, Home Assistant, a
- * remembered browser and a later app. Anybody could fake the anonymous ones.
+ * remembered browser and the app. Anybody could fake the anonymous ones.
  */
 function listen_anonymous_allowed(): bool
 {

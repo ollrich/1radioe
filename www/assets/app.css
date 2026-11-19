@@ -380,7 +380,7 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .dialog a { color: var(--mint); }
 .dh { margin: 0 0 16px; padding-right: 44px; font-size: 28px; line-height: 1.1; }
 .dp { margin: 0 0 14px; font-size: 15px; line-height: 1.6; }
-/* texts from the admin (Über, Impressum, Datenverarbeitung): same look as .dp and .d3 */
+/* texts from the admin (Über, Impressum, Datenverarbeitung): paragraphs like .dp */
 .rich p, .rich ul, .rich ol { margin: 0 0 14px; font-size: 15px; line-height: 1.6; }
 .rich h3 { margin: 20px 0 4px; font-size: 15px; font-weight: 700; }
 .rich h3:first-child { margin-top: 0; }
@@ -389,7 +389,6 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .rich > :last-child { margin-bottom: 0; }
 /* an e-mail address before the script set it in (without JavaScript: a hint) */
 .rich .mail { font-style: italic; color: var(--panelmuted); }
-.d3 { margin: 20px 0 4px; font-size: 15px; font-weight: 700; }
 .dnote { margin: 20px 0 0; font-size: 13px; color: var(--panelmuted); }
 .dkicker { margin: 0; font-size: 13px; color: var(--panelmuted); }
 .dlinks { display: flex; flex-direction: column; gap: 6px; font-weight: 640; }
@@ -492,7 +491,6 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 @media (max-width: 760px) {
   .page { padding: 20px 16px 128px; gap: 16px; }
   .wm .wordmark { height: 24px; }
-  .wide-only { display: none; }
   .listen-switch { padding: 0 10px; }
   .listen-switch [data-listen-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { justify-content: flex-start; gap: 0; }

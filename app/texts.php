@@ -300,8 +300,9 @@ function text_href(string $href): ?string
 {
     $href = trim($href);
     // no spaces or control characters inside: browsers drop tabs and line breaks, so
-    // "java<tab>script:" would turn into a script link
-    if ($href === '' || mb_strlen($href) > 1000 || preg_match('~[\x00-\x20\x7f]~', $href)) {
+    // "java<tab>script:" would turn into a script link; no backslash: browsers read
+    // "/\evil.com" as "//evil.com", another site
+    if ($href === '' || mb_strlen($href) > 1000 || preg_match('~[\x00-\x20\x7f\\\\]~', $href)) {
         return null;
     }
     if (preg_match('~^(https?://[^/?#\s]+|mailto:[^\s]+)~i', $href)) {

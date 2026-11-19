@@ -463,8 +463,10 @@ render_page('Sender', <<<HTML
           <button class="btn ghost small">Schlüssel erzeugen</button>
         </form>
         <div class="key-box" id="listen-key-box" hidden>
-          <p class="muted">Der Schlüssel für „<span id="listen-key-name"></span>“ ist nur jetzt sichtbar. In Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
-          <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" id="listen-key-copy">Kopieren</button></p>
+          <p class="muted">Der Schlüssel für „<span id="listen-key-name"></span>“ ist nur jetzt sichtbar. Für die App der Schlüssel allein:</p>
+          <p class="key-line"><code id="listen-key-plain"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-plain">Kopieren</button></p>
+          <p class="muted">Für Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
+          <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-line">Kopieren</button></p>
         </div>
         <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Art</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
       </div>

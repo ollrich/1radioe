@@ -12,7 +12,7 @@
  * request cannot set. "off" may come without it, because navigator.sendBeacon (used
  * when a tab closes) cannot send own headers.
  *
- * Key (Home Assistant, later an app): with the header X-1radioe-Token: <key>. A key is
+ * Key (Home Assistant, the app): with the header X-1radioe-Token: <key>. A key is
  * shown once when it is created. Browsers never send it by themselves, so the cookie
  * checks are not needed. Home Assistant reports what a Sonos speaker plays as "url"
  * and its media_channel as "title". The station is found by its smapi id in a Sonos
