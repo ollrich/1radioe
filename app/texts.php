@@ -63,11 +63,14 @@ function text_defaults(): array
         'datenverarbeitung' => [
             'de' => <<<'HTML'
                 <h3>Kein Tracking</h3>
-                <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt von sich aus nichts von fremden Servern. Schriften und Skripte liegen auf diesem Server. Die einzige Ausnahme ist der Player von SoundCloud, siehe unten.</p>
+                <p>Diese Seite nutzt keine Analyse-Werkzeuge und keine Werbung und lädt von sich aus nichts von fremden Servern. Schriften, Skripte, Senderlogos und die Vorschaubilder der Videos liegen auf diesem Server. Die Ausnahmen sind die Player von SoundCloud und YouTube, siehe unten.</p>
                 <h3>Beim Abspielen</h3>
                 <p>Dein Browser verbindet sich direkt mit dem Server des jeweiligen Senders. Dieser erhält dabei deine IP-Adresse. Es gelten die Hinweise des Senders zur Datenverarbeitung.</p>
                 <h3>SoundCloud</h3>
                 <p>Einige Einträge spielen im Player von SoundCloud. Er lädt erst, wenn du auf „SoundCloud laden“ klickst, und nur für diesen Besuch. Ab dann verbindet sich dein Browser mit SoundCloud. SoundCloud erhält deine IP-Adresse, setzt Cookies und verarbeitet Daten nach seinen eigenen Hinweisen: <a href="https://soundcloud.com/pages/privacy">soundcloud.com/pages/privacy</a>. Anbieter ist die SoundCloud Global Limited &amp; Co. KG in Berlin.</p>
+                <h3>YouTube</h3>
+                <p>Einige Einträge sind Videos von YouTube, diese Website nutzt dafür die YouTube API Services. Die Liste der Videos holt dieser Server einmal am Tag über die YouTube Data API bei Google ab, dabei werden keine Daten über dich übermittelt. Titel, Kanal, Länge und Vorschaubild liegen auf diesem Server.</p>
+                <p>Der Player von YouTube (youtube-nocookie.com) lädt erst, wenn du auf „YouTube laden“ klickst, und nur für diesen Besuch. Ab dann verbindet sich dein Browser mit Google. Google erhält deine IP-Adresse und Angaben zu deinem Browser, kann Cookies setzen und verarbeitet Daten nach eigenen Regeln, auch in den USA. Anbieter ist die Google Ireland Limited in Dublin. Datenschutzerklärung von Google: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>, Nutzungsbedingungen von YouTube: <a href="https://www.youtube.com/t/terms">youtube.com/t/terms</a></p>
                 <h3>Lautstärke</h3>
                 <p>Die gewählte Lautstärke liegt im lokalen Speicher deines Browsers und verlässt dein Gerät nicht.</p>
                 <h3>Cookies</h3>
@@ -77,11 +80,14 @@ function text_defaults(): array
                 HTML,
             'en' => <<<'HTML'
                 <h3>No tracking</h3>
-                <p>This site uses no analytics and no advertising and loads nothing from other servers on its own. Fonts and scripts are on this server. The one exception is SoundCloud's player, see below.</p>
+                <p>This site uses no analytics and no advertising and loads nothing from other servers on its own. Fonts, scripts, station logos and the video preview images are on this server. The exceptions are the players of SoundCloud and YouTube, see below.</p>
                 <h3>When a station plays</h3>
                 <p>Your browser connects directly to the server of the station. That server receives your IP address. The station's own notes on data processing apply.</p>
                 <h3>SoundCloud</h3>
                 <p>Some entries play in SoundCloud's player. It loads only when you click “Load SoundCloud”, and only for this visit. From then on your browser connects to SoundCloud. SoundCloud receives your IP address, sets cookies and processes data under its own notes: <a href="https://soundcloud.com/pages/privacy">soundcloud.com/pages/privacy</a>. The provider is SoundCloud Global Limited &amp; Co. KG in Berlin.</p>
+                <h3>YouTube</h3>
+                <p>Some entries are videos from YouTube; this website uses the YouTube API Services for them. This server fetches the list of videos from Google once a day through the YouTube Data API, no data about you is passed on. Title, channel, length and preview image are kept on this server.</p>
+                <p>YouTube's player (youtube-nocookie.com) loads only when you click “Load YouTube”, and only for this visit. From then on your browser connects to Google. Google receives your IP address and details about your browser, may set cookies and processes data under its own rules, also in the USA. The provider is Google Ireland Limited in Dublin. Google Privacy Policy: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>, YouTube Terms of Service: <a href="https://www.youtube.com/t/terms">youtube.com/t/terms</a></p>
                 <h3>Volume</h3>
                 <p>The volume you choose stays in your browser's local storage and does not leave your device.</p>
                 <h3>Cookies</h3>
