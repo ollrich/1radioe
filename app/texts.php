@@ -26,8 +26,8 @@ function text_defaults(): array
     return [
         'about' => [
             'de' => <<<'HTML'
-                <p>1radiœ ist meine persönliche Auswahl an Internetradios. Gepflegt wird sie an einer Stelle und läuft überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App.</p>
-                <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste, außer SoundCloud, wenn du es selbst lädst.</p>
+                <p>1radiœ ist meine persönliche Auswahl an Internetradios. Dazu kommen DJ-Mixe und Konzerte, die ich auf SoundCloud und YouTube sammle, und Playlists auf Deezer. Gepflegt wird alles an einer Stelle. Die Sender laufen überall: hier im Browser, auf Sonos, als Playlist in VLC und später in einer eigenen App. Mixe und Konzerte spielen hier im Browser.</p>
+                <p>Die Sender spielen direkt vom Original-Stream. Über diesen Server läuft kein Ton. Es gibt kein Tracking und keine externen Dienste, außer SoundCloud und YouTube, wenn du sie selbst lädst.</p>
                 <h3>Mitnehmen</h3>
                 <p>Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Quellcode</h3>
@@ -35,8 +35,8 @@ function text_defaults(): array
                 <p>Ein Projekt von Olli.</p>
                 HTML,
             'en' => <<<'HTML'
-                <p>1radiœ is my personal selection of internet radio stations. It is kept in one place and plays everywhere: here in the browser, on Sonos, as a playlist in VLC and later in an app of its own.</p>
-                <p>The stations play straight from the original stream. No sound runs through this server. There is no tracking and there are no external services, except SoundCloud when you load it yourself.</p>
+                <p>1radiœ is my personal selection of internet radio stations. Alongside them are DJ mixes and concerts I collect on SoundCloud and YouTube, and playlists on Deezer. Everything is kept in one place. The stations play everywhere: here in the browser, on Sonos, as a playlist in VLC and later in an app of its own. Mixes and concerts play here in the browser.</p>
+                <p>The stations play straight from the original stream. No sound runs through this server. There is no tracking and there are no external services, except SoundCloud and YouTube when you load them yourself.</p>
                 <h3>Take it with you</h3>
                 <p>All stations as a playlist for VLC and other players: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Source code</h3>
