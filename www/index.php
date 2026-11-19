@@ -183,7 +183,16 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <link rel="preload" href="<?= $root ?>assets/fonts/R1Sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?= $root ?>assets/app.css?v=<?= $v ?>">
 <noscript><link rel="stylesheet" href="<?= $root ?>assets/nojs.css?v=<?= $v ?>"></noscript>
-<script src="<?= $root ?>assets/app.js?v=<?= $v ?>" defer></script>
+<?php
+// the script as ES modules with the version in the path (www/.htaccess maps assets/v…/ to
+// assets/): the parts load relative to app.js and so carry the version too; preloading
+// them all saves the round trips of the imports
+$js = $root . 'assets/v' . $v . '/';
+?>
+<script type="module" src="<?= $js ?>app.js"></script>
+<?php foreach (glob(WEB_ROOT . '/assets/app/*.js') ?: [] as $mod): ?>
+<link rel="modulepreload" href="<?= $js ?>app/<?= h(basename($mod)) ?>">
+<?php endforeach; ?>
 </head>
 <body>
 <?php if ($data !== ''): ?>
