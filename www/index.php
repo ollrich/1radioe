@@ -39,7 +39,7 @@ try {
     $levels   = webapp_levels();
     $listener = listen_current_device();
     youtube_refresh_due();   // once a day, after the response
-    stations_check_due();    // a few streams a day each, after the response
+    stations_check_due();    // each active stream once a day, a few per request, after the response
 } catch (Throwable $e) {
     error_log('1radioe web app: ' . $e->getMessage());
     http_response_code(503);
