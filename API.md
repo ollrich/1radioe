@@ -7,7 +7,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 | Adresse | Methode | Wofür |
 |---|---|---|
 | `/api/stations.json` | GET | Sender, Kategorien, Logos, Stream-Adressen |
-| `/api/status` | GET | welche Sender Ollie gerade hört (die Balken) |
+| `/api/status` | GET | welche Sender Ollie gerade hört (die Balken) und welchen zuletzt |
 | `/api/nowplaying?id=<id>` | GET | laufender Song eines Senders |
 | `/api/listen` | POST | die App meldet: Ollie hört diesen Sender, oder nicht mehr |
 
@@ -55,10 +55,12 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 ## Hörstatus lesen: `GET /api/status`
 
 ```json
-{ "active": ["flux-b-funk"], "ttl": 150 }
+{ "active": ["flux-b-funk"], "last": "fip", "ttl": 150 }
 ```
 
 `active` sind die `id`s der Sender, die Ollie gerade hört, in der Reihenfolge der Liste. Eine Kategorie zeigt die Balken, wenn einer ihrer Sender aktiv ist. Die Web-App fragt alle 30 Sekunden.
+
+`last` ist die `id` des Senders, den Ollie zuletzt gehört hat (seit 1.29.0): die neueste beendete Sitzung von mindestens fünf Minuten, sonst `null`. Ein Sender, der gerade läuft, zählt nicht. Die Web-App zeigt „Zuletzt von Olli gehört“ nur, solange `active` leer ist.
 
 ## Laufender Song: `GET /api/nowplaying?id=<id>`
 

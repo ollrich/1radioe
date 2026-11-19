@@ -69,6 +69,7 @@
     curLevel: 'root',    // level it was started from: Vor/Zurück stays there
     phase: 'idle',       // idle | connecting | live | paused | error
     active: new Set(),   // stations Ollie is listening to
+    last: null,          // the station he heard last (api/status), shown while he plays nothing
     openCat: null,       // open category in the phone list
     retry: 0,
     touched: false,      // the visitor started something: from now on changes are announced
@@ -1278,12 +1279,26 @@
       if (res.ok) {
         const json = await res.json();
         state.active = new Set(Array.isArray(json.active) ? json.active : []);
+        state.last = typeof json.last === 'string' ? json.last : null;
         updateIndicators();
+        renderLastHeard();
       }
     } catch { /* offline: keep the last state */ }
     statusTimer = setTimeout(pollStatus, STATUS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pollStatus(); });
+
+  /** "Zuletzt von Olli gehört: <station>": only while he plays nothing, the bars show that. */
+  function renderLastHeard() {
+    const it = state.last ? items.get(state.last) : null;
+    const show = Boolean(it) && state.active.size === 0;
+    $$('[data-r1="last"]').forEach((p) => { p.hidden = !show; });
+    if (show) $$('[data-r1="last-station"]').forEach((b) => setText(b, it.name));
+  }
+  $$('[data-r1="last-station"]').forEach((b) => b.addEventListener('click', () => {
+    const it = state.last ? items.get(state.last) : null;
+    if (it) play(it, it.level);
+  }));
 
   /* ---------- Reporting Ollie's own listening ----------
    * Only in a browser with the listening cookie (the page says so in data.listen).

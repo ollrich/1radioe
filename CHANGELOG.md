@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.29.0 (19. November 2026)
+
+* Täglicher Test der Streams: Der Server prüft jeden aktiven Sender einmal am Tag von selbst, mit demselben Test wie „Alle Streams prüfen“. Ohne Cron: Jeder Aufruf der Web-App und von `/api/status` testet nach der Antwort bis zu drei fällige Streams, nie getestete zuerst. Ein Fehlschlag wird sofort wiederholt, erst der zweite färbt den Punkt rot; ein roter Sender wird nach zwei Stunden erneut geprüft. Im Admin nennt der Tooltip am Punkt den Zeitpunkt, die Zeile unter „Sender“ die Zahl der Streams mit Problem
+* Web-App: „Zuletzt von Olli gehört: <Sender>“, solange Olli gerade nichts hört. Auf breiten Bildschirmen rechts über der Senderskala, auf dem Handy über der Liste, der Name startet den Sender. Es zählt die neueste beendete Sitzung von mindestens fünf Minuten, kurzes Reinhören nicht. Aus den ohnehin gespeicherten Daten, ohne Verlauf und ohne Uhrzeit
+* `/api/status` liefert dafür `last` (API.md)
+* Tests: Auswahl und Ablauf des täglichen Tests (fällig, Reihenfolge, höchstens drei, Wiederholung, geänderte Adresse) und „zuletzt gehört“ (beendet, mindestens fünf Minuten, nicht laufend, nicht inaktiv). 146 Prüfungen
+
 ## 1.28.4 (19. November 2026)
 
 Kleinigkeiten aus der vierten Durchsicht, nichts davon sichtbar:

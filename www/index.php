@@ -39,6 +39,7 @@ try {
     $levels   = webapp_levels();
     $listener = listen_current_device();
     youtube_refresh_due();   // once a day, after the response
+    stations_check_due();    // each active stream once a day, a few per request, after the response
 } catch (Throwable $e) {
     error_log('1radioe web app: ' . $e->getMessage());
     http_response_code(503);
@@ -88,6 +89,17 @@ $langLinks = [
     'en' => ($lang === 'de' ? '../' : './') . '?lang=en',
     'de' => ($lang === 'de' ? './' : 'de/'),
 ];
+
+/**
+ * "Zuletzt von Olli gehört: <station>", the station Ollie heard last while he plays
+ * nothing (app.js fills it from api/status). Above the list on phones, beside the
+ * crumbs on wide screens. The name starts the station.
+ */
+function last_heard(array $L, string $class = ''): string
+{
+    return '<p class="lastheard' . ($class !== '' ? ' ' . $class : '') . '" data-r1="last" hidden data-js>'
+        . h($L['last_heard']) . ': <button type="button" class="lastheard-st" data-r1="last-station"></button></p>';
+}
 
 /** The plain list for browsers without JavaScript. */
 function nojs_list(array $levels): string
@@ -235,6 +247,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
     <section class="picker" aria-label="<?= h($L['picker']) ?>">
       <div class="picker-head" data-js>
         <div class="crumbs" data-r1="crumbs"></div>
+        <?= last_heard($L) ?>
         <span class="tipwrap">
           <button type="button" class="qbtn" aria-label="<?= h($L['keys']) ?>" aria-describedby="r1-keys"><span class="qmark" aria-hidden="true">?</span></button>
           <span class="tip" role="tooltip" id="r1-keys">
@@ -251,6 +264,7 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
         <button type="button" class="ic scl" data-scroll="1" aria-label="<?= h($L['more_right']) ?>" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 4.3 16 12l-7.7 7.7 1.4 1.4 9.1-9.1-9.1-9.1z"/></svg></button>
       </div>
       <h2 class="list-title"><?= h($L['all']) ?></h2>
+      <?= last_heard($L, 'lastheard-list') ?>
       <ul class="list" data-r1="list" data-js></ul>
       <?= nojs_list($levels) ?>
     </section>
