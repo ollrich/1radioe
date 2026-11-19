@@ -217,28 +217,44 @@ function youtube_fetch(string $playlistId, ?callable $api = null): array
 
 /* ---------- Pictures ---------- */
 
-/** File names of a video's pictures: "yt-<id>.jpg" and "yt-<id>-s.jpg". */
-function youtube_image_name(string $videoId): string
+/**
+ * File names of a video's pictures: "yt-<id>-<hash>.jpg" and "yt-<id>-<hash>-s.jpg".
+ * The hash of the picture is part of the name: browsers keep media files for a year
+ * (MEDIA_HTACCESS), so a new picture of the same video needs a new name, and the grid
+ * of a playlist (category_collage) follows by itself.
+ */
+function youtube_image_name(string $videoId, string $data): string
 {
-    return 'yt-' . $videoId . '.jpg';
+    $hash = substr(sha1(YOUTUBE_IMAGE_W . 'x' . YOUTUBE_IMAGE_H . ',' . YOUTUBE_THUMB_W . 'x' . YOUTUBE_THUMB_H . ':' . $data), 0, 10);
+    return 'yt-' . $videoId . '-' . $hash . '.jpg';
 }
 
 /**
  * Fetches the picture of a video from YouTube and stores it in two sizes, cut to 16:9
  * (the larger pictures of YouTube are 4:3 with black bars). Returns the file name or null.
+ * $get fetches the picture instead of the web (tests): fn(string $url): ?string.
  */
-function youtube_image(string $videoId, string $url): ?string
+function youtube_image(string $videoId, string $url, ?callable $get = null): ?string
 {
     $host = strtolower((string) parse_url($url, PHP_URL_HOST));
     if (!function_exists('imagecreatetruecolor') || !preg_match('~(^|\.)(ytimg\.com|ggpht\.com|googleusercontent\.com)$~', $host)) {
         return null;
     }
-    $res = http_get($url, LOGO_MAX_BYTES, 10);
-    $info = $res['ok'] ? @getimagesizefromstring($res['body']) : false;
+    if ($get !== null) {
+        $body = $get($url);
+    } else {
+        $res  = http_get($url, LOGO_MAX_BYTES, 10);
+        $body = $res['ok'] ? $res['body'] : null;
+    }
+    $info = is_string($body) && strlen($body) <= LOGO_MAX_BYTES ? @getimagesizefromstring($body) : false;
     if (!$info || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true) || !image_memory_ok($info[0], $info[1])) {
         return null;
     }
-    $src = @imagecreatefromstring($res['body']);
+    $name = youtube_image_name($videoId, $body);
+    if (is_file(media_dir() . '/' . $name) && is_file(media_dir() . '/' . logo_thumb_name($name))) {
+        return $name;   // the same picture as before (or as in another playlist)
+    }
+    $src = @imagecreatefromstring($body);
     if ($src === false) {
         return null;
     }
@@ -254,7 +270,6 @@ function youtube_image(string $videoId, string $url): ?string
     }
     $x    = intdiv($w - $cw, 2);
     $y    = intdiv($h - $ch, 2);
-    $name = youtube_image_name($videoId);
     if (!is_dir(media_dir()) && !@mkdir(media_dir(), 0755, true)) {
         return null;
     }
@@ -287,7 +302,7 @@ function youtube_image_remove(?string $file): void
  * ones out (with their pictures), order and titles as on YouTube. A failure keeps the
  * last list and is shown in the admin. Returns ['ok' => bool, 'info' => text].
  */
-function youtube_sync(int $listId, ?callable $api = null): array
+function youtube_sync(int $listId, ?callable $api = null, ?callable $get = null): array
 {
     @set_time_limit(300);
     $row = station_find($listId);
@@ -310,7 +325,7 @@ function youtube_sync(int $listId, ?callable $api = null): array
     foreach ($old as $vid => $r) {
         if (!in_array((string) $vid, $keep, true)) {
             q('DELETE FROM r1_youtube_videos WHERE list_id = ? AND video_id = ?', [$listId, (string) $vid]);
-            if (!youtube_image_used_elsewhere((string) $vid, $listId)) {
+            if (!youtube_image_in_use($r['image'], $listId, (string) $vid)) {
                 youtube_image_remove($r['image']);
             }
         }
@@ -321,8 +336,12 @@ function youtube_sync(int $listId, ?callable $api = null): array
         $image = $prev['image'] ?? null;
         $at    = (int) ($prev['image_at'] ?? 0);
         if ($image === null || $at < $now - YOUTUBE_IMAGE_AGE || !is_file(media_dir() . '/' . $image)) {
-            $fresh = $v['thumb'] !== '' ? youtube_image($v['video_id'], $v['thumb']) : null;
+            $fresh = $v['thumb'] !== '' ? youtube_image($v['video_id'], $v['thumb'], $get) : null;
             if ($fresh !== null) {
+                // a new picture of the video: the old one goes, unless another playlist still shows it
+                if ($image !== null && $image !== $fresh && !youtube_image_in_use($image, $listId, $v['video_id'])) {
+                    youtube_image_remove($image);
+                }
                 $image = $fresh;
                 $at    = $now;
             }
@@ -340,10 +359,17 @@ function youtube_sync(int $listId, ?callable $api = null): array
     return ['ok' => true, 'info' => $info];
 }
 
-/** True if another YouTube playlist holds the same video (the picture is shared). */
-function youtube_image_used_elsewhere(string $videoId, int $listId): bool
+/**
+ * True if a picture is still shown by another entry than this video of this playlist:
+ * another playlist with the same video may not have fetched its newer picture yet.
+ */
+function youtube_image_in_use(?string $file, int $listId, string $videoId): bool
 {
-    return (bool) q('SELECT 1 FROM r1_youtube_videos WHERE video_id = ? AND list_id <> ? LIMIT 1', [$videoId, $listId])->fetchColumn();
+    if ($file === null || $file === '') {
+        return false;
+    }
+    return (bool) q('SELECT 1 FROM r1_youtube_videos WHERE image = ? AND NOT (list_id = ? AND video_id = ?) LIMIT 1',
+        [$file, $listId, $videoId])->fetchColumn();
 }
 
 /**
@@ -406,7 +432,7 @@ function youtube_cover(array $row): ?string
 function youtube_forget(int $listId): void
 {
     foreach (youtube_videos($listId) as $v) {
-        if (!youtube_image_used_elsewhere((string) $v['video_id'], $listId)) {
+        if (!youtube_image_in_use($v['image'], $listId, (string) $v['video_id'])) {
             youtube_image_remove($v['image']);
         }
     }

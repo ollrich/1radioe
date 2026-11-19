@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.28.2';
+const APP_VERSION = '1.28.3';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -49,6 +49,12 @@ function config_path(): ?string
         return $path;
     }
     $path = null;
+    // the tests (tests/run.php) bring a config of their own with a database of their own;
+    // only on the command line, a web request never reads it
+    $test = PHP_SAPI === 'cli' ? getenv('R1_CONFIG') : false;
+    if (is_string($test) && $test !== '') {
+        return $path = is_file($test) ? $test : null;
+    }
     $dir  = realpath(APP_ROOT) ?: APP_ROOT;
     for ($i = 0; $i < 10; $i++) {
         $candidate = $dir . '/' . CONFIG_DIR . '/config.php';
