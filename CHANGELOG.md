@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.29.1 (19. November 2026)
+
+* Web-App: Das Fragezeichen mit den Tastenkürzeln steht jetzt unten rechts im Fuß, am rechten Rand des Inhalts. Daneben über der Senderskala war es zu eng mit „Zuletzt von Olli gehört“. Der Tooltip öffnet sich nach oben, rechtsbündig, der Pfeil zeigt auf den Knopf. Auf dem Handy bleibt es weg wie bisher
+
 ## 1.29.0 (19. November 2026)
 
 * Täglicher Test der Streams: Der Server prüft jeden aktiven Sender einmal am Tag von selbst, mit demselben Test wie „Alle Streams prüfen“. Ohne Cron: Jeder Aufruf der Web-App und von `/api/status` testet nach der Antwort bis zu drei fällige Streams, nie getestete zuerst. Ein Fehlschlag wird sofort wiederholt, erst der zweite färbt den Punkt rot; ein roter Sender wird nach zwei Stunden erneut geprüft. Im Admin nennt der Tooltip am Punkt den Zeitpunkt, die Zeile unter „Sender“ die Zahl der Streams mit Problem

@@ -248,15 +248,6 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
       <div class="picker-head" data-js>
         <div class="crumbs" data-r1="crumbs"></div>
         <?= last_heard($L) ?>
-        <span class="tipwrap">
-          <button type="button" class="qbtn" aria-label="<?= h($L['keys']) ?>" aria-describedby="r1-keys"><span class="qmark" aria-hidden="true">?</span></button>
-          <span class="tip" role="tooltip" id="r1-keys">
-            <span><kbd>←</kbd><kbd>→</kbd><?= h($L['key_arrows']) ?></span>
-            <span><?= $L['key_digits'] ?></span>
-            <span><?= $L['key_space'] ?></span>
-            <span><kbd>Esc</kbd><?= h($L['key_esc']) ?></span>
-          </span>
-        </span>
       </div>
       <div class="scale-row" data-js>
         <button type="button" class="ic scl" data-scroll="-1" aria-label="<?= h($L['more_left']) ?>" hidden><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.7 4.3 8 12l7.7 7.7-1.4 1.4L5.2 12l9.1-9.1z"/></svg></button>
@@ -271,11 +262,22 @@ $close = '<button type="button" class="close" data-close aria-label="' . h($L['c
 <?php endif; ?>
   </main>
 
-  <!-- only without JavaScript, the menu has these -->
+  <!-- the links only without JavaScript (the menu has them), the keys only with it and a keyboard -->
   <footer class="foot">
     <a href="#impressum"><?= h($L['impressum']) ?></a>
     <a href="#datenverarbeitung"><?= h($L['datenverarbeitung']) ?></a>
     <a href="<?= h($langLinks[$lang === 'de' ? 'en' : 'de']) ?>"><?= $lang === 'de' ? 'English' : 'Deutsch' ?></a>
+<?php if ($levels !== null && $levels['root']): ?>
+        <span class="tipwrap" data-js>
+          <button type="button" class="qbtn" aria-label="<?= h($L['keys']) ?>" aria-describedby="r1-keys"><span class="qmark" aria-hidden="true">?</span></button>
+          <span class="tip tip-up" role="tooltip" id="r1-keys">
+            <span><kbd>←</kbd><kbd>→</kbd><?= h($L['key_arrows']) ?></span>
+            <span><?= $L['key_digits'] ?></span>
+            <span><?= $L['key_space'] ?></span>
+            <span><kbd>Esc</kbd><?= h($L['key_esc']) ?></span>
+          </span>
+        </span>
+<?php endif; ?>
   </footer>
 </div>
 
