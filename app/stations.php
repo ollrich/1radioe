@@ -67,11 +67,23 @@ function station_by_play_uri(string $uri): ?array
     if ($want === null) {
         return null;
     }
-    $loose = null;
-    foreach (q("SELECT * FROM r1_stations WHERE kind = 'stream' AND active = 1 ORDER BY sort, id")->fetchAll() as $s) {
+    $loose    = null;
+    $stations = q("SELECT * FROM r1_stations WHERE kind = 'stream' AND active = 1 ORDER BY sort, id")->fetchAll();
+    // the streams the playlist stations resolved to, all with one query (Home Assistant reports often)
+    $hashes = [];
+    foreach ($stations as $s) {
+        if ($s['is_playlist']) {
+            $hashes[] = hash('sha256', (string) $s['stream_url']);
+        }
+    }
+    $cached = $hashes
+        ? q('SELECT url_hash, stream FROM r1_playlist_cache WHERE url_hash IN (' . implode(',', array_fill(0, count($hashes), '?')) . ')', $hashes)
+            ->fetchAll(PDO::FETCH_KEY_PAIR)
+        : [];
+    foreach ($stations as $s) {
         $urls = [$s['stream_url']];
         if ($s['is_playlist']) {
-            $hit = q('SELECT stream FROM r1_playlist_cache WHERE url_hash = ?', [hash('sha256', $s['stream_url'])])->fetchColumn();
+            $hit = $cached[hash('sha256', (string) $s['stream_url'])] ?? null;
             if (is_string($hit) && $hit !== '') {
                 $urls[] = $hit;
             }
@@ -444,8 +456,9 @@ function stations_reorder(array $ids): void
     $stmt = db()->prepare('UPDATE r1_stations SET sort = ? WHERE id = ?');
     db()->beginTransaction();
     try {
-        foreach (array_values($ids) as $pos => $id) {
-            $stmt->execute([$pos + 1, (int) $id]);
+        // each station once, at its first place (a list with doubles would write a row twice)
+        foreach (array_values(array_unique(array_map('intval', $ids))) as $pos => $id) {
+            $stmt->execute([$pos + 1, $id]);
         }
         db()->commit();
     } catch (Throwable $e) {

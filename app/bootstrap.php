@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.28.3';
+const APP_VERSION = '1.28.4';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -125,10 +125,11 @@ function track_dir(): string
     return media_dir() . '/tracks';
 }
 
-/** The private folder that holds config.php. */
+/** The private folder that holds config.php; without one, where it belongs in the checkout. */
 function private_dir(): string
 {
-    return dirname((string) config_path());
+    $path = config_path();
+    return $path !== null ? dirname($path) : APP_ROOT . '/' . CONFIG_DIR;
 }
 
 function upload_dir(): string

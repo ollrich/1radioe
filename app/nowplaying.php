@@ -33,9 +33,10 @@ function nowplaying(array $station): ?array
     if ($row !== null && $now - (int) $row['fetched_at'] < ($row['text'] === null ? NOWPLAYING_EMPTY_TTL : NOWPLAYING_TTL)) {
         return nowplaying_split($row['text'], $station);
     }
-    // one read per station at a time; whoever does not get the lock waits briefly for it
+    // one read per station at a time; whoever does not get the lock within two seconds
+    // gets the last known title (or nothing yet) instead of waiting for the slow stream
     $lock = 'r1_np_' . $id . '_' . substr(md5((string) cfg('db.name', '')), 0, 12);
-    if ((int) q('SELECT GET_LOCK(?, ?)', [$lock, NOWPLAYING_TIMEOUT + 2])->fetchColumn() !== 1) {
+    if ((int) q('SELECT GET_LOCK(?, ?)', [$lock, 2])->fetchColumn() !== 1) {
         return $row !== null ? nowplaying_split($row['text'], $station) : null;
     }
     try {

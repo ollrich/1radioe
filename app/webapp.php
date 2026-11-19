@@ -332,6 +332,9 @@ function webapp_headers(): void
 {
     $media = media_origin(0);
     // frame-src: the players of SoundCloud and YouTube, loaded only after a click in the web app (see app.js)
+    // connect-src https: hls.js (Firefox, HLS stations such as BBC Radio 1) fetches the
+    // playlist and the audio parts of a stream from the station's servers; 'self' alone
+    // would silence them (#74)
     header("Content-Security-Policy: default-src 'self'; img-src 'self' data:$media; media-src https: http: blob:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self' https:; frame-src https://w.soundcloud.com https://www.youtube-nocookie.com; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');

@@ -576,23 +576,34 @@ function upload_path(string $id): string
 function upload_chunk(string $id, int $offset, string $tmpFile): int
 {
     $path = upload_path($id);
-    clearstatcache(true, $path);
-    if (filesize($path) !== $offset) {
-        throw new InputError([], 'Upload unterbrochen, bitte erneut versuchen.');
-    }
-    if ($offset + filesize($tmpFile) > upload_expected($path)) {
-        throw new InputError([], 'Teil passt nicht zur Größe der Datei, bitte erneut versuchen.');
-    }
-    $in     = fopen($tmpFile, 'rb');
-    $out    = fopen($path, 'ab');
-    $copied = ($in && $out) ? stream_copy_to_stream($in, $out) : false;
-    $in && fclose($in);
-    $out && fclose($out);
-    clearstatcache(true, $path);
-    if ($copied === false || $copied !== filesize($tmpFile)) {
+    $size = (int) filesize($tmpFile);
+    // check and append under one lock: the same part twice at the same time (a repeated
+    // request) cannot both pass the check, the second one sees the longer file
+    $out = fopen($path, 'ab');
+    if ($out === false || !flock($out, LOCK_EX)) {
+        $out && fclose($out);
         throw new InputError([], 'Teil konnte nicht gespeichert werden. Ist der Speicherplatz voll?');
     }
-    return (int) filesize($path);
+    try {
+        $now = (int) (fstat($out)['size'] ?? -1);
+        if ($now !== $offset) {
+            throw new InputError([], 'Upload unterbrochen, bitte erneut versuchen.');
+        }
+        if ($offset + $size > upload_expected($path)) {
+            throw new InputError([], 'Teil passt nicht zur Größe der Datei, bitte erneut versuchen.');
+        }
+        $in     = fopen($tmpFile, 'rb');
+        $copied = $in ? stream_copy_to_stream($in, $out) : false;
+        $in && fclose($in);
+        fflush($out);
+        if ($copied !== $size || (int) (fstat($out)['size'] ?? -1) !== $offset + $size) {
+            throw new InputError([], 'Teil konnte nicht gespeichert werden. Ist der Speicherplatz voll?');
+        }
+        return $offset + $size;
+    } finally {
+        flock($out, LOCK_UN);
+        fclose($out);
+    }
 }
 
 /** Completes an upload and imports it as a track, only if all announced bytes arrived. */
