@@ -20,7 +20,7 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
 www/                  Web-Verzeichnis der Domain https://1radioe.net
   index.php           Web-App mit Player
-  assets/             CSS, JavaScript, Schrift Mona Sans, Favicon und App-Icons der Web-App
+  assets/             CSS, JavaScript, Schrift (R1 Sans aus Mona Sans), Favicon und App-Icons der Web-App
   smapi.php           SMAPI-Endpoint für Sonos
   report.php          Wiedergabe-Meldungen von Sonos (Reporting Endpoint)
   admin/              Verwaltung (Login mit Passwort und TOTP)
@@ -62,7 +62,7 @@ Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `
 ## Bedienung
 
 * **Sender hinzufügen:** Stream-URL eintragen und „Stream testen“. Der Test erkennt MP3, AAC, Ogg Vorbis, FLAC und HLS, folgt Weiterleitungen und löst `.pls`- und `.m3u`-Playlists auf. Format, Name und Beschreibung werden aus dem Stream übernommen, wenn die Felder leer sind. Ogg Opus lehnt der Test ab, weil Sonos es nicht abspielt.
-* **Logo:** hochladen oder per URL laden, im Editor zuschneiden, zoomen, drehen, einpassen oder füllen, Hintergrund für transparente Bereiche wählen. Gespeichert wird immer 600 × 600 px.
+* **Logo:** hochladen oder per URL laden, im Editor zuschneiden, zoomen, drehen, einpassen oder füllen, Hintergrund für transparente Bereiche wählen. Gespeichert wird immer 600 × 600 px. Für die kleinen Kacheln der Web-App legt der Server beim ersten Aufruf daneben ein Bild mit 192 px an (`…-s.jpg`), das große bekommen Player, Sperrbildschirm, Sonos und Link-Karten.
 * **Reihenfolge:** Kacheln per Drag & Drop verschieben. Die Vorschau entspricht der Liste in Sonos.
 * **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
 * **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen.
@@ -317,7 +317,7 @@ PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.
 
 ## Mitgelieferte Bibliotheken
 
-[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. [hls.js](https://github.com/video-dev/hls.js) 1.7.4 (`hls.light.min.js` aus dem npm-Paket, Prüfsumme in `www/assets/vendor/hls.js-LICENSE.txt`), Apache-2.0-Lizenz, nur für HLS in Firefox. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`). Aus ihr sind auch die Wortmarke (`app/brand.php`, Gewicht 900, Breite 100, Laufweite −0,035 em, das œ in `#1a80b6`) und die „1“ der Icons gebaut, als Vektorpfade mit fontTools und HarfBuzz. Die OFL erlaubt das, die Pfade sind kein Font.
+[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. [hls.js](https://github.com/video-dev/hls.js) 1.7.4 (`hls.light.min.js` aus dem npm-Paket, Prüfsumme in `www/assets/vendor/hls.js-LICENSE.txt`), Apache-2.0-Lizenz, nur für HLS in Firefox. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`). Die Web-App lädt sie zugeschnitten als `R1Sans.woff2`: lateinische Schrift, Breite 100 bis 112 %, Gewicht 400 bis 900, ohne Stilsets, 141 statt 301 KB. Weil „Mona Sans“ ein reservierter Name der OFL ist, heißt die veränderte Datei „R1 Sans“. Aus ihr sind auch die Wortmarke (`app/brand.php`, Gewicht 900, Breite 100, Laufweite −0,035 em, das œ in `#1a80b6`) und die „1“ der Icons gebaut, als Vektorpfade mit fontTools und HarfBuzz. Die OFL erlaubt das, die Pfade sind kein Font.
 
 ## Lizenz
 

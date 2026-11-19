@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 const LOGO_SIZE      = 600;
+const LOGO_THUMB     = 192;   // small picture for the tiles of the web app (44 to 72 px, also on sharp screens)
 const LOGO_MAX_BYTES = 8 * 1024 * 1024;
 
 /** Stores an image (binary string) as station logo file. Returns the file name. */
@@ -114,9 +115,61 @@ function category_collage(int $id, array $logos): string
         }
     }
     foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $old) {
-        @unlink($old);   // grid of an earlier set of logos
+        @unlink($old);   // grid of an earlier set of logos, and its small picture
     }
     return imagejpeg($dst, media_dir() . '/' . $name, 88) ? $name : $logos[0];
+}
+
+/** File name of the small picture of a logo: "ab12.jpg" becomes "ab12-s.jpg". */
+function logo_thumb_name(string $file): string
+{
+    $file = basename($file);
+    $dot  = strrpos($file, '.');
+    return $dot === false ? $file . '-s' : substr($file, 0, $dot) . '-s' . substr($file, $dot);
+}
+
+/**
+ * The small picture of a logo or category grid (LOGO_THUMB px) for the tiles of the web
+ * app, which show logos at 44 to 72 px: a tenth of the bytes of the 600 px file. Made
+ * from the logo on first use and kept next to it; logo names are never reused, so it
+ * never goes stale. Returns its file name, the logo's own if it cannot be made (no GD,
+ * folder not writable), or null if there is no logo.
+ */
+function logo_thumb(?string $file): ?string
+{
+    if ($file === null || $file === '') {
+        return null;
+    }
+    $file = basename($file);
+    $src  = media_dir() . '/' . $file;
+    if (!is_file($src)) {
+        return null;
+    }
+    $name = logo_thumb_name($file);
+    $path = media_dir() . '/' . $name;
+    if (is_file($path)) {
+        return $name;
+    }
+    $img = function_exists('imagecreatetruecolor') ? @imagecreatefromstring((string) @file_get_contents($src)) : false;
+    if ($img === false) {
+        return $file;
+    }
+    $png = str_ends_with(strtolower($file), '.png');
+    $dst = imagecreatetruecolor(LOGO_THUMB, LOGO_THUMB);
+    if ($png) {   // keep transparency
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        imagefill($dst, 0, 0, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+    }
+    imagecopyresampled($dst, $img, 0, 0, 0, 0, LOGO_THUMB, LOGO_THUMB, imagesx($img), imagesy($img));
+    // written under another name first: a request at the same time never sees half a file
+    $tmp = $path . '.' . bin2hex(random_bytes(4)) . '.tmp';
+    $ok  = $png ? @imagepng($dst, $tmp, 9) : @imagejpeg($dst, $tmp, 82);
+    if (!$ok || !@rename($tmp, $path)) {
+        @unlink($tmp);
+        return $file;
+    }
+    return $name;
 }
 
 /** Downloads an image from the web for the editor. Returns a data: URL. */

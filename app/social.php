@@ -174,33 +174,13 @@ function social_heard(array $station, int $since, int $now, int $postedSince): v
 /** Runs the post after the response went out (PHP-FPM / LiteSpeed), else at the end of the request. */
 function social_defer(int $stationId): void
 {
-    static $queue = null;
-    if ($queue === null) {
-        $queue = new ArrayObject();
-        register_shutdown_function(static function () use ($queue): void {
-            ignore_user_abort(true);
-            @set_time_limit(90);
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request();
-            } elseif (function_exists('litespeed_finish_request')) {
-                litespeed_finish_request();
-            }
-            foreach (array_keys($queue->getArrayCopy()) as $id) {
-                try {
-                    social_run((int) $id, 'auto');
-                } catch (Throwable $e) {
-                    error_log('1radioe posting: ' . $e->getMessage());
-                }
-            }
-        });
-    }
-    $queue[$stationId] = true;
+    after_response('posting ' . $stationId, static fn() => social_run($stationId, 'auto'));
 }
 
 /** True if the server can answer first and post afterwards. */
 function social_background_ok(): bool
 {
-    return function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request');
+    return can_answer_first();
 }
 
 /**

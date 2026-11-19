@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.26.2';
+const APP_VERSION = '1.27.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -263,6 +263,42 @@ function sonos_log(string $method, string $item, int $status, string $note): voi
     } catch (Throwable) {
         // logging must never break playback
     }
+}
+
+/** True if the server can send the response first and keep working afterwards. */
+function can_answer_first(): bool
+{
+    return function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request');
+}
+
+/**
+ * Runs $job after the response went out (PHP-FPM, LiteSpeed), otherwise at the end of
+ * the request. A job with the same $key runs once per request. Errors are logged, never
+ * shown. Used for posting and for refreshing .pls/.m3u playlists.
+ */
+function after_response(string $key, callable $job): void
+{
+    static $jobs = null;
+    if ($jobs === null) {
+        $jobs = new ArrayObject();
+        register_shutdown_function(static function () use ($jobs): void {
+            ignore_user_abort(true);
+            @set_time_limit(90);
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            } elseif (function_exists('litespeed_finish_request')) {
+                litespeed_finish_request();
+            }
+            foreach ($jobs as $name => $run) {
+                try {
+                    $run();
+                } catch (Throwable $e) {
+                    error_log('1radioe ' . $name . ': ' . $e->getMessage());
+                }
+            }
+        });
+    }
+    $jobs[$key] ??= $job;
 }
 
 /** Sends JSON and stops. $noStore false keeps a Cache-Control header set before. */

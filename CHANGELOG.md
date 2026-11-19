@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.27.0 (19. November 2026)
+
+Aus dem Code-Audit, schnelleres Laden:
+
+* Kleine Logos: Liste, Skala, Mini-Player und Dialoge zeigen Logos mit 44 bis 72 px, luden aber die Datei mit 600 px (bis 300 KB). Jetzt legt der Server beim ersten Aufruf daneben ein Bild mit 192 px an (`<name>-s.jpg` bzw. `.png`, 3 bis 5 KB), nur der große Player, der Sperrbildschirm, Sonos und die Link-Karten nehmen das große. Beim ersten Besuch spart das gut 1 MB. Ein neues Logo bekommt ein neues Bild, mit dem alten verschwindet auch sein kleines
+* Schrift: Die Web-App lädt Mona Sans zugeschnitten als `R1Sans.woff2` (141 statt 301 KB): lateinische Zeichen, nur die genutzten Breiten (100 bis 112 %) und Gewichte (400 bis 900), ohne Stilsets. Die optische Größe bleibt, die Schrift sieht aus wie vorher. „Mona Sans“ ist ein reservierter Name der Lizenz (SIL OFL), deshalb heißt die veränderte Datei „R1 Sans“. Gebaut mit fontTools aus dem lokalen `design/build_font.py`
+* Sender mit `.pls` oder `.m3u`: Ist die gemerkte Stream-Adresse älter als 6 Stunden, bekommt die Anfrage sofort die bekannte Adresse und der Server holt die Playlist erst nach der Antwort neu, nur eine Anfrage tut das. Bisher wartete die Seite (oder Sonos, `stations.json`, `streams.m3u`) bis zu 4 Sekunden pro Sender auf dessen Server
+* Intern: `after_response()` in `app/bootstrap.php` erledigt Arbeit nach der Antwort, für das Posting und die Playlists
+
 ## 1.26.2 (19. November 2026)
 
 Aus dem Code-Audit, kleine Fehler und Aufräumen:
