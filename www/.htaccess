@@ -22,6 +22,10 @@ Options -Indexes -MultiViews
     # from REQUEST_URI (which keeps /de/). /de gets its slash, so relative links stay right.
     RewriteRule ^de$ /de/ [R=301,L]
     RewriteRule ^de/(.*)$ /$1 [L]
+    # scripts with the version in the path (assets/v1.30.0/app.js, also in admin/): the ES
+    # modules an entry loads relative to itself carry the version that way (index.php,
+    # app/admin.php). The files themselves lie in assets/ without it.
+    RewriteRule ^(admin/)?assets/v[0-9][0-9.]*/(.+)$ $1assets/$2 [L]
     RewriteRule ^api/status$ api/status.php [L]
     RewriteRule ^api/listen$ api/listen.php [L]
     RewriteRule ^api/nowplaying$ api/nowplaying.php [L]

@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.30.0 (19. November 2026)
+
+Die beiden großen Skripte sind aufgeteilt, sichtbar ändert sich nichts:
+
+* Web-App (`www/assets/app.js`, bisher rund 1.850 Zeilen) und Admin (`www/admin/assets/app.js`, rund 1.830 Zeilen) sind ES-Module ohne Build: `app.js` ist der Einstieg, die Teile liegen in `app/` (Web-App 13 Teile, Admin 8, je 40 bis 330 Zeilen). `core.js` hält, was alle brauchen, und importiert nichts. Jeder Teil deklariert beim Laden nur, seine Listener hängt `init()` an, der Einstieg ruft sie in der Reihenfolge auf, in der das alte Skript sie ausführte
+* Version im Pfad statt in der Query: Der Einstieg kommt als `assets/v1.30.0/app.js`, `www/.htaccess` (und lokal `app/dev-router.php`) bildet das auf `assets/` ab. Die Module, die er relativ nachlädt, tragen so dieselbe Version, Browser behalten sie ein Jahr und mischen nach einem Deploy keine alten und neuen Teile. `modulepreload` für alle Teile spart die Wartezeit der Imports
+* Die Teile verweisen nicht auf fremde Variablen beim Laden, außer auf `core` und im Admin auf den Bildeditor (der nur `core` braucht); eine Variable, die ein anderer Teil setzte (`mqPick`), liegt jetzt im gemeinsamen `state`
+* CI: `node --check` prüft Module als Module
+* Geprüft im Browser: Web-App auf Desktop und Handy (Skala, Liste, Kategorien, Abspielen, Tastatur, Info, Menü und Seiten, „Zuletzt von Olli gehört“, Balken mit Tooltip, YouTube mit laufender Zeit und nächstem Video) und Admin (Raster mit Tooltip, Editor mit Bildeditor, neuer YouTube-Eintrag, Kategorie, Tracks, Texte, Posting, System), ohne Fehler in der Konsole
+
 ## 1.29.1 (19. November 2026)
 
 * Web-App: Das Fragezeichen mit den Tastenkürzeln steht jetzt unten rechts im Fuß, am rechten Rand des Inhalts. Daneben über der Senderskala war es zu eng mit „Zuletzt von Olli gehört“. Der Tooltip öffnet sich nach oben, rechtsbündig, der Pfeil zeigt auf den Knopf. Auf dem Handy bleibt es weg wie bisher

@@ -20,10 +20,11 @@ Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
 www/                  Web-Verzeichnis der Domain https://1radioe.net
   index.php           Web-App mit Player
-  assets/             CSS, JavaScript, Schrift (R1 Sans aus Mona Sans), Favicon und App-Icons der Web-App
+  assets/             CSS, Schrift (R1 Sans aus Mona Sans), Favicon und App-Icons der Web-App
+    app.js            Einstieg des Skripts der Web-App, die Teile als ES-Module in app/
   smapi.php           SMAPI-Endpoint für Sonos
   report.php          Wiedergabe-Meldungen von Sonos (Reporting Endpoint)
-  admin/              Verwaltung (Login mit Passwort und TOTP)
+  admin/              Verwaltung (Login mit Passwort und TOTP), Skript wie oben: assets/app.js und assets/app/
   deploy.php          Ziel des GitHub-Webhooks
   robots.txt          Web-App für Suchmaschinen offen, Admin, Schnittstellen und Tracks gesperrt
   media/              Logos, Cover, tracks/ (legt die App an, nicht in Git)
@@ -32,6 +33,8 @@ DEPLOY-SETUP.md       Einrichtung auf All-Inkl Schritt für Schritt
 ```
 
 Im Checkout neben `www/` liegt der Ordner `1radioe-private` mit `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Er liegt außerhalb des Web-Verzeichnisses und ist von Git ausgeschlossen, das Ausrollen lässt ihn unberührt. So bleibt alles für 1radiœ in einem Ordner. Die App sucht ihn zuerst im Checkout, dann in den Ordnern darüber.
+
+**Skripte:** Web-App und Admin sind ES-Module ohne Build. `app.js` ist jeweils der Einstieg, die Teile liegen in `app/` daneben (Web-App: `core`, `scale`, `list`, `view`, `audio`, `soundcloud`, `youtube`, `media`, `status`, `dialogs`, `keys`, `song`, `tip`; Admin: `core`, `image`, `stations`, `editor`, `tracks`, `system`, `texts`, `social`). `core.js` hält, was alle brauchen, und importiert nichts. Jeder Teil deklariert beim Laden nur und hängt seine Listener in `init()` an, der Einstieg ruft die `init()` in fester Reihenfolge auf. Geladen wird der Einstieg als `assets/v<Version>/app.js`, `www/.htaccess` bildet `assets/v…/` auf `assets/` ab. So tragen die Module, die der Einstieg relativ nachlädt, die Version im Pfad, Browser dürfen alles ein Jahr behalten und mischen nach einem Deploy nie alte und neue Teile. `index.php` und `render_page()` (`app/admin.php`) setzen `modulepreload` für alle Teile, damit die Imports keine Wartezeit kosten. Ein neuer Teil in `app/` ist damit ohne weitere Änderung dabei.
 
 `www/media/` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen. Die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Der Ordner ist nicht in Git, deshalb lässt ihn das Ausrollen unberührt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
 
@@ -50,7 +53,7 @@ cp config.sample.php 1radioe-private/config.php   # Ordner vorher anlegen, Daten
 php -S 127.0.0.1:8080 -t www app/dev-router.php
 ```
 
-`app/dev-router.php` bildet die Adressen ohne Dateiendung aus `www/.htaccess` nach. `1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main` prüft GitHub Actions die Syntax aller PHP- und JavaScript-Dateien und lässt die Tests laufen (`.github/workflows/lint.yml`), lokal geht das mit `php -l`, `node --check` und `php tests/run.php`.
+`app/dev-router.php` bildet die Adressen ohne Dateiendung aus `www/.htaccess` nach. `1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main` prüft GitHub Actions die Syntax aller PHP- und JavaScript-Dateien und lässt die Tests laufen (`.github/workflows/lint.yml`), lokal geht das mit `php -l`, `node --check` und `php tests/run.php`. Module (Dateien mit `import`/`export`) prüft `node --check` nur als `.mjs`, die CI kopiert sie dafür.
 
 **Tests** (`tests/`): einfaches PHP ohne Framework, je Datei `*.test.php` eine Gruppe. Geprüft werden Abgleich und Bilder der YouTube-Playlists mit nachgebauter API (Reihenfolge, Filter, Seiten, neues Bild desselben Videos, geteilte Videos, nicht in Sonos und `stations.json`), welcher Sender läuft (Stream-Adresse, aufgelöste Playlist, Titel), Uploads in Teilen, auch derselbe Teil zweimal gleichzeitig aus zwei Prozessen, und Adressen in Playlists. Die Tests brauchen eine eigene MariaDB-Datenbank, deren Name `test` enthält, denn sie leeren sie zuerst. Zugang über `R1_TEST_DB_HOST`, `R1_TEST_DB_PORT`, `R1_TEST_DB_NAME`, `R1_TEST_DB_USER` und `R1_TEST_DB_PASS` (ohne Angabe `127.0.0.1`, `r1_test`, Benutzer und Passwort `r1`, wie in der CI). Konfiguration und Medienordner legen sie in einem temporären Ordner an, `config.php` und `www/media/` bleiben unberührt. Kein Netz, keine Schlüssel. Der Player im Browser (`app.js`) hat keine automatischen Tests, er wird von Hand geprüft.
 
