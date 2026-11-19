@@ -204,7 +204,8 @@
 
   function renderCrumbs() {
     if (state.view === 'root') {
-      crumbs.replaceChildren(el('span', '', T.all));
+      // the same pill as the way back from a category, so nothing moves when one opens
+      crumbs.replaceChildren(el('span', 'pillbtn here', T.all));
       return;
     }
     const back = el('button', 'pillbtn');
