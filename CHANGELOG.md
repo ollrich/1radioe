@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.28.3 (19. November 2026)
+
+* YouTube: Die Bilder der Videos heißen jetzt `yt-<id>-<hash>.jpg` (und `-s.jpg`), der Hash kommt vom Bild. Bisher behielten sie beim Neuladen nach 25 Tagen ihren Namen; hatte sich das Bild auf YouTube geändert, zeigten Browser bis zu ein Jahr lang das alte (Dateien in `media/` sind ein Jahr im Cache) und das Raster der Playlist blieb alt. Jetzt gibt es einen neuen Namen und damit ein neues Raster, das alte Bild wird gelöscht, sobald keine Playlist es mehr zeigt. Vorhandene Bilder bekommen den neuen Namen beim nächsten Neuladen (#65)
+* Tests: `php tests/run.php`, einfaches PHP ohne Framework, mit eigener Datenbank und temporärem Ordner, ohne Netz. Geprüft werden Abgleich und Bilder der YouTube-Playlists mit nachgebauter API, auch ein neues Bild desselben Videos und geteilte Videos, dass YouTube nicht in Sonos, `streams.m3u` und `stations.json` landet, Uploads in Teilen und Adressen in Playlists. GitHub Actions lässt sie bei jedem PR und jedem Push auf `main` laufen, mit MariaDB 10.11 im Container (#67)
+* `R1_CONFIG`: Auf der Kommandozeile nimmt die App eine andere `config.php`, nur für die Tests. Web-Aufrufe lesen die Variable nie
+
 ## 1.28.2 (19. November 2026)
 
 * Web-App: Titel und Beschreibung nennen neben dem Radio auch DJ-Mixe und Konzerte („1radiœ · Ollis Radio, Mixe und Konzerte“, „1radiœ · Ollie's radio, mixes and concerts“), für Browser, Suchmaschinen und die Vorschau beim Teilen. Die Beschreibung sagt, dass alles im Browser spielt und das Radio auch auf Sonos und in VLC

@@ -1,6 +1,7 @@
-# 1radiœ: syntax check for every pull request and every push to main. A merge to main
-# goes live at once (webhook), so a typo should show up here before that. Uses the PHP
-# and Node.js of the GitHub runner, no further actions besides checkout.
+# 1radiœ: syntax check and tests for every pull request and every push to main. A merge
+# to main goes live at once (webhook), so a mistake should show up here before that.
+# Uses the PHP and Node.js of the GitHub runner and a MariaDB container for the tests,
+# no further actions besides checkout.
 name: Lint
 
 on:
@@ -21,10 +22,35 @@ jobs:
         shell: bash
         run: |
           php -v | head -n 1
-          find app www config.sample.php -name '*.php' -print0 | xargs -0 -n 1 php -l
+          find app www tests config.sample.php -name '*.php' -print0 | xargs -0 -n 1 php -l
 
       - name: JavaScript syntax (node --check), without the bundled libraries
         shell: bash
         run: |
           node --version
           find www -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n 1 node --check
+
+  # tests/run.php: YouTube sync and pictures, uploads, addresses; no network, no secrets
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: r1_test
+          MARIADB_USER: r1
+          MARIADB_PASSWORD: r1
+          MARIADB_RANDOM_ROOT_PASSWORD: '1'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tests (php tests/run.php)
+        shell: bash
+        run: |
+          php -v | head -n 1
+          php tests/run.php
