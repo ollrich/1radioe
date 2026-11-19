@@ -271,6 +271,9 @@
     $$('.view').forEach((v) => { v.hidden = v.id !== 'view-' + view; });
     const tab = view === 'playlist' || view === 'category' ? 'stations' : view;
     $$('.tab').forEach((t) => t.setAttribute('aria-current', t.dataset.view === tab ? 'page' : 'false'));
+    // phones with large text: the tab bar scrolls, the current tab stays in view
+    const cur = $(`.tab[data-view="${tab}"]`);
+    if (cur && cur.parentElement.scrollWidth > cur.parentElement.clientWidth) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (view === 'playlist') loadPlaylist(Number(hash.split('/')[1]));
     if (view === 'category') loadCategory(Number(hash.split('/')[1]));
     if (view === 'tracks') loadLibrary();

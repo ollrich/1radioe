@@ -363,10 +363,12 @@ label small { font-weight: 400; }
   .track-row { gap: .5rem; padding: .4rem .5rem; }
   .track-row .pos, .track-row .track-meta { display: none; }
   .track-row .btn.small { padding: .3rem .5rem; }
-  .tabs .tab { padding: .4rem .65rem; }
   .topbar { flex-wrap: wrap; row-gap: .6rem; padding-top: .6rem; padding-bottom: .6rem; }
-  .topbar .tabs { order: 3; width: 100%; justify-content: space-between; }
-  .topbar .tabs .tab { flex: 1; text-align: center; }
+  /* five tabs over the full width; with large text (phone setting) the bar scrolls
+     sideways instead of pushing the page out */
+  .topbar .tabs { order: 3; width: 100%; min-width: 0; gap: .15rem; overflow-x: auto; scrollbar-width: none; }
+  .topbar .tabs::-webkit-scrollbar { display: none; }
+  .topbar .tabs .tab { flex: 1 0 auto; padding: .4rem; font-size: .9rem; text-align: center; white-space: nowrap; }
   .edit-btn .lbl { display: none; }
   .edit-btn::before { content: "✎"; font-size: 1rem; }
   .track-row .edit-btn { min-height: 34px; width: 36px; padding: 0; }

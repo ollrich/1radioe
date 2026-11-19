@@ -258,6 +258,8 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .crumbs { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 640; }
 .crumbs .sep { color: var(--muted); font-weight: 400; }
 .crumbs .pillbtn { min-height: 36px; padding: 0 12px 0 8px; font-size: 14px; font-weight: 400; }
+.crumbs .pillbtn.here { padding: 0 12px; cursor: default; }
+.crumbs .pillbtn.here:hover { background: transparent; }
 .scale-row { display: flex; align-items: center; gap: 8px; }
 .scl { width: 44px; height: 44px; background: var(--bg); }
 .scl.is-off { visibility: hidden; }
