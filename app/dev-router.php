@@ -15,6 +15,7 @@ const DEV_ROUTES = [
     '~^/api/nowplaying$~'              => '/api/nowplaying.php',
     '~^/api/stations\.json$~'          => '/api/stations.php',
     '~^/streams\.m3u$~'                => '/playlist.php',
+    '~^/streams\.xspf$~'               => '/xspf.php',
     '~^/streams\.pls$~'                => 410,   // gone since 1.13.0, as in .htaccess
     '~^/s/[A-Za-z0-9._-]+\.m3u$~'      => 410,
     '~^/s/([A-Za-z0-9._-]+)$~'         => '/index.php?s=$1&go=1',
