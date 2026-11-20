@@ -38,7 +38,10 @@ try {
     $version = catalog_token();
     // everything else is covered by the catalog marker; resolved playlists can change on their own
     header('Cache-Control: no-cache');
-    etag_check('"' . $version . '-' . substr(sha1(json_encode($streams)), 0, 12) . '"');
+    // the format number changes the ETag once when the fields change, so apps that saved the
+    // old answer load the new one instead of getting 304 (2: categories carry a description)
+    $format = 2;
+    etag_check('"' . $version . '-' . $format . '-' . substr(sha1(json_encode($streams)), 0, 12) . '"');
 
     $base = base_url(1);
     $rows = stations_all(true);
@@ -49,10 +52,11 @@ try {
         'listen_url' => $base . '/api/listen',
         'nowplaying_url' => $base . '/api/nowplaying?id={id}',
         'categories' => array_map(static fn($c) => [
-            'id'   => $c['row']['smapi_id'],
-            'name' => $c['row']['title'],
-            'sort' => $c['sort'],
-            'logo' => json_logo(category_cover($c['row'], $rows)),
+            'id'          => $c['row']['smapi_id'],
+            'name'        => $c['row']['title'],
+            'description' => (string) ($c['row']['description'] ?? ''),
+            'sort'        => $c['sort'],
+            'logo'        => json_logo(category_cover($c['row'], $rows)),
         ], $catalog['categories']),
         'stations'   => array_map(static fn($e) => [
             'id'          => $e['row']['smapi_id'],

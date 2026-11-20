@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.30.2 (20. November 2026)
+
+* `stations.json`: Kategorien tragen jetzt `description`, die Beschreibung aus dem Admin, damit die Android-App sie unter dem Namen zeigt wie die Web-App (API.md)
+* Das ETag von `stations.json` enthält eine Formatnummer. Sie ändert sich einmalig mit diesem Update, damit Apps mit gespeicherter Liste die neue Fassung laden statt `304` zu bekommen
+
 ## 1.30.1 (20. November 2026)
 
 * Lizenz: Apache License 2.0 statt MIT. Neu ist die Datei `NOTICE`: Wer 1radiœ weitergibt oder darauf aufbaut, muss sie mitliefern und damit 1radiœ von Oliver Eichhof als Ursprung nennen, außerdem geänderte Dateien kennzeichnen. Fassungen bis 1.30.0 bleiben für alle, die sie schon haben, unter MIT

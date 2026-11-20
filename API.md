@@ -1,6 +1,6 @@
 # 1radiœ: Schnittstellen für eine App
 
-Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.26.2, 19. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
+Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.30.2, 20. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
 
 ## Überblick
 
@@ -23,7 +23,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
   "listen_url": "https://1radioe.net/api/listen",
   "nowplaying_url": "https://1radioe.net/api/nowplaying?id={id}",
   "categories": [
-    { "id": "nts", "name": "NTS", "sort": 12,
+    { "id": "nts", "name": "NTS", "description": "Nuts to soup.", "sort": 12,
       "logo": { "url": "https://1radioe.net/media/….jpg", "sha256": "…", "size": 600 } }
   ],
   "stations": [
@@ -48,6 +48,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 * **`streams`**: bisher immer genau einer. `format` ist der MIME-Typ (`audio/mpeg`, `audio/aac`, `application/ogg`, `application/vnd.apple.mpegURL` für HLS, `audio/flac`). `.pls` und `.m3u` sind schon zur Stream-Adresse aufgelöst. `https: false` heißt: nur per HTTP erreichbar.
 * **Umleitungen:** Viele Streams leiten weiter, FluxFM etwa bei jedem Abruf auf einen anderen Server. Die App spielt immer die Adresse aus `stations.json`, nie eine umgeleitete, die sie sich gemerkt hat.
 * **`logo`**: 600 × 600 px, JPEG oder PNG, oder `null`. Der Dateiname ändert sich mit jedem neuen Logo, `sha256` erlaubt einen Abgleich ohne Download. Kategorien ohne eigenes Bild haben ein Raster aus vier Logos.
+* **`description`** gibt es bei Sendern und (seit 1.30.2) bei Kategorien, die App zeigt sie unter dem Namen wie die Web-App. Leer, wenn nichts eingetragen ist.
 * **`description`, `website`, `country`, `city`**: leer bzw. `null`, wenn nichts eingetragen ist. `country` ist ein ISO-3166-Code (`GB`, `FR`, `DE`), den Namen setzt die App in ihrer Sprache ein.
 * **Nicht enthalten:** MP3-Playlists und Tracks (nur für Sonos), SoundCloud-Einträge, Deezer-Links und YouTube-Playlists (nur in der Web-App, ihre Bedingungen erlauben kein Abspielen in einer Radio-App, YouTube keinen Ton ohne Bild).
 * **Zwischenspeichern:** Die Antwort trägt `Cache-Control: no-cache` und einen `ETag`. Mit `If-None-Match: <etag>` kommt `304 Not Modified`, solange sich nichts geändert hat. `version` ändert sich bei jeder Änderung im Admin.
