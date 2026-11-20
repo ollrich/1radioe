@@ -1,0 +1,13 @@
+1radiœ
+Copyright 2026 Oliver Eichhof
+https://github.com/ollrich/1radioe
+
+This product is 1radiœ by Oliver Eichhof: own radio stations and MP3 playlists
+as a service in the Sonos app, a web app with player at https://1radioe.net,
+and a small admin to manage them.
+
+Works based on it must keep this notice and name 1radiœ by Oliver Eichhof as
+their origin (Apache License 2.0, section 4 d).
+
+Third-party components bundled in www/assets/vendor/ and www/admin/assets/vendor/
+keep their own licences, see README.md ("Mitgelieferte Bibliotheken").
