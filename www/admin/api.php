@@ -140,6 +140,7 @@ try {
                 ],
                 'public' => [
                     'Playlist für VLC (M3U)' => base_url(1) . '/streams.m3u',
+                    'Playlist für Eter (XSPF)' => base_url(1) . '/streams.xspf',
                     'Sender als JSON'        => base_url(1) . '/api/stations.json',
                     'Hörstatus als JSON'     => base_url(1) . '/api/status',
                 ],
