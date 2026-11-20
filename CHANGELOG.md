@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.30.1 (20. November 2026)
+
+* Lizenz: Apache License 2.0 statt MIT. Neu ist die Datei `NOTICE`: Wer 1radiœ weitergibt oder darauf aufbaut, muss sie mitliefern und damit 1radiœ von Oliver Eichhof als Ursprung nennen, außerdem geänderte Dateien kennzeichnen. Fassungen bis 1.30.0 bleiben für alle, die sie schon haben, unter MIT
+* Vorgabetext „Über 1radiœ“: „Apache-Lizenz 2.0“ statt „MIT-Lizenz“ (live im Admin ebenso)
+
 ## 1.30.0 (19. November 2026)
 
 Die beiden großen Skripte sind aufgeteilt, sichtbar ändert sich nichts:

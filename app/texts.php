@@ -31,7 +31,7 @@ function text_defaults(): array
                 <h3>Mitnehmen</h3>
                 <p>Alle Sender als Playlist für VLC und andere Player: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Quellcode</h3>
-                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT-Lizenz</p>
+                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, Apache-Lizenz 2.0</p>
                 <p>Ein Projekt von Olli.</p>
                 HTML,
             'en' => <<<'HTML'
@@ -40,7 +40,7 @@ function text_defaults(): array
                 <h3>Take it with you</h3>
                 <p>All stations as a playlist for VLC and other players: <a href="streams.m3u">streams.m3u</a></p>
                 <h3>Source code</h3>
-                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, MIT licence</p>
+                <p><a href="https://github.com/ollrich/1radioe" target="_blank" rel="noopener">github.com/ollrich/1radioe</a>, Apache License 2.0</p>
                 <p>A project by Ollie.</p>
                 HTML,
         ],

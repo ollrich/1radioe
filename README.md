@@ -338,4 +338,4 @@ PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.
 
 ## Lizenz
 
-[MIT](LICENSE)
+[Apache License 2.0](LICENSE), seit 1.30.1 (bis 1.30.0 MIT). Wer 1radiœ weitergibt oder darauf aufbaut, muss die Datei [NOTICE](NOTICE) mitliefern und damit 1radiœ von Oliver Eichhof als Ursprung nennen, geänderte Dateien kennzeichnen und die Lizenz beilegen.
