@@ -65,6 +65,34 @@ function playlist_title(string $title): string
     return trim((string) preg_replace('~[\r\n]+~', ' ', $title));
 }
 
+/**
+ * The stations as an XSPF playlist (XSPF 1.0), for Eter on the Mac and iPad and other
+ * players that import XSPF. The same form as Eter's own export: per station only title,
+ * stream address and logo. $stations: public_catalog()['stations'], so the same stations
+ * in the same order as streams.m3u. $logo turns a logo file into an absolute address.
+ */
+function xspf_playlist(array $stations, callable $logo): string
+{
+    $xml = static function (string $s): string {
+        // valid UTF-8, only characters XML 1.0 allows, then the five escapes
+        $s = mb_scrub($s, 'UTF-8');
+        $s = (string) preg_replace('/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', '', $s);
+        return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    };
+    $out = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<playlist version=\"1\" xmlns=\"http://xspf.org/ns/0/\">\n<trackList>\n";
+    foreach ($stations as $e) {
+        $out .= "<track>\n"
+            . '    <title>' . $xml(playlist_title((string) $e['row']['title'])) . "</title>\n"
+            . '    <location>' . $xml(station_playback_url($e['row'])) . "</location>\n";
+        $image = $logo($e['row']['logo'] ?? null);
+        if (is_string($image) && $image !== '') {
+            $out .= '    <image>' . $xml($image) . "</image>\n";
+        }
+        $out .= "</track>\n";
+    }
+    return $out . "</trackList>\n</playlist>\n";
+}
+
 /** Sends a 304 and stops if the client already has this version. */
 function etag_check(string $etag): void
 {

@@ -9,7 +9,7 @@ Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, dazu eine Web-
 * PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
 * Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
 * **Hörstatus:** zeigt, welchen Sender Olli gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
-* **Playlist und JSON:** alle Sender als `/streams.m3u` für VLC und andere Player und als `/api/stations.json` für eine eigene App
+* **Playlist und JSON:** alle Sender als `/streams.m3u` für VLC und andere Player, als `/streams.xspf` zum Import in Eter und als `/api/stations.json` für eine eigene App
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
 
@@ -153,6 +153,7 @@ Alle aktiven Sender, nie MP3-Playlists, Tracks, SoundCloud, Deezer oder YouTube.
 | Adresse | Inhalt |
 |---|---|
 | `/streams.m3u` | M3U mit Namen, für VLC: „Medien, Netzwerkstream öffnen“. Bei jedem Abruf neu aus der Datenbank, Player dürfen sie 5 Minuten zwischenspeichern |
+| `/streams.xspf` | XSPF 1.0 in der Form, die Eter selbst exportiert: je Sender Name, Stream-Adresse und Logo (absolute Adresse). Für Eter auf Mac und iPad: Datei laden und in Eter importieren (Favoriten, Import aus XSPF, braucht dort den einmaligen Kauf). Ein Import ist eine Momentaufnahme, ändert sich die Liste, wird neu importiert; ob Eter dabei Doppelte erkennt, liegt an Eter. Dieselben Sender und Reihenfolge wie die M3U, ebenfalls 5 Minuten Cache und ETag |
 | `/api/stations.json` | alles für eine eigene App |
 | `/api/status` | laufende Sender |
 | `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
