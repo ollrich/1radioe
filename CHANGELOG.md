@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.31.1 (20. November 2026)
+
+* Admin, System: Die öffentlichen Adressen nennen jetzt auch die Playlist für Eter (`/streams.xspf`)
+
 ## 1.31.0 (20. November 2026)
 
 * Neu: `/streams.xspf`, alle Sender als XSPF-Playlist zum Import in Eter (Mac, iPad) und andere Player (#82). Dieselben Sender in derselben Reihenfolge wie `/streams.m3u`, in der Form, die Eter selbst exportiert: je Sender Name, Stream-Adresse und Logo. Sauberes XML auch bei Sonderzeichen und Steuerzeichen im Namen, `application/xspf+xml`, Dateiname `1radioe.xspf`, 5 Minuten Cache und ETag, 503 ohne halbe Datei, wenn die Datenbank fehlt. Ein Import ist eine Momentaufnahme, kein Abgleich
