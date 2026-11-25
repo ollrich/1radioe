@@ -87,7 +87,8 @@ function station(string $smapiId, ?string $kind = null): array
 {
     $s = station_by_smapi($smapiId);
     // SoundCloud and Deezer exist only in the web app
-    if ($s === null || !$s['active'] || in_array($s['kind'], ['soundcloud', 'deezer', 'youtube'], true) || ($kind !== null && $s['kind'] !== $kind)) {
+    if ($s === null || !$s['active'] || in_array($s['kind'], ['soundcloud', 'deezer', 'youtube'], true) || ($kind !== null && $s['kind'] !== $kind)
+        || ($s['kind'] !== 'category' && !profile_visible($s, 'olli'))) {
         fault('Client.ItemNotFound', 'Unknown id');
     }
     return $s;

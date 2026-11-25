@@ -82,6 +82,11 @@ try {
         }
         listen_stop(401, $key !== '' ? 'unknown key' : 'no listening device');
     }
+    if (!listen_profile_allowed($device)) {
+        // a key of Cathy's reads her playlists, it never says "Olli hört"
+        sonos_log('listen ' . $state, '', 403, 'Schlüssel ohne Hörstatus (Profil ' . $device['profile'] . ') · ' . $device['name']);
+        listen_stop(403, 'no listening status for this profile');
+    }
     $s = $station !== '' ? station_by_smapi($station) : ($url !== '' ? station_by_play_uri($url) : null);
     if ($s === null && $station === '' && $title !== '') {
         $s = station_by_title($title);

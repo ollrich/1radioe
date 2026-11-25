@@ -78,6 +78,10 @@ label small { font-weight: 400; }
 .row .btn { margin-top: .3rem; }
 .switch { display: flex; align-items: center; gap: .6rem; cursor: pointer; font-weight: 600; }
 .switch input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--accent); }
+/* "Sichtbar für": the profiles of a stream or MP3 playlist (app/profiles.php) */
+.profile-fields { display: grid; gap: .45rem; }
+.profile-fields .field-title { margin: 0; font-weight: 600; }
+.profile-fields .switch small { font-weight: 400; }
 .inline { display: inline; margin: 0; }
 
 /* Card pages (login, setup) */

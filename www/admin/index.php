@@ -461,13 +461,19 @@ render_page('Sender', <<<HTML
         </form>
         <form class="banner-form" id="listen-key">
           <input name="name" maxlength="80" required value="Home Assistant" aria-label="Name für den Schlüssel">
+          <select name="profile" aria-label="Für wen">
+            <option value="olli" selected>Olli: Hörstatus und Playlists</option>
+            <option value="cathy">Cathy: nur Playlists</option>
+          </select>
           <button class="btn ghost small">Schlüssel erzeugen</button>
         </form>
         <div class="key-box" id="listen-key-box" hidden>
           <p class="muted">Der Schlüssel für „<span id="listen-key-name"></span>“ ist nur jetzt sichtbar. Für die App der Schlüssel allein:</p>
           <p class="key-line"><code id="listen-key-plain"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-plain">Kopieren</button></p>
-          <p class="muted">Für Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
-          <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-line">Kopieren</button></p>
+          <div id="listen-key-ha">
+            <p class="muted">Für Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
+            <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-line">Kopieren</button></p>
+          </div>
         </div>
         <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Art</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
       </div>
@@ -538,6 +544,12 @@ render_page('Sender', <<<HTML
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span id="active-label">Aktiv, in Sonos sichtbar</span></label>
+        <div class="profile-fields">
+          <p class="field-title">Sichtbar für</p>
+          <label class="switch"><input type="checkbox" name="show_olli" checked><span>Olli <small class="muted">Web-App, Sonos, Playlist-Dateien und die App</small></span></label>
+          <label class="switch"><input type="checkbox" name="show_cathy"><span>Cathy <small class="muted">nur in ihrer App</small></span></label>
+          <small class="err" data-err="show_olli"></small>
+        </div>
         <input type="hidden" name="is_playlist" value="0">
         <p class="muted small" id="smapi-id"></p>
       </div>

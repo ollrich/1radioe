@@ -90,16 +90,25 @@ function listen_anonymous_allowed(): bool
 const LISTEN_COOKIE      = 'r1listen';
 const LISTEN_COOKIE_DAYS = 180;
 
-/** Creates a device and returns ['device' => row, 'token' => plain token, shown or set once]. */
-function listen_device_create(string $name, string $kind): array
+/**
+ * Creates a device and returns ['device' => row, 'token' => plain token, shown or set once].
+ * $profile (app/profiles.php): whose key it is. A browser is always Olli's; a key of Cathy's
+ * only reads her playlists and never reports a listening status.
+ */
+function listen_device_create(string $name, string $kind, string $profile = PROFILE_DEFAULT): array
 {
     $name = clean_text($name);
     if ($name === '' || mb_strlen($name) > 80) {
         throw new InputError(['name' => 'Bitte einen Namen mit höchstens 80 Zeichen angeben.']);
     }
-    $token = bin2hex(random_bytes(32));
-    q('INSERT INTO r1_listen_devices (name, kind, token_hash, created_at) VALUES (?, ?, ?, ?)',
-        [$name, $kind === 'app' ? 'app' : 'browser', hash('sha256', $token), now_sql()]);
+    $kind = $kind === 'app' ? 'app' : 'browser';
+    if (!isset(PROFILES[$profile])) {
+        throw new InputError(['profile' => 'Unbekanntes Profil.']);
+    }
+    $profile = $kind === 'app' ? $profile : PROFILE_DEFAULT;
+    $token   = bin2hex(random_bytes(32));
+    q('INSERT INTO r1_listen_devices (name, kind, profile, token_hash, created_at) VALUES (?, ?, ?, ?, ?)',
+        [$name, $kind, $profile, hash('sha256', $token), now_sql()]);
     return ['device' => listen_device_find((int) db()->lastInsertId()), 'token' => $token];
 }
 
@@ -174,6 +183,7 @@ function listen_device_public(array $d, ?int $currentId = null): array
         'id'        => (int) $d['id'],
         'name'      => $d['name'],
         'kind'      => $d['kind'],
+        'profile'   => (string) ($d['profile'] ?? PROFILE_DEFAULT),
         'created'   => date('d.m.Y', (int) strtotime((string) $d['created_at'])),
         'last_used' => $d['last_used_at'] !== null ? date('d.m.Y H:i', (int) strtotime((string) $d['last_used_at'])) : null,
         'revoked'   => $d['revoked_at'] !== null ? date('d.m.Y', (int) strtotime((string) $d['revoked_at'])) : null,

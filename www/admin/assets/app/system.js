@@ -167,7 +167,7 @@ export async function loadDevices() {
   for (const d of data.devices) {
     const tr = el('tr', d.revoked ? 'is-revoked' : '');
     const status = d.revoked ? `widerrufen am ${d.revoked}` : d.this ? 'aktiv, dieser Browser' : 'aktiv';
-    tr.append(el('td', '', d.name), el('td', '', d.kind === 'app' ? 'Schlüssel' : 'Browser'), el('td', '', d.created),
+    tr.append(el('td', '', d.name), el('td', '', d.kind !== 'app' ? 'Browser' : d.profile === 'cathy' ? 'Schlüssel Cathy, nur Playlists' : 'Schlüssel'), el('td', '', d.created),
       el('td', '', d.last_used || 'noch nie'), el('td', '', status));
     const cell = el('td');
     if (!d.revoked) {
@@ -224,11 +224,14 @@ export function init() {
     e.preventDefault();
     const f = e.currentTarget;
     const name = f.elements.namedItem('name').value.trim();
+    const profile = f.elements.namedItem('profile').value;
     try {
-      const { device, key } = await api('listen.key', { name });
+      const { device, key } = await api('listen.key', { name, profile });
       $('#listen-key-name').textContent = device.name;
       $('#listen-key-plain').textContent = key;
       $('#listen-key-line').textContent = `radioe_listen_token: ${key}`;
+      // Cathy's key only reads playlists in the app: no line for Home Assistant
+      $('#listen-key-ha').hidden = device.profile !== 'olli';
       $('#listen-key-box').hidden = false;
       toast(`Schlüssel für „${device.name}“ erzeugt`);
       loadDevices();

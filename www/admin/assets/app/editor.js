@@ -99,6 +99,10 @@ export function openEditor(s, kind = 'stream', categoryId = null) {
   F('social').checked = s ? s.social !== false : true;
   F('hashtags').value = s ? (s.hashtags || '') : '';
   F('active').checked = s ? s.active : true;
+  // profiles: streams and MP3 playlists only; a new one is Olli's, as everything before
+  $('.profile-fields', form).hidden = !(ed.kind === 'stream' || ed.kind === 'playlist');
+  F('show_olli').checked = s ? s.show_olli !== false : true;
+  F('show_cathy').checked = s ? Boolean(s.show_cathy) : false;
   F('is_playlist').value = s && s.is_playlist ? '1' : '0';
   $('#smapi-id').textContent = !s ? '' : ed.kind === 'deezer' || isYt ? `ID: ${s.smapi_id}`
     : isSc ? `ID: ${s.smapi_id}, eigene Seite in der Web-App: /s/${s.smapi_id}`
@@ -226,6 +230,8 @@ export async function saveStation(e) {
       hashtags: F('hashtags').value,
       active: F('active').checked,
       is_playlist: F('is_playlist').value === '1',
+      show_olli: F('show_olli').checked,
+      show_cathy: F('show_cathy').checked,
       check: ed.probe && ed.probe.url === url ? { ok: ed.probe.ok, info: ed.probe.info, https: ed.probe.https } : null,
     };
     if (!$('.cat-field', form).hidden) data.category_id = Number(F('category_id').value) || null;

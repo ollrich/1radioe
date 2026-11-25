@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-const SCHEMA_VERSION = 10;  // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)  9: origin (1.21)  10: YouTube (1.28)
+const SCHEMA_VERSION = 11;  // 1: stations (1.0)  2: playlists and tracks (1.1)  3: duplicate check (1.2)  4: categories (1.3)  5: listening status (1.5)  6: posting (1.9)  7: now playing (1.10)  8: called addresses (1.10.2)  9: origin (1.21)  10: YouTube (1.28)  11: profiles (1.32)
 
 function db(): PDO
 {
@@ -259,6 +259,18 @@ function db_migrate_locked(): void
             KEY k_pos (list_id, pos),
             KEY k_video (video_id)
         ) $opts");
+    }
+    if ($current < 11) {
+        // 1.32: profiles (app/profiles.php). For whom a stream or MP3 playlist is visible:
+        // everything there was stays Olli's, Cathy's list starts empty.
+        if (!q("SHOW COLUMNS FROM r1_stations LIKE 'show_olli'")->fetch()) {
+            db()->exec('ALTER TABLE r1_stations ADD COLUMN show_olli TINYINT(1) NOT NULL DEFAULT 1 AFTER active, ADD COLUMN show_cathy TINYINT(1) NOT NULL DEFAULT 0 AFTER show_olli');
+        }
+        // whose a key is: Olli's report the listening status and read his playlists,
+        // Cathy's only read hers; every key there was is Olli's
+        if (!q("SHOW COLUMNS FROM r1_listen_devices LIKE 'profile'")->fetch()) {
+            db()->exec("ALTER TABLE r1_listen_devices ADD COLUMN profile VARCHAR(16) NOT NULL DEFAULT 'olli' AFTER kind");
+        }
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {
