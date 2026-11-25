@@ -37,13 +37,14 @@ try {
     header('Cache-Control: no-cache');
     // the format number changes the ETag once when the fields change, so apps that saved the
     // old answer load the new one instead of getting 304 (2: categories carry a description,
-    // 3: positions counted together with the MP3 playlists); the profile is part of it, so a
-    // switch of profiles never gets the other list's 304
-    $format = 3;
+    // 3: positions counted together with the MP3 playlists, 4: category pictures made of the
+    // profile's own entries); the profile is part of it, so a switch of profiles never gets
+    // the other list's 304
+    $format = 4;
     etag_check('"' . $version . '-' . $format . '-' . $profile . '-' . substr(sha1(json_encode($streams)), 0, 12) . '"');
 
-    $base = base_url(1);
-    $rows = stations_all(true);
+    $base   = base_url(1);
+    $inside = catalog_inside($catalog);
     json_out([
         'version'    => $version,
         'profile'    => $profile,
@@ -56,7 +57,7 @@ try {
             'name'        => $c['row']['title'],
             'description' => (string) ($c['row']['description'] ?? ''),
             'sort'        => $c['sort'],
-            'logo'        => json_picture(category_cover($c['row'], $rows)),
+            'logo'        => json_picture(category_cover($c['row'], $inside[(int) $c['row']['id']] ?? [], $profile)),
         ], $catalog['categories']),
         'stations'   => array_map(static fn($e) => [
             'id'          => $e['row']['smapi_id'],

@@ -103,3 +103,17 @@ check('timed out counts', listen_last(), $c['smapi_id']);
 $session($d, $now - 1200, $now - 60, 1);             // inactive station
 check('inactive station does not count', listen_last(), $c['smapi_id']);
 q('DELETE FROM r1_listen_status');
+
+// ---------- ids: readable, unique, never one the system uses itself (#97) ----------
+$root   = station_save(['kind' => 'category', 'title' => 'Root', 'active' => 1]);
+$inRoot = station_save(['kind' => 'stream', 'title' => 'In Root', 'stream_url' => 'https://r.example/r.mp3', 'mime' => 'audio/mpeg', 'active' => 1, 'category_id' => (int) $root['id']]);
+$alpha2 = station_save(['kind' => 'stream', 'title' => 'Alpha FM', 'stream_url' => 'https://a2.example/a.mp3', 'mime' => 'audio/mpeg', 'active' => 1]);
+check('"Root" is not the top level', $root['smapi_id'], 'root-2');
+check('a taken id gets a number', $alpha2['smapi_id'], 'alpha-fm-2');
+$levels = webapp_levels();
+check('its stations in the web app', array_column($levels['root-2'] ?? [], 'id'), [$inRoot['smapi_id']]);
+check('the top level stays the top level', in_array('root-2', array_column($levels['root'], 'id'), true), true);
+check('in Sonos', array_column(sonos_visible(stations_all(true), playlist_stats(), (int) $root['id']), 'smapi_id'), [$inRoot['smapi_id']]);
+foreach ([$inRoot, $root, $alpha2] as $s) {
+    station_delete((int) $s['id']);
+}

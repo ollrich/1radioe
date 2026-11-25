@@ -204,3 +204,46 @@ check('failed sync', [$res, count(youtube_videos($A)), (int) station_find($A)['c
     [['ok' => false, 'info' => 'API-Schlüssel ungültig.'], 3, 0, 'API-Schlüssel ungültig.']);
 // without a key nothing goes out to the network
 check('no key', youtube_sync($A)['info'], 'Kein API-Schlüssel eingetragen.');
+
+// ---------- one sync per playlist at a time (#93) ----------
+$listed = static fn(int $list): array => array_column(youtube_videos($list), 'video_id');
+$kept   = $listed($A);
+// another request holds the lock (a second connection, like a second request)
+$other = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', cfg('db.host'), (int) cfg('db.port'), cfg('db.name')),
+    (string) cfg('db.user'), (string) cfg('db.pass'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$lockName = 'r1_yt_' . $A . '_' . substr(md5((string) cfg('db.name', '')), 0, 12);
+$other->query("SELECT GET_LOCK('$lockName', 0)");
+$asked = 0;
+$res   = youtube_sync($A, static function () use (&$asked): array {
+    $asked++;
+    return ['items' => []];
+}, $get, 1);
+check('busy: left alone, YouTube not asked', [$res, $asked, $listed($A)], [['ok' => false, 'info' => 'Läuft gerade schon, bitte gleich noch einmal.'], 0, $kept]);
+$other->query("SELECT RELEASE_LOCK('$lockName')");
+$other = null;
+check('free again', youtube_sync($A, $api($entries2), $get)['ok'], true);
+
+// ---------- an address changed while YouTube answered: nothing taken over (#93) ----------
+$plOther = 'PLchanged00000000000000000000000000';
+$res = youtube_sync($A, static function (string $endpoint, array $params) use ($A, $api, $entries, $plOther): array {
+    if ($endpoint === 'videos') {   // the admin saves another address meanwhile
+        q('UPDATE r1_stations SET stream_url = ? WHERE id = ?', ["https://www.youtube.com/playlist?list=$plOther", $A]);
+    }
+    return $api($entries)($endpoint, $params);
+}, $get);
+check('changed meanwhile: dropped', [$res, $listed($A), station_find($A)['checked_at']],
+    [['ok' => false, 'info' => 'Während des Abrufs geändert, nichts übernommen.'], $kept, null]);
+q('UPDATE r1_stations SET stream_url = ? WHERE id = ?', ["https://www.youtube.com/playlist?list=$pl", $A]);
+
+// ---------- deleted while the pictures came: nothing stays behind (#93) ----------
+$c = station_save(['kind' => 'youtube', 'title' => 'Dritte', 'stream_url' => 'https://www.youtube.com/playlist?list=PLthird00000000000000000000000000', 'active' => 1]);
+$C = (int) $c['id'];
+$res = youtube_sync($C, $api([['djsItMOfCQA', '2026-12-01T10:00:00Z'], ['s9r5sBZR_cU', '2026-09-16T10:00:00Z']]),
+    static function (string $url) use ($get, $C): ?string {
+        if (station_find($C) !== null) {
+            station_delete($C);   // the admin deletes the playlist while its pictures load
+        }
+        return $get($url);
+    });
+check('deleted meanwhile', [$res, youtube_videos($C)], [['ok' => false, 'info' => 'Während des Abrufs gelöscht.'], []]);
+check('other playlist untouched', $listed($A), $kept);

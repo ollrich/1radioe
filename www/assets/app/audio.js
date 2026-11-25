@@ -164,6 +164,9 @@ function hangUp() {
 
 function failed(code) {
   if (!isPlaying() || isOwn(state.cur)) return;
+  // one failure often comes twice (the error event and the refused play()): the retry that
+  // already waits covers it, counted once; so pausing or another station always stops it
+  if (retryTimer) return;
   // code 4: format or address not playable here, a long retry would not help
   const limit = code === 4 ? 2 : RETRY.length;
   if (state.retry >= limit) {
@@ -231,6 +234,9 @@ export function init() {
 
   audio.addEventListener('playing', () => {
     if (isOwn(state.cur)) return;
+    // it plays (again) by itself: a reconnect that still waits is not needed any more
+    clearTimeout(retryTimer);
+    retryTimer = 0;
     state.retry = 0;
     lastProgress = Date.now();
     setPhase('live');

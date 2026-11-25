@@ -208,7 +208,7 @@ try {
             $saved  = station_save($in, $id);
             // a new YouTube playlist (or another address) fills itself right away
             if ($saved['kind'] === 'youtube' && ($before === null || $before['stream_url'] !== $saved['stream_url'] || $saved['checked_at'] === null)) {
-                youtube_sync((int) $saved['id']);
+                youtube_sync((int) $saved['id'], wait: YOUTUBE_LOCK_WAIT);
                 $saved = station_find((int) $saved['id']);
             }
             json_out(['station' => station_public($saved)]);
@@ -218,7 +218,7 @@ try {
             json_out(['youtube' => youtube_state()]);
 
         case 'POST youtube.sync':
-            $result = youtube_sync((int) $id);
+            $result = youtube_sync((int) $id, wait: YOUTUBE_LOCK_WAIT);
             json_out(['result' => $result, 'station' => station_public(station_find((int) $id) ?? throw new InputError([], 'Nicht gefunden.'))]);
 
         /* ----- Track library ----- */

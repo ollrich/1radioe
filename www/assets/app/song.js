@@ -1,6 +1,6 @@
 // 1radiœ web app: the song from the stream, asked from the server while a station plays.
 
-import { $, $$, NOW_EVERY, isOwn, isPlaying, isYt, phaseText, state } from './core.js';
+import { $, $$, NOW_EVERY, deadline, isOwn, isPlaying, isYt, phaseText, state } from './core.js';
 import { canHover, marquee, setText, stopMarquee, updateIndicators } from './view.js';
 import { ytLine } from './youtube.js';
 import { setMediaMetadata } from './media.js';
@@ -10,7 +10,7 @@ import { setMediaMetadata } from './media.js';
  * read from <audio>. The server reads it (api/nowplaying, cached there), the player
  * asks while it plays. */
 
-export const now = { id: null, track: null, timer: 0 };
+export const now = { id: null, track: null, timer: 0, busy: null };
 
 /** The song of the station in the player, only while it plays. */
 export function currentTrack() {
@@ -51,13 +51,18 @@ export async function pollNow() {
   now.timer = 0;
   const it = state.cur;
   if (!it || state.phase !== 'live' || isOwn(it)) return;
+  // its request is under way and sets the next timer itself: no second one beside it
+  // (a station picked again meanwhile gets its own)
+  if (now.busy === it) return;
+  now.busy = it;
   let track = now.id === it.id ? now.track : null;
   try {
-    const res = await fetch('api/nowplaying?id=' + encodeURIComponent(it.id), { credentials: 'omit' });
+    const res = await fetch('api/nowplaying?id=' + encodeURIComponent(it.id), { credentials: 'omit', signal: deadline() });
     if (res.ok) track = (await res.json()).track || null;
   } catch {
     // offline for a moment: keep what is shown
   }
+  if (now.busy === it) now.busy = null;
   if (state.cur !== it || state.phase !== 'live') return;   // switched or stopped meanwhile
   const changed = now.id !== it.id || trackLine(track) !== trackLine(now.track);
   now.id = it.id;

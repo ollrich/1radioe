@@ -213,6 +213,9 @@ function deezer_url(string $url, bool $follow = true): ?string
     return 'https://www.deezer.com/' . $m[1] . '/' . $m[2];
 }
 
+/** Ids of the system itself: Sonos asks for the top level as "root", the web app keys it so. */
+const SMAPI_RESERVED = ['root'];
+
 /** Builds a readable, unique SMAPI id from a title, e.g. "bbc-radio-1-dance". */
 function station_make_smapi_id(string $title): string
 {
@@ -221,7 +224,8 @@ function station_make_smapi_id(string $title): string
     $slug = trim((string) preg_replace('~[^a-z0-9]+~', '-', $slug), '-');
     $slug = substr($slug !== '' ? $slug : 'station', 0, 40);
     $candidate = $slug;
-    for ($n = 2; station_by_smapi($candidate) !== null; $n++) {
+    // a reserved id counts as taken: a category "Root" becomes "root-2"
+    for ($n = 2; in_array($candidate, SMAPI_RESERVED, true) || station_by_smapi($candidate) !== null; $n++) {
         $candidate = $slug . '-' . $n;
     }
     return $candidate;
@@ -416,25 +420,28 @@ function sonos_visible(array $rows, array $stats, ?int $categoryId): array
 }
 
 /**
- * Picture of a category: its own logo, otherwise a grid of the first four logos inside.
- * Returns a file name in the media folder or null.
+ * Picture of a category: its own logo, otherwise a grid of the first four logos of
+ * $inside, the entries one list shows in it, in its order (catalog_inside(),
+ * sonos_visible()). So a grid never shows what that list leaves out: a station of the
+ * other profile, an MP3 playlist in the web app, SoundCloud in Sonos. $variant names the
+ * list (category_collage): '' Sonos, 'web' the web app, 'olli' and 'cathy' the app,
+ * 'all' the admin. Returns a file name in the media folder or null.
  */
-function category_cover(array $category, array $rows): ?string
+function category_cover(array $category, array $inside, string $variant = ''): ?string
 {
     if ($category['logo'] && is_file(media_dir() . '/' . basename($category['logo']))) {
         return $category['logo'];
     }
     $logos = [];
-    foreach ($rows as $s) {
-        if ((int) ($s['category_id'] ?? 0) === (int) $category['id'] && $s['active'] && $s['logo']
-            && is_file(media_dir() . '/' . basename($s['logo']))) {
+    foreach ($inside as $s) {
+        if ($s['logo'] && is_file(media_dir() . '/' . basename($s['logo']))) {
             $logos[] = basename($s['logo']);
             if (count($logos) === 4) {
                 break;
             }
         }
     }
-    return $logos ? category_collage((int) $category['id'], $logos) : null;
+    return $logos ? category_collage((int) $category['id'], $logos, $variant) : null;
 }
 
 function station_set_active(int $id, bool $active): void
@@ -583,8 +590,10 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
     $stats ??= $s['kind'] === 'playlist' ? playlist_stats() : [];
     $cover   = null;
     if ($s['kind'] === 'category') {
+        // the admin shows everything active inside, whoever sees it
         $rows ??= stations_all();
-        $cover = category_cover($s, $rows);
+        $inside = array_filter($rows, static fn($r) => (int) ($r['category_id'] ?? 0) === (int) $s['id'] && $r['active']);
+        $cover  = category_cover($s, $inside, 'all');
     }
     if ($s['kind'] === 'youtube') {
         $cover = youtube_cover($s);
