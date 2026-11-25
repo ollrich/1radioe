@@ -1,5 +1,17 @@
 # Änderungen
 
+## 1.32.1 (25. November 2026)
+
+Abschließender Audit (Code, Logik, Sicherheit, Leistung):
+
+* Hörstatus und Posting nur für Ollis Sender: Ein Sender, der allein Cathy zugeordnet ist, setzte bisher „Olli hört“, wenn er auf anderem Weg gemeldet wurde (anonym über Sonos mit seiner ID, über Home Assistant mit Stream-Adresse oder Titel), und hätte danach gepostet. Jetzt nimmt `listen_report()` ihn nicht an, `/api/status` (laufend und zuletzt gehört) zeigt ihn nie, und `social_run()` postet nicht für ihn
+* Senderseiten (`/s/<id>`): Die Weiterleitung nimmt nur einen sauberen Pfad dieser Seite, nie `//host` oder `/\host`, die Browser als andere Seite lesen. Über Apache war das praktisch nicht erreichbar, jetzt ist es ausgeschlossen
+* Stream-Test, Logo-Abruf, Posting: Neben privaten und reservierten Netzen ist auch `100.64.0.0/10` (Carrier-NAT) gesperrt, das PHPs Filter durchließ
+* `robots.txt`: `streams.xspf` wie `streams.m3u` ausgenommen
+* Aufgeräumt: `/api/playlists` prüft die Tracks einmal statt zweimal, ein veralteter Kommentar in `app/catalog.php`, `json_logo()` war nur noch eine Hülle
+* Geprüft und in Ordnung: Anmeldung (Passwort, TOTP mit Schutz gegen Wiederverwendung, Sperre nach Fehlversuchen, neue Sitzung beim Anmelden), CSRF bei jedem POST des Admins, Sitzungs-Cookies, Webhook (HMAC, ohne Secret kein Deploy), Schlüssel nur als SHA-256, Zugänge fürs Posting verschlüsselt (libsodium), Uploads (Größe, Sperre, Prüfung als MP3, zufällige Namen, keine Skripte im Medienordner), Text-Filter des Admins (nur erlaubte Tags, Links nur http, https, mailto oder relativ), SOAP ohne DTD, Ausgaben maskiert, keine HTML-Zeichenketten aus Daten in den Skripten, alle Anfragewerte typgeprüft. Lokal auf PHP 8.6 alle Seiten und Schnittstellen abgerufen, auch mit falschen Eingaben: keine Warnung, keine Deprecation
+* Tests: 228 Prüfungen (neu: Adressfilter, Hörstatus nur für Ollis Sender)
+
 ## 1.32.0 (25. November 2026)
 
 * Profile Olli und Cathy (für die Android-App 0.9): Jeder Sender und jede MP3-Playlist hat im Admin zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich; die Kacheln zeigen „+ Cathy“ bzw. „nur Cathy“. Alles Bisherige ist Ollis, Cathys Liste beginnt leer. Ollis Liste bleibt die öffentliche (Web-App, Sonos, `streams.m3u`, `streams.xspf`, `stations.json` ohne Profil), Cathys gibt es nur für die App. Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus, Posting und Datenverarbeitung bleiben Ollis. Neue Spalten `show_olli`, `show_cathy` (Schema 11), legt die App beim nächsten Aufruf selbst an

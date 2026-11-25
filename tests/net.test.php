@@ -37,3 +37,14 @@ foreach ([[[], false], [['HTTPS' => 'on'], true], [['HTTPS' => 'off'], false], [
     check('is_https ' . json_encode($server), is_https(), $want);
 }
 $_SERVER = $keep;
+
+// internal addresses are refused on the server (allow_private_urls is off in the tests)
+foreach (['127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.0.1', '169.254.169.254', '0.0.0.0', '::1', 'fd00::1', 'fe80::1', '::ffff:192.168.0.1', '100.64.0.1', '100.127.255.254'] as $ip) {
+    check("internal address refused: $ip", net_resolve($ip)[0] ?? '', '!');
+}
+foreach (['8.8.8.8', '100.63.255.255', '100.128.0.1', '2001:4860:4860::8888'] as $ip) {
+    check("public address allowed: $ip", net_resolve($ip), $ip);
+}
+check('shared range start', net_shared_range('100.64.0.0'), true);
+check('shared range end', net_shared_range('100.127.255.255'), true);
+check('shared range outside', [net_shared_range('100.63.255.255'), net_shared_range('100.128.0.0'), net_shared_range('::1')], [false, false, false]);

@@ -113,6 +113,19 @@ check('positions only with playlists asked for', array_column(public_catalog()['
 check('Sonos with playlists', array_map(static fn($s) => $s['title'], sonos_visible(stations_all(true), playlist_stats(), null)),
     ['Für beide', 'Nur Olli', 'Liste für beide', 'Liste Olli']);
 
+// the listening status is Olli's: a station of Cathy's alone never counts (audit 1.32.1)
+check('status for Cathy alone refused', listen_report(station_find((int) $cathy['id']), true), false);
+check('status for both', listen_report(station_find((int) $both['id']), true), true);
+check('only Olli\'s playing', listen_active(), [$both['smapi_id']]);
+// a session of Cathy's station from before (or by another way into the table) stays out
+$t0 = time();
+q('INSERT INTO r1_listen_status (station_id, last_seen, stopped, since, posted_since) VALUES (?, ?, 0, ?, 0)', [(int) $cathy['id'], $t0, $t0 - 60]);
+check('Cathy alone never playing', listen_active(), [$both['smapi_id']]);
+q('UPDATE r1_listen_status SET stopped = 1, last_seen = ?, since = ? WHERE station_id = ?', [$t0, $t0 - 3600, (int) $cathy['id']]);
+q('UPDATE r1_listen_status SET stopped = 1, last_seen = ?, since = ? WHERE station_id = ?', [$t0 - 600, $t0 - 4000, (int) $both['id']]);
+check('Cathy alone never heard last', listen_last(), $both['smapi_id']);
+q('DELETE FROM r1_listen_status');
+
 // keys: every profile reads its own playlists with its own key, only Olli's reports
 $keyOlli  = listen_device_create('Ollis Handy', 'app');
 $keyCathy = listen_device_create('Cathys Handy', 'app', 'cathy');

@@ -84,7 +84,7 @@ function json_picture(?string $file): ?array
 function playlists_api(string $profile): array
 {
     $catalog = public_catalog(false, $profile, true);
-    $tracks  = playlists_playable();
+    $tracks  = $catalog['playable'];
     $out     = [];
     foreach ($catalog['playlists'] as $e) {
         $p     = $e['row'];
