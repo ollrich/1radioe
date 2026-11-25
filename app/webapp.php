@@ -166,9 +166,9 @@ function webapp_prefers_german(): bool
 function webapp_strings(string $lang): array
 {
     $de = [
-        'title'       => '1radiœ · Ollis Radio, Mixe und Konzerte',
+        'title'       => '1radiœ · Ollis Lieblingsmusik',
         'description' => 'Ollis persönliche Auswahl an Internetradios, von FIP bis BBC Radio 1, dazu DJ-Mixe und Konzerte. Alles im Browser, das Radio auch auf Sonos und in VLC. Ohne Tracking.',
-        'h1'          => '1radiœ: Ollis Radio, Mixe und Konzerte',
+        'h1'          => '1radiœ: Ollis Lieblingsmusik',
         'menu'        => 'Menü',
         'menu_open'   => 'Menü öffnen',
         'pages'       => 'Seiten',
@@ -220,9 +220,9 @@ function webapp_strings(string $lang): array
         'close_player' => 'Player schließen',
     ];
     $en = [
-        'title'       => "1radiœ · Ollie's radio, mixes and concerts",
+        'title'       => "1radiœ · Ollie's favorite music",
         'description' => "Ollie's personal selection of internet radio stations, from FIP to BBC Radio 1, plus DJ mixes and concerts. All in the browser, the radio also on Sonos and in VLC. No tracking.",
-        'h1'          => "1radiœ: Ollie's radio, mixes and concerts",
+        'h1'          => "1radiœ: Ollie's favorite music",
         'menu'        => 'Menu',
         'menu_open'   => 'Open menu',
         'pages'       => 'Pages',

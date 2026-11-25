@@ -87,6 +87,12 @@ function tile(s) {
     }
   }
   if (!s.active) a.append(el('span', 'badge', 'inaktiv'));
+  // profiles: what Cathy sees too, or only she
+  if (s.show_cathy) {
+    const who = el('span', 'badge', s.show_olli ? '+ Cathy' : 'nur Cathy');
+    who.title = s.show_olli ? 'Auch in Cathys App' : 'Nur in Cathys App, nicht in Web-App, Sonos und Playlist-Dateien';
+    a.append(who);
+  }
   t.append(a, el('span', 'tile-name', s.title));
   const open = () => {
     if (s.kind === 'playlist') location.hash = '#playlist/' + s.id;

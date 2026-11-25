@@ -8,6 +8,9 @@
  * category hides its streams, like in Sonos. The web app also asks for SoundCloud
  * tracks, Deezer links and YouTube playlists ($webapp), the playlist file and
  * stations.json do not.
+ *
+ * Profiles (app/profiles.php): everything public is Olli's; Cathy's list exists only
+ * for the Android app (stations.json and /api/playlists with ?profile=cathy).
  */
 declare(strict_types=1);
 
@@ -18,39 +21,55 @@ declare(strict_types=1);
  * Category entries: ['row' => category row, 'sort' => position on the top level,
  *   'youtube' => true for a YouTube playlist, whose videos are in r1_youtube_videos]
  *   (top-level streams and categories share one sequence of positions).
+ * Playlist entries ($playlists, for the app): like stations, MP3 playlists that can play
+ *   (active, with at least one track whose file exists). They take their places in the
+ *   same sequence, so stations.json and /api/playlists number one list.
  * Stations come in listening order: what Sonos shows, categories opened in place.
+ * $profile: whose list (app/profiles.php); a category appears only with something in it.
  */
-function public_catalog(bool $webapp = false): array
+function public_catalog(bool $webapp = false, string $profile = PROFILE_DEFAULT, bool $playlists = false): array
 {
     $kinds    = $webapp ? ['stream', 'soundcloud', 'deezer'] : ['stream'];
+    $playable = $playlists ? playlists_playable() : [];
     $byParent = [];
     foreach (stations_all(true) as $r) {
+        if ($r['kind'] !== 'category' && !profile_visible($r, $profile)) {
+            continue;
+        }
         $byParent[$r['category_id'] !== null ? (int) $r['category_id'] : 0][] = $r;
     }
+    $isPlaylist = static fn(array $r): bool => $playlists && $r['kind'] === 'playlist' && isset($playable[(int) $r['id']]);
     $stations   = [];
     $categories = [];
+    $lists      = [];
     $pos        = 0;
     $videos     = null;
     foreach ($byParent[0] ?? [] as $r) {
         if (in_array($r['kind'], $kinds, true)) {
             $stations[] = ['row' => $r, 'category' => null, 'sort' => ++$pos];
+        } elseif ($isPlaylist($r)) {
+            $lists[] = ['row' => $r, 'category' => null, 'sort' => ++$pos];
         } elseif ($webapp && $r['kind'] === 'youtube') {
             $videos ??= youtube_counts();
             if (($videos[(int) $r['id']] ?? 0) > 0) {
                 $categories[] = ['row' => $r, 'sort' => ++$pos, 'youtube' => true];
             }
         } elseif ($r['kind'] === 'category') {
-            $inner = array_values(array_filter($byParent[(int) $r['id']] ?? [], static fn($x) => in_array($x['kind'], $kinds, true)));
+            $inner = array_values(array_filter($byParent[(int) $r['id']] ?? [], static fn($x) => in_array($x['kind'], $kinds, true) || $isPlaylist($x)));
             if (!$inner) {
                 continue;   // empty, or holds nothing for this list
             }
             $categories[] = ['row' => $r, 'sort' => ++$pos];
             foreach ($inner as $i => $x) {
-                $stations[] = ['row' => $x, 'category' => $r, 'sort' => $i + 1];
+                if ($x['kind'] === 'playlist') {
+                    $lists[] = ['row' => $x, 'category' => $r, 'sort' => $i + 1];
+                } else {
+                    $stations[] = ['row' => $x, 'category' => $r, 'sort' => $i + 1];
+                }
             }
         }
     }
-    return ['stations' => $stations, 'categories' => $categories];
+    return ['stations' => $stations, 'categories' => $categories, 'playlists' => $lists];
 }
 
 /** True if the address can be played from an HTTPS page. */

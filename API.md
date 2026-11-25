@@ -1,17 +1,27 @@
 # 1radiœ: Schnittstellen für eine App
 
-Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.30.2, 20. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
+Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https://1radioe.net` braucht. Stand 1.32.0, 25. November 2026. Alle Antworten sind JSON in UTF-8, alle Adressen HTTPS.
 
 ## Überblick
 
 | Adresse | Methode | Wofür |
 |---|---|---|
-| `/api/stations.json` | GET | Sender, Kategorien, Logos, Stream-Adressen |
+| `/api/stations.json` | GET | Sender, Kategorien, Logos, Stream-Adressen; `?profile=cathy` für Cathys Liste |
+| `/api/playlists` | GET | MP3-Playlists mit ihren Tracks; Olli mit Schlüssel, Cathy mit `?profile=cathy` ohne |
 | `/api/status` | GET | welche Sender Ollie gerade hört (die Balken) und welchen zuletzt |
 | `/api/nowplaying?id=<id>` | GET | laufender Song eines Senders |
 | `/api/listen` | POST | die App meldet: Ollie hört diesen Sender, oder nicht mehr |
 
 `stations.json` nennt die übrigen Adressen selbst (`status_url`, `nowplaying_url`, `listen_url`). Die App sollte sie von dort nehmen und nicht fest einbauen.
+
+## Profile: Olli und Cathy (seit 1.32.0)
+
+* **Olli** ist der Standard: ohne `profile` (oder mit `?profile=olli`) kommt seine Liste, dieselbe wie in Web-App, Sonos und den Playlist-Dateien.
+* **Cathy:** `?profile=cathy` an `stations.json` und `playlists`. Ihre Liste gibt es nur für die App, nicht in der öffentlichen Web-App, nicht in Sonos und nicht in `streams.m3u`/`streams.xspf`. Kein Schlüssel nötig.
+* **Unbekanntes Profil:** `400` mit `{"error": "unknown profile", "profiles": ["olli", "cathy"]}`, nie stillschweigend Ollis Liste.
+* **Zuordnung:** Im Admin hat jeder Sender und jede MP3-Playlist zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich. Kategorien folgen ihrem Inhalt: Eine Kategorie erscheint in einem Profil nur, wenn sie dort sichtbare Sender oder Playlists hat. Die Track-Bibliothek ist gemeinsam, ein Track ist über seine Playlists sichtbar.
+* **Antwort:** gleiches Format für beide Profile, dazu `"profile": "olli"` bzw. `"cathy"`. Der `ETag` enthält das Profil, nach einem Wechsel bekommt die App also nie ein `304` für die andere Liste. Logo- und Cover-Adressen sind für beide Profile gleich.
+* **Hörstatus:** nur Olli. Cathys App meldet nichts (`/api/listen` und `/api/status` bleiben unverändert).
 
 ## Sender: `GET /api/stations.json`
 
@@ -44,14 +54,56 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 ```
 
 * **`id`** ist dauerhaft (es ist die SMAPI-ID, die auch Sonos in Favoriten speichert). Damit merkt sich die App Favoriten und meldet den Hörstatus.
-* **Reihenfolge und Ebenen:** wie im Admin und in Sonos. `category` ist `null` (oberste Ebene) oder die `id` einer Kategorie. `sort` zählt innerhalb der Ebene ab 1: Sender ohne Kategorie und Kategorien teilen sich die Plätze der obersten Ebene, die Sender einer Kategorie zählen darin neu ab 1. Eine Kategorie erscheint nur, wenn sie aktive Sender hat.
+* **Reihenfolge und Ebenen:** wie im Admin und in Sonos. `category` ist `null` (oberste Ebene) oder die `id` einer Kategorie. `sort` zählt innerhalb der Ebene ab 1: Sender ohne Kategorie, Kategorien und MP3-Playlists teilen sich die Plätze der obersten Ebene, Sender und Playlists einer Kategorie zählen darin neu ab 1. Die Plätze der Playlists stehen in `/api/playlists`; in `stations.json` fehlen sie, dort hat `sort` also Lücken (seit 1.32.0). Die App sortiert nach `sort` und nummeriert selbst. Eine Kategorie erscheint nur, wenn sie aktive Sender oder Playlists des Profils hat.
 * **`streams`**: bisher immer genau einer. `format` ist der MIME-Typ (`audio/mpeg`, `audio/aac`, `application/ogg`, `application/vnd.apple.mpegURL` für HLS, `audio/flac`). `.pls` und `.m3u` sind schon zur Stream-Adresse aufgelöst. `https: false` heißt: nur per HTTP erreichbar.
 * **Umleitungen:** Viele Streams leiten weiter, FluxFM etwa bei jedem Abruf auf einen anderen Server. Die App spielt immer die Adresse aus `stations.json`, nie eine umgeleitete, die sie sich gemerkt hat.
 * **`logo`**: 600 × 600 px, JPEG oder PNG, oder `null`. Der Dateiname ändert sich mit jedem neuen Logo, `sha256` erlaubt einen Abgleich ohne Download. Kategorien ohne eigenes Bild haben ein Raster aus vier Logos.
 * **`description`** gibt es bei Sendern und (seit 1.30.2) bei Kategorien, die App zeigt sie unter dem Namen wie die Web-App. Leer, wenn nichts eingetragen ist.
 * **`description`, `website`, `country`, `city`**: leer bzw. `null`, wenn nichts eingetragen ist. `country` ist ein ISO-3166-Code (`GB`, `FR`, `DE`), den Namen setzt die App in ihrer Sprache ein.
-* **Nicht enthalten:** MP3-Playlists und Tracks (nur für Sonos), SoundCloud-Einträge, Deezer-Links und YouTube-Playlists (nur in der Web-App, ihre Bedingungen erlauben kein Abspielen in einer Radio-App, YouTube keinen Ton ohne Bild).
+* **Nicht enthalten:** MP3-Playlists und Tracks (die kommen aus `/api/playlists`), SoundCloud-Einträge, Deezer-Links und YouTube-Playlists (nur in der Web-App, ihre Bedingungen erlauben kein Abspielen in einer Radio-App, YouTube keinen Ton ohne Bild).
 * **Zwischenspeichern:** Die Antwort trägt `Cache-Control: no-cache` und einen `ETag`. Mit `If-None-Match: <etag>` kommt `304 Not Modified`, solange sich nichts geändert hat. `version` ändert sich bei jeder Änderung im Admin.
+
+## MP3-Playlists: `GET /api/playlists`
+
+Ollis Playlists nur mit Schlüssel (Header `X-1radioe-Token`, derselbe wie für `/api/listen`), weil die Liste die direkten Adressen der MP3-Dateien nennt. Ohne oder mit ungültigem Schlüssel: `401` mit `{"error": "key required"}`. Cathys mit `?profile=cathy`, ohne Schlüssel.
+
+```json
+{
+  "version": "d4cefb1f",
+  "profile": "olli",
+  "generated": "2026-11-25T14:03:13+01:00",
+  "playlists": [
+    {
+      "id": "lieblingsalben",
+      "name": "Lieblingsalben",
+      "description": "…",
+      "category": null,
+      "sort": 3,
+      "cover": { "url": "https://1radioe.net/media/….jpg", "sha256": "…", "size": 600 },
+      "tracks": [
+        {
+          "id": "track:12",
+          "title": "Genesis",
+          "artist": "Justice",
+          "album": null,
+          "duration": 233,
+          "url": "https://1radioe.net/media/tracks/….mp3",
+          "cover": { "url": "https://1radioe.net/media/….jpg", "sha256": "…", "size": 600 }
+        }
+      ]
+    }
+  ]
+}
+```
+
+* **`id`** der Playlist ist ihre dauerhafte SMAPI-ID, die eines Tracks `track:<Nummer>` wie in Sonos.
+* **`category` und `sort`:** in derselben Zählung wie die Sender in `stations.json` desselben Profils. Mit beiden Antworten zusammen ergibt sich die Reihenfolge von Sonos.
+* **Enthalten** sind aktive Playlists des Profils mit mindestens einem Track, dessen Datei vorhanden ist; Tracks ohne Datei fehlen. Leere Playlists fehlen ganz, wie in Sonos.
+* **`artist`, `album`**: `null`, wenn leer. `duration` in Sekunden.
+* **`cover`** der Playlist und der Tracks wie `logo` in `stations.json`, oder `null`. Ein Track ohne eigenes Cover nimmt das Cover der Playlist.
+* **`url`**: die MP3-Datei direkt, gestreamt, kein Download nötig. Die Dateinamen sind zufällig und bleiben gleich.
+* **Zwischenspeichern:** `Cache-Control: no-cache`, `ETag` aus dem Inhalt selbst (mit Profil). Jede Änderung, auch an einem Track, gibt einen neuen.
+* **Hörstatus:** Tracks werden nicht gemeldet.
 
 ## Hörstatus lesen: `GET /api/status`
 

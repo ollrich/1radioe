@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.32.0 (25. November 2026)
+
+* Profile Olli und Cathy (für die Android-App 0.9): Jeder Sender und jede MP3-Playlist hat im Admin zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich; die Kacheln zeigen „+ Cathy“ bzw. „nur Cathy“. Alles Bisherige ist Ollis, Cathys Liste beginnt leer. Ollis Liste bleibt die öffentliche (Web-App, Sonos, `streams.m3u`, `streams.xspf`, `stations.json` ohne Profil), Cathys gibt es nur für die App. Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus, Posting und Datenverarbeitung bleiben Ollis. Neue Spalten `show_olli`, `show_cathy` (Schema 11), legt die App beim nächsten Aufruf selbst an
+* `stations.json?profile=cathy`, ohne Schlüssel. Unbekanntes Profil: 400. Der ETag enthält das Profil. `sort` zählt jetzt zusammen mit den MP3-Playlists (Lücken, wo eine Playlist steht), Format 3
+* Neu `/api/playlists` (Plan 0.8 der App): Playlists mit Tracks (Titel, Interpret, Album, Dauer, MP3-Adresse, Cover), in derselben Zählung wie die Sender. Ollis nur mit Schlüssel (401 ohne), Cathys mit `?profile=cathy` ohne. Leere Playlists und Tracks ohne Datei fehlen, wie in Sonos. ETag aus dem Inhalt
+* Seitentitel: „1radiœ · Ollis Lieblingsmusik“ bzw. „1radiœ · Ollie's favorite music“ statt „Radio, Mixe und Konzerte“
+* Tests: neue Gruppe `profiles` (Zuordnung, Speichern und Prüfen im Admin, Listen beider Profile in Web-App, Sonos, XSPF und Katalog, Kategorien nach Inhalt, Playlists mit Tracks, gemeinsame Zählung). 190 Prüfungen
+
 ## 1.31.1 (20. November 2026)
 
 * Admin, System: Die öffentlichen Adressen nennen jetzt auch die Playlist für Eter (`/streams.xspf`)

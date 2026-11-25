@@ -30,6 +30,7 @@ Options -Indexes -MultiViews
     RewriteRule ^api/listen$ api/listen.php [L]
     RewriteRule ^api/nowplaying$ api/nowplaying.php [L]
     RewriteRule ^api/stations\.json$ api/stations.php [L]
+    RewriteRule ^api/playlists$ api/playlists.php [L]
     RewriteRule ^streams\.m3u$ playlist.php [L]
     RewriteRule ^streams\.xspf$ xspf.php [L]
     # gone since 1.13.0: the PLS list and the playlist of a single station

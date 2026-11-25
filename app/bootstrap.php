@@ -17,7 +17,7 @@
 declare(strict_types=1);
 
 const APP_NAME    = '1radiœ';
-const APP_VERSION = '1.31.1';
+const APP_VERSION = '1.32.0';
 const CONFIG_DIR  = '1radioe-private';
 define('APP_ROOT', dirname(__DIR__));
 define('WEB_ROOT', APP_ROOT . '/www');
@@ -35,6 +35,7 @@ require __DIR__ . '/listen.php';
 require __DIR__ . '/social.php';
 require __DIR__ . '/nowplaying.php';
 require __DIR__ . '/catalog.php';
+require __DIR__ . '/profiles.php';
 require __DIR__ . '/youtube.php';
 require __DIR__ . '/texts.php';
 require __DIR__ . '/brand.php';

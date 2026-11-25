@@ -249,6 +249,14 @@ function station_save(array $in, ?int $id = null): array
     // origin (1.21): ISO country code and city, for streams and SoundCloud; kept when not sent
     $country     = array_key_exists('country', $in) ? strtoupper(trim((string) $in['country'])) : (string) ($existing['country'] ?? '');
     $city        = array_key_exists('city', $in) ? clean_text((string) $in['city']) : (string) ($existing['city'] ?? '');
+    // profiles (1.32, app/profiles.php): streams and MP3 playlists say for whom they are
+    // visible, kept when not sent; everything else is Olli's alone
+    $showOlli    = array_key_exists('show_olli', $in) ? (!empty($in['show_olli']) ? 1 : 0) : (int) ($existing['show_olli'] ?? 1);
+    $showCathy   = array_key_exists('show_cathy', $in) ? (!empty($in['show_cathy']) ? 1 : 0) : (int) ($existing['show_cathy'] ?? 0);
+    if (!in_array($kind, ['stream', 'playlist'], true)) {
+        $showOlli  = 1;
+        $showCathy = 0;
+    }
     if ($kind !== 'stream') {
         // playlists, categories, SoundCloud and Deezer have no stream and no website of
         // their own; SoundCloud and Deezer keep their address, but never post (no listening status)
@@ -311,6 +319,9 @@ function station_save(array $in, ?int $id = null): array
     if (!isset(MIME_TYPES[$mime])) {
         $errors['mime'] = 'Bitte ein Format wählen oder den Stream testen.';
     }
+    if ($showOlli === 0 && $showCathy === 0) {
+        $errors['show_olli'] = 'Bitte mindestens ein Profil wählen, sonst sieht ihn niemand.';
+    }
     // category: kept as it is when the field is not sent, categories themselves never nest
     // (nor do YouTube playlists, which are stacks of their own)
     $categoryId = $existing !== null && $existing['category_id'] !== null ? (int) $existing['category_id'] : null;
@@ -333,15 +344,15 @@ function station_save(array $in, ?int $id = null): array
         : null;
 
     if ($id === null) {
-        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, country, city, social, hashtags, stream_url, mime, is_playlist, active, sort, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, station_next_sort(), now_sql(), now_sql(),
+        q('INSERT INTO r1_stations (smapi_id, kind, category_id, title, description, website, country, city, social, hashtags, stream_url, mime, is_playlist, active, show_olli, show_cathy, sort, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            station_make_smapi_id($title), $kind, $categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, $showOlli, $showCathy, station_next_sort(), now_sql(), now_sql(),
         ]);
         $id = (int) db()->lastInsertId();
     } else {
         $old = $existing ?? throw new InputError([], 'Sender nicht gefunden.');
-        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, country = ?, city = ?, social = ?, hashtags = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, updated_at = ? WHERE id = ?',
-            [$categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, now_sql(), $id]);
+        q('UPDATE r1_stations SET category_id = ?, title = ?, description = ?, website = ?, country = ?, city = ?, social = ?, hashtags = ?, stream_url = ?, mime = ?, is_playlist = ?, active = ?, show_olli = ?, show_cathy = ?, updated_at = ? WHERE id = ?',
+            [$categoryId, $title, $description, $website, $country, $city, $social, $hashtags, $url, $mime, $isPlaylist, $active, $showOlli, $showCathy, now_sql(), $id]);
         if (($old['category_id'] !== null ? (int) $old['category_id'] : null) !== $categoryId) {
             q('UPDATE r1_stations SET sort = ? WHERE id = ?', [station_next_sort(), $id]);   // moved: goes to the end
         }
@@ -379,7 +390,7 @@ function stations_assign(?int $categoryId, array $ids): void
 /**
  * The entries Sonos shows at the top level ($categoryId null) or inside a category:
  * active, playlists only with tracks, categories only with something to show,
- * never SoundCloud, Deezer or YouTube (web app only).
+ * never SoundCloud, Deezer or YouTube (web app only), never Cathy's alone (Sonos is Olli's).
  * $rows: stations_all() in display order, $stats: playlist_stats().
  */
 function sonos_visible(array $rows, array $stats, ?int $categoryId): array
@@ -389,6 +400,9 @@ function sonos_visible(array $rows, array $stats, ?int $categoryId): array
         $in = $s['category_id'] !== null ? (int) $s['category_id'] : null;
         if (!$s['active'] || $in !== $categoryId || in_array($s['kind'], ['soundcloud', 'deezer', 'youtube'], true)) {
             continue;
+        }
+        if ($s['kind'] !== 'category' && !profile_visible($s, 'olli')) {
+            continue;   // Cathy's alone: only in her app
         }
         if ($s['kind'] === 'playlist' && ($stats[(int) $s['id']]['tracks'] ?? 0) === 0) {
             continue;
@@ -590,6 +604,8 @@ function station_public(array $s, ?array $stats = null, ?array $rows = null): ar
         'country'     => (string) ($s['country'] ?? ''),
         'city'        => (string) ($s['city'] ?? ''),
         'social'      => (int) ($s['social'] ?? 1) === 1,
+        'show_olli'   => profile_visible($s, 'olli'),
+        'show_cathy'  => profile_visible($s, 'cathy'),
         'hashtags'    => (string) ($s['hashtags'] ?? ''),
         'stream_url'  => $s['stream_url'],
         'mime'        => $s['mime'],

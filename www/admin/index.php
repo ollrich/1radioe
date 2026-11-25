@@ -538,6 +538,12 @@ render_page('Sender', <<<HTML
         <label>Beschreibung <small class="muted" id="desc-count"></small><textarea name="description" maxlength="500" rows="3"></textarea><small class="err" data-err="description"></small></label>
         <label class="cat-field">Kategorie<select name="category_id" id="category-select"></select><small class="muted">Ohne Kategorie steht der Eintrag in Sonos direkt in der Liste.</small><small class="err" data-err="category_id"></small></label>
         <label class="switch"><input type="checkbox" name="active" checked><span id="active-label">Aktiv, in Sonos sichtbar</span></label>
+        <div class="profile-fields">
+          <p class="field-title">Sichtbar für</p>
+          <label class="switch"><input type="checkbox" name="show_olli" checked><span>Olli <small class="muted">Web-App, Sonos, Playlist-Dateien und die App</small></span></label>
+          <label class="switch"><input type="checkbox" name="show_cathy"><span>Cathy <small class="muted">nur in ihrer App</small></span></label>
+          <small class="err" data-err="show_olli"></small>
+        </div>
         <input type="hidden" name="is_playlist" value="0">
         <p class="muted small" id="smapi-id"></p>
       </div>
