@@ -24,14 +24,15 @@ function webapp_levels(): array
             $levels[$e['category']['smapi_id']][] = $item;
         }
     }
-    $rows = $catalog['categories'] ? stations_all(true) : [];
+    $inside = catalog_inside($catalog);
     foreach ($catalog['categories'] as $c) {
         $id    = $c['row']['smapi_id'];
         $isYt  = !empty($c['youtube']);
         if ($isYt) {
             $levels[$id] = webapp_youtube($c['row']);
         }
-        $cover = $isYt ? youtube_cover($c['row']) : category_cover($c['row'], $rows);
+        // a grid of what the web app shows inside, a file of its own (category_cover)
+        $cover = $isYt ? youtube_cover($c['row']) : category_cover($c['row'], $inside[(int) $c['row']['id']] ?? [], 'web');
         $root[$c['sort']] = [
             'id'     => $id,
             'type'   => 'category',

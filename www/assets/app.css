@@ -85,10 +85,11 @@ button svg, a svg, label svg { fill: currentColor; flex: none; }
 .listen-switch:hover { background: var(--hl); }
 .listen-switch[aria-pressed="false"] .pill i { animation: none; transform: scaleY(.3); opacity: .5; }
 main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 48px; }
-/* only without JavaScript (nojs.css shows it), the menu has these links */
-/* with JavaScript only the keys at the right edge, the links are in the menu (nojs.css shows them) */
+/* with JavaScript only the keys at the right edge, the links are in the menu (nojs.css shows them);
+   a page without stations shows them too (index.php, foot-links) */
 .foot { display: flex; justify-content: flex-end; align-items: center; gap: 20px; font-size: 13px; }
 .foot a { display: none; }
+.foot.foot-links a { display: inline; }
 .foot a { color: var(--muted); text-underline-offset: 3px; padding: 12px 0; }
 .notice { text-align: center; color: var(--muted); }
 .menu-btn {

@@ -275,8 +275,9 @@ $js = $root . 'assets/v' . $v . '/';
 <?php endif; ?>
   </main>
 
-  <!-- the links only without JavaScript (the menu has them), the keys only with it and a keyboard -->
-  <footer class="foot">
+  <!-- the links only without JavaScript (the menu has them), the keys only with it and a keyboard;
+       without stations (no player) the links stay, also for a browser whose script did not start -->
+  <footer class="foot<?= $levels === null || !$levels['root'] ? ' foot-links' : '' ?>">
     <a href="#impressum"><?= h($L['impressum']) ?></a>
     <a href="#datenverarbeitung"><?= h($L['datenverarbeitung']) ?></a>
     <a href="<?= h($langLinks[$lang === 'de' ? 'en' : 'de']) ?>"><?= $lang === 'de' ? 'English' : 'Deutsch' ?></a>

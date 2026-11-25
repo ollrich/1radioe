@@ -24,6 +24,7 @@ const YOUTUBE_API        = 'https://www.googleapis.com/youtube/v3/';
 const YOUTUBE_MAX_VIDEOS = 500;           // ten pages of the API
 const YOUTUBE_EVERY      = 86400;         // sync once a day
 const YOUTUBE_RETRY      = 3600;          // after a failed sync
+const YOUTUBE_LOCK_WAIT  = 30;            // the admin waits this long for a sync that runs (youtube_sync)
 const YOUTUBE_IMAGE_AGE  = 25 * 86400;    // pictures are fetched again before YouTube's 30 days
 const YOUTUBE_IMAGE_W    = 640;           // the picture in the player (16:9)
 const YOUTUBE_IMAGE_H    = 360;
@@ -306,10 +307,29 @@ function youtube_image_remove(?string $file): void
  * Fetches the playlist and brings the stored videos up to date: new ones in, the gone
  * ones out (with their pictures), order and titles as on YouTube. A failure keeps the
  * last list and is shown in the admin. Returns ['ok' => bool, 'info' => text].
+ *
+ * One sync per playlist at a time, the daily one and one from the admin alike. The daily
+ * one ($wait 0) leaves a playlist that is syncing, the admin waits up to $wait seconds
+ * for it (YOUTUBE_LOCK_WAIT). The database frees the lock when the request ends, also
+ * after an error, so it never stays.
  */
-function youtube_sync(int $listId, ?callable $api = null, ?callable $get = null): array
+function youtube_sync(int $listId, ?callable $api = null, ?callable $get = null, int $wait = 0): array
 {
     @set_time_limit(300);
+    $lock = 'r1_yt_' . $listId . '_' . substr(md5((string) cfg('db.name', '')), 0, 12);
+    if ((int) q('SELECT GET_LOCK(?, ?)', [$lock, $wait])->fetchColumn() !== 1) {
+        return ['ok' => false, 'info' => 'Läuft gerade schon, bitte gleich noch einmal.'];
+    }
+    try {
+        return youtube_sync_run($listId, $api, $get);
+    } finally {
+        q('SELECT RELEASE_LOCK(?)', [$lock]);
+    }
+}
+
+/** The sync itself, under the lock of youtube_sync(). */
+function youtube_sync_run(int $listId, ?callable $api, ?callable $get): array
+{
     $row = station_find($listId);
     if ($row === null || $row['kind'] !== 'youtube') {
         return ['ok' => false, 'info' => 'Nicht gefunden.'];
@@ -320,6 +340,14 @@ function youtube_sync(int $listId, ?callable $api = null, ?callable $get = null)
     } catch (YoutubeError $e) {
         station_set_check($listId, false, $e->getMessage());
         return ['ok' => false, 'info' => $e->getMessage()];
+    }
+    // The playlist may have changed while YouTube answered: another address in the admin
+    // (whose own sync waits for this one) or deleted. The answer belongs to the old address
+    // then: dropped, and the playlist is due again, in case nobody syncs the new one.
+    $current = station_find($listId);
+    if ($current === null || $current['stream_url'] !== $row['stream_url']) {
+        q('UPDATE r1_stations SET checked_at = NULL WHERE id = ?', [$listId]);
+        return ['ok' => false, 'info' => 'Während des Abrufs geändert, nichts übernommen.'];
     }
 
     $old = [];
@@ -356,6 +384,10 @@ function youtube_sync(int $listId, ?callable $api = null, ?callable $get = null)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE title = ?, channel = ?, added_at = ?, duration = ?, pos = ?, image = ?, image_at = ?',
             [$listId, $v['video_id'], ...$set, ...$set]);
+    }
+    if (station_find($listId) === null) {
+        youtube_forget($listId);   // deleted while the pictures came: take back what was written
+        return ['ok' => false, 'info' => 'Während des Abrufs gelöscht.'];
     }
     $n    = count($videos);
     $info = ($n === 1 ? '1 Video' : $n . ' Videos')

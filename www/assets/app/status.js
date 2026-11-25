@@ -1,18 +1,21 @@
 // 1radiœ web app: Ollie's listening status (the bars, "Zuletzt von Olli gehört") and,
 // in his own browser, reporting what he listens to.
 
-import { $, $$, STATUS_EVERY, T, data, isPlaying, items, state } from './core.js';
+import { $, $$, STATUS_EVERY, T, data, deadline, items, state } from './core.js';
 import { setText, updateIndicators } from './view.js';
 import { play } from './audio.js';
 
 /* ---------- Listening status ---------- */
 
 let statusTimer = 0;
+let statusBusy = false;
 export async function pollStatus() {
   clearTimeout(statusTimer);
-  if (document.hidden) return;
+  // one request at a time: the one under way brings the news and sets the next timer
+  if (document.hidden || statusBusy) return;
+  statusBusy = true;
   try {
-    const res = await fetch('api/status', { cache: 'no-store', headers: { Accept: 'application/json' } });
+    const res = await fetch('api/status', { cache: 'no-store', headers: { Accept: 'application/json' }, signal: deadline() });
     if (res.ok) {
       const json = await res.json();
       state.active = new Set(Array.isArray(json.active) ? json.active : []);
@@ -21,6 +24,7 @@ export async function pollStatus() {
       renderLastHeard();
     }
   } catch { /* offline: keep the last state */ }
+  statusBusy = false;
   statusTimer = setTimeout(pollStatus, STATUS_EVERY);
 }
 
@@ -85,7 +89,11 @@ export function listenStart() {
   }
   report(listen.id, true);
   clearInterval(listen.timer);
-  listen.timer = setInterval(() => { if (listen.id && isPlaying()) report(listen.id, true); }, (data.interval || 60) * 1000);
+  // only while it really plays: reconnecting does not count as listening. One beat missed
+  // while the stream buffers is no gap, the server keeps a station playing for 150 seconds
+  // (LISTEN_TTL, more than two beats). A longer outage ends the session there by itself;
+  // once the stream plays again, setPhase('live') reports at once and the beats go on.
+  listen.timer = setInterval(() => { if (listen.id && state.phase === 'live') report(listen.id, true); }, (data.interval || 60) * 1000);
 }
 
 export function listenStop(beacon) {

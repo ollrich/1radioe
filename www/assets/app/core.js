@@ -30,6 +30,8 @@ export const { levels } = data || { levels: {} };
 export const SLOT = 88;                                         // width of a place on the scale, as in CSS
 export const RETRY = [1, 2, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10];   // seconds between reconnects
 export const STATUS_EVERY = 30000;
+// a request to this server that hangs gives up after this long, so the next one can follow
+export const deadline = (ms = 15000) => (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
 // texts in the page's language (index.php, webapp_script_strings); German if missing
 export const T = Object.assign({
   listening: 'Olli hört gerade', listeningTo: 'Olli hört gerade', and: 'und',

@@ -88,17 +88,22 @@ function image_has_alpha(GdImage $img): bool
 /**
  * Cover for a category without its own picture: up to four logos in a 2 x 2 grid,
  * stored once as cat<id>-<hash>.jpg (a new set of logos gives a new file).
+ * $variant: the list it is for (category_cover), then cat<id>-<variant>-<hash>.jpg.
+ * Every list keeps a grid of its own, and a new grid replaces only the one of its list;
+ * '' is Sonos (the names as before) and the YouTube playlists.
  * One logo is used as it is. Each cell takes the square middle of its picture, so the
  * 16:9 pictures of YouTube videos fit too (a single one fills the whole square).
  * Returns the file name.
  */
-function category_collage(int $id, array $logos): string
+function category_collage(int $id, array $logos, string $variant = ''): string
 {
     $wide = str_starts_with($logos[0], 'yt-');
     if ((count($logos) === 1 && !$wide) || !function_exists('imagecreatetruecolor')) {
         return $logos[0];
     }
-    $name = 'cat' . $id . '-' . substr(sha1(implode(',', $logos)), 0, 12) . '.jpg';
+    $variant = (string) preg_replace('~[^a-z]~', '', $variant);
+    $prefix  = 'cat' . $id . '-' . ($variant !== '' ? $variant . '-' : '');
+    $name    = $prefix . substr(sha1(implode(',', $logos)), 0, 12) . '.jpg';
     if (is_file(media_dir() . '/' . $name)) {
         return $name;
     }
@@ -121,8 +126,13 @@ function category_collage(int $id, array $logos): string
             imagecopyresampled($dst, $images[$i], ($n % 2) * $cell, intdiv($n, 2) * $cell, intdiv($w - $side, 2), intdiv($h - $side, 2), $cell, $cell, $side, $side);
         }
     }
-    foreach (glob(media_dir() . '/cat' . $id . '-*.jpg') ?: [] as $old) {
-        @unlink($old);   // grid of an earlier set of logos, and its small picture
+    // the grid of an earlier set of logos for the same list, and its small picture; the
+    // grids of the other lists stay
+    $same = '~^' . preg_quote($prefix, '~') . '[0-9a-f]{12}(-s)?\.jpg$~';
+    foreach (glob(media_dir() . '/' . $prefix . '*.jpg') ?: [] as $old) {
+        if (preg_match($same, basename($old))) {
+            @unlink($old);
+        }
     }
     return imagejpeg($dst, media_dir() . '/' . $name, 88) ? $name : $logos[0];
 }

@@ -18,7 +18,8 @@ import { renderTrack } from './song.js';
  * follows. No listening status and no song lookups for YouTube. */
 
 const YT_ORIGIN = 'https://www.youtube-nocookie.com';
-export const yt = { ok: false, frame: null, video: '', ready: false, want: false, timer: 0, hello: 0, gone: 0, pos: null, dur: 0, line: '' };
+// started: the video loaded last has played; only then its pause and its end count
+export const yt = { ok: false, frame: null, video: '', ready: false, want: false, timer: 0, hello: 0, gone: 0, pos: null, dur: 0, line: '', started: false };
 const ytBox = () => $(`[data-yt-box="${phone.matches ? 'sheet' : 'stage'}"]`);
 const ytSlot = () => $(`[data-yt-slot="${phone.matches ? 'sheet' : 'stage'}"]`);
 
@@ -63,7 +64,7 @@ function ytLoad(it, autoplay) {
   clearTimeout(yt.gone);
   yt.video = it.video;
   yt.want = autoplay;
-  Object.assign(yt, { pos: null, dur: 0, line: '' });
+  Object.assign(yt, { pos: null, dur: 0, line: '', started: false });
   if (yt.frame && yt.ready && yt.frame.parentElement === box) {
     ytSend(autoplay ? 'loadVideoById' : 'cueVideoById', [it.video]);   // the same player, no new consent to start
   } else {
@@ -151,7 +152,7 @@ export function ytClose() {
   clearTimeout(yt.gone);
   clearInterval(yt.hello);
   if (yt.frame) yt.frame.remove();
-  Object.assign(yt, { frame: null, video: '', ready: false, want: false, pos: null, dur: 0, line: '' });
+  Object.assign(yt, { frame: null, video: '', ready: false, want: false, pos: null, dur: 0, line: '', started: false });
   $$('[data-yt-box]').forEach((b) => { b.hidden = true; b.replaceChildren(); });
   $$('[data-yt-slot]').forEach((s) => { s.hidden = true; });
 }
@@ -235,16 +236,22 @@ export function init() {
       return;
     }
     if (msg.event === 'infoDelivery' && msg.info && typeof msg.info === 'object') ytTime(msg.info);
+    // After another video was loaded, reports about the one before may still come; they
+    // end with its pause or end. Both count only once this video has played.
     if (st === 1) {          // playing
       clearTimeout(yt.timer);
+      yt.started = true;
       yt.want = true;
       if (state.phase !== 'live') setPhase('live');
     } else if (st === 2) {   // paused, also by YouTube's own button
-      if (isPlaying()) {
+      if (yt.started && isPlaying()) {
         yt.want = false;
         setPhase('paused');
       }
-    } else if (st === 0 && state.phase !== 'error') {   // ended
+    } else if (st === 0 && yt.started && state.phase !== 'error') {   // ended
+      // YouTube reports the end twice (onStateChange and infoDelivery): only the first one
+      // moves on, the second would skip the next video
+      yt.started = false;
       ytNext();
     }
   });

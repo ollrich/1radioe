@@ -5,10 +5,14 @@
 // The entry: the parts are ES modules in app/, loaded without a build step. index.php
 // loads this file as assets/v<version>/app.js (www/.htaccess maps that to assets/), so
 // the modules carry the version in their path and a new version never meets old parts
-// in the browser's cache. Each part only declares at load; its listeners and first state
-// come from its init(), called here in the order the old single file ran them.
+// in the browser's cache. The server keeps only the current files, under any version:
+// a page that loaded just before a deploy and fetches its parts after it would get new
+// ones. The page itself is never cached (no-cache), so that needs a deploy within the
+// moment of loading; accepted (issue #95), a build step for it is not worth it.
+// Each part only declares at load; its listeners and first state come from its init(),
+// called here in the order the old single file ran them, the menu's first.
 
-import { $, data, isSc, isYt, items, state, stationsOf } from './app/core.js';
+import { $, data, isSc, isYt, items, levels, state, stationsOf } from './app/core.js';
 import { renderScale, init as initScale } from './app/scale.js';
 import { renderList } from './app/list.js';
 import { renderPlayer, setPhase, init as initView } from './app/view.js';
@@ -22,8 +26,18 @@ import { init as initKeys } from './app/keys.js';
 import { init as initSong } from './app/song.js';
 import { init as initTip } from './app/tip.js';
 
-// without station data (the database is away) only the e-mail links of the texts work
-if (data) {
+// the menu with its pages (Impressum, Datenverarbeitung, Über) and the language work
+// always, also without station data (the database is away) or without stations
+initDialogs();
+// links like 1radioe.net/#impressum open the page, also when only the anchor changes
+const openFromHash = () => {
+  const id = pageFromHash();
+  if (id) openPage(id);
+};
+window.addEventListener('hashchange', openFromHash);
+
+// the player only with stations: without them the page has no scale, list or player
+if (data && (levels.root || []).length) {
   initScale();
   initView();
   initAudio();
@@ -31,7 +45,6 @@ if (data) {
   initYoutube();
   initMedia();
   initStatus();
-  initDialogs();
   initKeys();
   initSong();
   initTip();
@@ -58,11 +71,5 @@ if (data) {
   renderScale();
   setPhase('idle');
   pollStatus();
-  // links like 1radioe.net/#impressum open the page, also when only the anchor changes
-  const openFromHash = () => {
-    const id = pageFromHash();
-    if (id) openPage(id);
-  };
-  window.addEventListener('hashchange', openFromHash);
-  openFromHash();
 }
+openFromHash();

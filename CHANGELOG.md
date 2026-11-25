@@ -1,5 +1,20 @@
 # Änderungen
 
+## 1.32.2 (25. November 2026)
+
+Durchsicht der Issues #87 bis #98:
+
+* YouTube: Am Ende eines Videos sprang die Web-App eins zu weit, das nächste Video wurde übersprungen. YouTube meldet das Ende doppelt (`onStateChange` und `infoDelivery`), beide lösten den Wechsel aus. Jetzt zählt das Ende einmal je Video und nur, wenn es gelaufen ist; ebenso eine Pause, damit eine verspätete Meldung des vorigen Videos das neue nicht anhält (#92)
+* Radio, Wiederverbinden: Ein nicht erreichbarer Sender meldet seinen Fehler doppelt (Fehler-Ereignis und abgelehntes `play()`). Das plante zwei Versuche ein, zählte doppelt und konnte nach einer Pause in der ersten Sekunde doch noch neu verbinden. Jetzt wartet höchstens ein Versuch, und er entfällt, sobald der Stream von selbst weiterspielt (#89)
+* Hörstatus: Während der Browser neu verbindet, meldet er nicht mehr „läuft“, nur bei echter Wiedergabe. Ein verpasster Herzschlag beim Puffern bleibt unter den 150 Sekunden, die ein Sender als laufend gilt; ein längerer Ausfall beendet die Sitzung von selbst und zählt nicht für „Zuletzt gehört“ oder Posting (#91)
+* Ohne Senderliste (Datenbank nicht erreichbar oder kein Sender aktiv) bleiben Menü, Impressum, Datenverarbeitung, Sprachwahl und Links wie `/#impressum` nutzbar. Vorher startete das Menü nicht oder brach ab. Der Fuß zeigt die Links dann auch direkt (#90)
+* Kategorie-Bilder: Das Raster aus Logos zeigt nur, was die jeweilige Liste in der Kategorie zeigt: die Web-App Ollis Sender, SoundCloud und Deezer, Sonos Ollis Sender und MP3-Playlists, die App die Einträge des gewählten Profils, der Admin alles Aktive. Jede Liste hat eine eigene Datei, keine löscht die einer anderen. Vorher konnten Logos von Cathys Sendern bei Olli erscheinen und umgekehrt. `stations.json` hat Format 4, damit Apps die neuen Bilder einmal laden (#87)
+* YouTube-Sync: Je Playlist läuft ein Abgleich zur selben Zeit, der Admin wartet bis zu 30 Sekunden auf einen laufenden. Wird die Adresse während des Abrufs geändert oder die Playlist gelöscht, wird das Ergebnis verworfen (#93)
+* Ein Eintrag mit dem Titel „Root“ bekommt die ID `root-2`: `root` ist die oberste Ebene in Sonos und der Web-App (#97)
+* Status- und Titelabfragen der Web-App: höchstens eine Anfrage je Art zur selben Zeit, eine hängende gibt nach 15 Sekunden auf (#94)
+* Bewusst nicht umgesetzt: Nach einem Deploy liefert eine alte Versionsadresse die neuen Module; das trifft nur einen Deploy im Moment des Ladens und bräuchte einen Build-Schritt (#95). Die YouTube-Zeitanzeige bleibt, der Aufwand ist nicht messbar (#96). Keine JavaScript-Testumgebung, die kritischen Fälle hängen am Browser (#98). Ein Video in zwei YouTube-Playlists (#88) folgt, sobald es eine zweite Playlist gibt
+* Tests: neue Gruppe `covers`, dazu Sperre und Änderungen während des YouTube-Syncs und reservierte IDs. 250 Prüfungen
+
 ## 1.32.1 (25. November 2026)
 
 Abschließender Audit (Code, Logik, Sicherheit, Leistung):

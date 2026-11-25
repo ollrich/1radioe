@@ -149,12 +149,13 @@ function media_inner(array $s): string
 /**
  * A folder. A playlist is playable: Sonos lists its tracks on click and queues all of
  * them on "play" (shuffle and repeat are handled by the Sonos queue). A category is a
- * plain container with streams and playlists inside.
+ * plain container with streams and playlists inside; $inside: what Sonos shows in it
+ * (sonos_visible), its picture is made of that.
  */
-function collection_xml(array $p, int $total, array $rows = []): string
+function collection_xml(array $p, int $total, array $inside = []): string
 {
     $isCategory = $p['kind'] === 'category';
-    $art        = logo_url($isCategory ? category_cover($p, $rows) : $p['logo']);
+    $art        = logo_url($isCategory ? category_cover($p, $inside) : $p['logo']);
     return '<mediaCollection>'
         . '<id>' . esc($p['smapi_id']) . '</id>'
         . '<itemType>' . ($isCategory ? 'container' : 'playlist') . '</itemType>'
@@ -194,7 +195,8 @@ function item_xml(array $item, array $stats = [], ?array $playlist = null, array
         return collection_xml($item, $stats[(int) $item['id']]['tracks'] ?? 0);
     }
     if ($item['kind'] === 'category') {
-        return collection_xml($item, count(sonos_visible($rows, $stats, (int) $item['id'])), $rows);
+        $inside = sonos_visible($rows, $stats, (int) $item['id']);
+        return collection_xml($item, count($inside), $inside);
     }
     return '<mediaMetadata>' . media_inner($item) . '</mediaMetadata>';
 }

@@ -73,6 +73,24 @@ function public_catalog(bool $webapp = false, string $profile = PROFILE_DEFAULT,
     return ['stations' => $stations, 'categories' => $categories, 'playlists' => $lists, 'playable' => $playable];
 }
 
+/**
+ * The entries in each category of a catalog of public_catalog(), stations and playlists
+ * in their order there: [category id => rows]. The category pictures of that list are
+ * made of them (category_cover), so they show only what the list shows.
+ */
+function catalog_inside(array $catalog): array
+{
+    $entries = array_merge($catalog['stations'], $catalog['playlists'] ?? []);
+    usort($entries, static fn($a, $b) => $a['sort'] <=> $b['sort']);   // stable: one category's order stays
+    $out = [];
+    foreach ($entries as $e) {
+        if ($e['category'] !== null) {
+            $out[(int) $e['category']['id']][] = $e['row'];
+        }
+    }
+    return $out;
+}
+
 /** True if the address can be played from an HTTPS page. */
 function is_https_url(string $url): bool
 {
