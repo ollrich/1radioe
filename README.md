@@ -155,16 +155,16 @@ Alle aktiven Sender, nie MP3-Playlists, Tracks, SoundCloud, Deezer oder YouTube.
 | `/streams.m3u` | M3U mit Namen, für VLC: „Medien, Netzwerkstream öffnen“. Bei jedem Abruf neu aus der Datenbank, Player dürfen sie 5 Minuten zwischenspeichern |
 | `/streams.xspf` | XSPF 1.0 in der Form, die Eter selbst exportiert: je Sender Name, Stream-Adresse und Logo (absolute Adresse). Für Eter auf Mac und iPad: Datei laden und in Eter importieren (Favoriten, Import aus XSPF, braucht dort den einmaligen Kauf). Ein Import ist eine Momentaufnahme, ändert sich die Liste, wird neu importiert; ob Eter dabei Doppelte erkennt, liegt an Eter. Dieselben Sender und Reihenfolge wie die M3U, ebenfalls 5 Minuten Cache und ETag |
 | `/api/stations.json` | alles für eine eigene App, `?profile=cathy` für Cathys Liste |
-| `/api/playlists` | MP3-Playlists mit Tracks für die App, Ollis mit Schlüssel, Cathys mit `?profile=cathy` |
+| `/api/playlists` | MP3-Playlists mit Tracks für die App, mit dem Schlüssel des Profils (Olli ohne, Cathy mit `?profile=cathy`) |
 | `/api/status` | laufende Sender |
 | `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
 | `/api/listen` | Meldungen des eigenen Browsers (Hör-Cookie), von Home Assistant oder einer App (Schlüssel) |
 
 Alles, was eine eigene App braucht, mit Beispielen und Antwortcodes, steht in [API.md](API.md).
 
-**Profile (seit 1.32.0):** Olli und Cathy. Im Admin hat jeder Sender und jede MP3-Playlist zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich (Kacheln zeigen „+ Cathy“ bzw. „nur Cathy“). Ollis Liste ist die öffentliche: Web-App, Sonos, `streams.m3u`, `streams.xspf` und `stations.json` ohne Profil. Cathys Liste gibt es nur für die Android-App: `/api/stations.json?profile=cathy` und `/api/playlists?profile=cathy`, ohne Schlüssel. Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus, Posting und Datenverarbeitung bleiben Ollis. Code: `app/profiles.php`, Spalten `show_olli` und `show_cathy` in `r1_stations` (Schema 11).
+**Profile (seit 1.32.0):** Olli und Cathy. Im Admin hat jeder Sender und jede MP3-Playlist zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich (Kacheln zeigen „+ Cathy“ bzw. „nur Cathy“). Ollis Liste ist die öffentliche: Web-App, Sonos, `streams.m3u`, `streams.xspf` und `stations.json` ohne Profil. Cathys Liste gibt es nur für die Android-App: `/api/stations.json?profile=cathy` ohne Schlüssel, `/api/playlists?profile=cathy` mit Cathys Schlüssel. Schlüssel werden im Admin unter Hörgeräte für Olli oder Cathy erzeugt; Cathys liest nur Playlists und meldet nie einen Hörstatus (`/api/listen` antwortet ihr mit 403). Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus, Posting und Datenverarbeitung bleiben Ollis. Code: `app/profiles.php`, Spalten `show_olli` und `show_cathy` in `r1_stations` (Schema 11).
 
-**MP3-Playlists für die App (seit 1.32.0):** `/api/playlists` mit Playlists und Tracks, Ollis nur mit Schlüssel (`X-1radioe-Token`), weil die Liste die direkten MP3-Adressen nennt. Positionen in derselben Zählung wie die Sender.
+**MP3-Playlists für die App (seit 1.32.0):** `/api/playlists` mit Playlists und Tracks, immer mit dem Schlüssel des Profils (`X-1radioe-Token`), weil die Liste die direkten MP3-Adressen nennt; ein Schlüssel des anderen Profils gibt 403. Positionen in derselben Zählung wie die Sender.
 
 Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
 

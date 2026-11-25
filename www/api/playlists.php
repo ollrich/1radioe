@@ -2,9 +2,10 @@
 /**
  * GET /api/playlists: the MP3 playlists with their tracks, for the Android app.
  *
- * Olli's (no profile): only with a key, the header X-1radioe-Token (a key from the admin,
- * Hörgeräte), because the list names the direct addresses of the MP3 files.
- * ?profile=cathy: Cathy's, without a key (app/profiles.php). An unknown profile is 400.
+ * Always with a key of the profile asked for, the header X-1radioe-Token (a key from the
+ * admin, Hörgeräte, made for Olli or Cathy), because the list names the direct addresses
+ * of the MP3 files: no profile (Olli) with Olli's key, ?profile=cathy with Cathy's.
+ * 401 without a valid key, 403 with a key of the other profile, 400 for an unknown profile.
  *
  * Positions ("sort") are in the same counting as the stations of stations.json for the
  * same profile. Empty playlists and tracks without a file are missing, as in Sonos.
@@ -28,11 +29,12 @@ if ($profile === null) {
 
 try {
     db_migrate();
-    if ($profile === PROFILE_DEFAULT) {
-        $key = trim((string) ($_SERVER['HTTP_X_1RADIOE_TOKEN'] ?? ''));
-        if ($key === '' || listen_device_by_token($key, 'app') === null) {
-            json_out(['error' => 'key required'], 401);
-        }
+    $access = playlists_access($profile, trim((string) ($_SERVER['HTTP_X_1RADIOE_TOKEN'] ?? '')));
+    if ($access === 401) {
+        json_out(['error' => 'key required'], 401);
+    }
+    if ($access === 403) {
+        json_out(['error' => 'key of another profile'], 403);
     }
     $body = [
         'version'   => catalog_token(),

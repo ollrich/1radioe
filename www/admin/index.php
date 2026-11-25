@@ -461,13 +461,19 @@ render_page('Sender', <<<HTML
         </form>
         <form class="banner-form" id="listen-key">
           <input name="name" maxlength="80" required value="Home Assistant" aria-label="Name für den Schlüssel">
+          <select name="profile" aria-label="Für wen">
+            <option value="olli" selected>Olli: Hörstatus und Playlists</option>
+            <option value="cathy">Cathy: nur Playlists</option>
+          </select>
           <button class="btn ghost small">Schlüssel erzeugen</button>
         </form>
         <div class="key-box" id="listen-key-box" hidden>
           <p class="muted">Der Schlüssel für „<span id="listen-key-name"></span>“ ist nur jetzt sichtbar. Für die App der Schlüssel allein:</p>
           <p class="key-line"><code id="listen-key-plain"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-plain">Kopieren</button></p>
-          <p class="muted">Für Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
-          <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-line">Kopieren</button></p>
+          <div id="listen-key-ha">
+            <p class="muted">Für Home Assistant gehört diese Zeile in <code>secrets.yaml</code>, die Einrichtung steht im README unter Hörstatus:</p>
+            <p class="key-line"><code id="listen-key-line"></code> <button type="button" class="btn ghost small" data-copy="#listen-key-line">Kopieren</button></p>
+          </div>
         </div>
         <div class="table-wrap"><table class="log"><thead><tr><th>Name</th><th>Art</th><th>Angelegt</th><th>Zuletzt benutzt</th><th>Status</th><th></th></tr></thead><tbody id="listen-devices"></tbody></table></div>
       </div>

@@ -113,6 +113,31 @@ check('positions only with playlists asked for', array_column(public_catalog()['
 check('Sonos with playlists', array_map(static fn($s) => $s['title'], sonos_visible(stations_all(true), playlist_stats(), null)),
     ['Für beide', 'Nur Olli', 'Liste für beide', 'Liste Olli']);
 
+// keys: every profile reads its own playlists with its own key, only Olli's reports
+$keyOlli  = listen_device_create('Ollis Handy', 'app');
+$keyCathy = listen_device_create('Cathys Handy', 'app', 'cathy');
+$browser  = listen_device_create('Browser', 'browser', 'cathy');
+check('key default is Olli', $keyOlli['device']['profile'], 'olli');
+check('key for Cathy', $keyCathy['device']['profile'], 'cathy');
+check('a browser is always Olli', $browser['device']['profile'], 'olli');
+check('admin JSON of a key', listen_device_public($keyCathy['device'])['profile'], 'cathy');
+try {
+    listen_device_create('X', 'app', 'bob');
+    check('unknown profile for a key refused', false, true);
+} catch (InputError $e) {
+    check('unknown profile for a key refused', isset($e->fields['profile']), true);
+}
+check('Olli\'s playlists with his key', playlists_access('olli', $keyOlli['token']), 200);
+check('Cathy\'s playlists with her key', playlists_access('cathy', $keyCathy['token']), 200);
+check('Olli\'s playlists with Cathy\'s key', playlists_access('olli', $keyCathy['token']), 403);
+check('Cathy\'s playlists with Olli\'s key', playlists_access('cathy', $keyOlli['token']), 403);
+check('playlists without a key', [playlists_access('olli', ''), playlists_access('cathy', '')], [401, 401]);
+check('playlists with a browser token', playlists_access('olli', $browser['token']), 401);
+listen_device_revoke((int) $keyCathy['device']['id']);
+check('playlists with a revoked key', playlists_access('cathy', $keyCathy['token']), 401);
+check('listening status: Olli\'s key', listen_profile_allowed($keyOlli['device']), true);
+check('listening status: Cathy\'s key', listen_profile_allowed($keyCathy['device']), false);
+
 foreach ([$both, $olli, $cathy, $inCat, $cat, $plBoth, $plOlli, $plEmpty, $plCat] as $s) {
     station_delete((int) $s['id']);
 }

@@ -45,6 +45,26 @@ function playlists_playable(): array
     return $out;
 }
 
+/**
+ * May this key read the playlists of $profile? 200, 401 (no key, unknown or revoked one)
+ * or 403 (a key of the other profile). Every profile needs its own key: the list names
+ * the direct addresses of the MP3 files.
+ */
+function playlists_access(string $profile, string $key): int
+{
+    $device = $key !== '' ? listen_device_by_token($key, 'app') : null;
+    if ($device === null) {
+        return 401;
+    }
+    return (string) ($device['profile'] ?? PROFILE_DEFAULT) === $profile ? 200 : 403;
+}
+
+/** May this device report the listening status? Only Olli's (it says "Olli hört"). */
+function listen_profile_allowed(array $device): bool
+{
+    return (string) ($device['profile'] ?? PROFILE_DEFAULT) === PROFILE_DEFAULT;
+}
+
 /** Logo or cover block for the app's JSON, or null. The file name changes with every new picture. */
 function json_picture(?string $file): ?array
 {

@@ -177,7 +177,7 @@ try {
 
         case 'POST listen.key':
             // a key for Home Assistant or an app, shown only in this answer
-            $created = listen_device_create((string) ($in['name'] ?? ''), 'app');
+            $created = listen_device_create((string) ($in['name'] ?? ''), 'app', (string) ($in['profile'] ?? PROFILE_DEFAULT));
             json_out(['device' => listen_device_public($created['device']), 'key' => $created['token']]);
 
         case 'POST listen.revoke':

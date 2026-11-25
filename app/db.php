@@ -266,6 +266,11 @@ function db_migrate_locked(): void
         if (!q("SHOW COLUMNS FROM r1_stations LIKE 'show_olli'")->fetch()) {
             db()->exec('ALTER TABLE r1_stations ADD COLUMN show_olli TINYINT(1) NOT NULL DEFAULT 1 AFTER active, ADD COLUMN show_cathy TINYINT(1) NOT NULL DEFAULT 0 AFTER show_olli');
         }
+        // whose a key is: Olli's report the listening status and read his playlists,
+        // Cathy's only read hers; every key there was is Olli's
+        if (!q("SHOW COLUMNS FROM r1_listen_devices LIKE 'profile'")->fetch()) {
+            db()->exec("ALTER TABLE r1_listen_devices ADD COLUMN profile VARCHAR(16) NOT NULL DEFAULT 'olli' AFTER kind");
+        }
     }
     setting_set('schema', (string) SCHEMA_VERSION);
     if (setting('catalog') === null) {

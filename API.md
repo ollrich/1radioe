@@ -7,7 +7,7 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 | Adresse | Methode | Wofür |
 |---|---|---|
 | `/api/stations.json` | GET | Sender, Kategorien, Logos, Stream-Adressen; `?profile=cathy` für Cathys Liste |
-| `/api/playlists` | GET | MP3-Playlists mit ihren Tracks; Olli mit Schlüssel, Cathy mit `?profile=cathy` ohne |
+| `/api/playlists` | GET | MP3-Playlists mit ihren Tracks; immer mit dem Schlüssel des Profils |
 | `/api/status` | GET | welche Sender Ollie gerade hört (die Balken) und welchen zuletzt |
 | `/api/nowplaying?id=<id>` | GET | laufender Song eines Senders |
 | `/api/listen` | POST | die App meldet: Ollie hört diesen Sender, oder nicht mehr |
@@ -17,11 +17,12 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 ## Profile: Olli und Cathy (seit 1.32.0)
 
 * **Olli** ist der Standard: ohne `profile` (oder mit `?profile=olli`) kommt seine Liste, dieselbe wie in Web-App, Sonos und den Playlist-Dateien.
-* **Cathy:** `?profile=cathy` an `stations.json` und `playlists`. Ihre Liste gibt es nur für die App, nicht in der öffentlichen Web-App, nicht in Sonos und nicht in `streams.m3u`/`streams.xspf`. Kein Schlüssel nötig.
+* **Cathy:** `?profile=cathy` an `stations.json` und `playlists`. Ihre Liste gibt es nur für die App, nicht in der öffentlichen Web-App, nicht in Sonos und nicht in `streams.m3u`/`streams.xspf`. `stations.json` braucht keinen Schlüssel, `playlists` Cathys eigenen.
 * **Unbekanntes Profil:** `400` mit `{"error": "unknown profile", "profiles": ["olli", "cathy"]}`, nie stillschweigend Ollis Liste.
 * **Zuordnung:** Im Admin hat jeder Sender und jede MP3-Playlist zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich. Kategorien folgen ihrem Inhalt: Eine Kategorie erscheint in einem Profil nur, wenn sie dort sichtbare Sender oder Playlists hat. Die Track-Bibliothek ist gemeinsam, ein Track ist über seine Playlists sichtbar.
 * **Antwort:** gleiches Format für beide Profile, dazu `"profile": "olli"` bzw. `"cathy"`. Der `ETag` enthält das Profil, nach einem Wechsel bekommt die App also nie ein `304` für die andere Liste. Logo- und Cover-Adressen sind für beide Profile gleich.
-* **Hörstatus:** nur Olli. Cathys App meldet nichts (`/api/listen` und `/api/status` bleiben unverändert).
+* **Schlüssel:** Im Admin (Hörgeräte) wird jeder Schlüssel für Olli oder für Cathy erzeugt. Ollis Schlüssel meldet den Hörstatus und liest seine Playlists, Cathys liest nur ihre Playlists.
+* **Hörstatus:** nur Olli. `POST /api/listen` mit Cathys Schlüssel gibt `403` mit `{"error": "no listening status for this profile"}`, ihre App meldet also nichts. `/api/status` bleibt unverändert.
 
 ## Sender: `GET /api/stations.json`
 
@@ -65,7 +66,14 @@ Was eine eigene App (geplant: ein Fork von Transistor für Android) von `https:/
 
 ## MP3-Playlists: `GET /api/playlists`
 
-Ollis Playlists nur mit Schlüssel (Header `X-1radioe-Token`, derselbe wie für `/api/listen`), weil die Liste die direkten Adressen der MP3-Dateien nennt. Ohne oder mit ungültigem Schlüssel: `401` mit `{"error": "key required"}`. Cathys mit `?profile=cathy`, ohne Schlüssel.
+Immer mit dem Schlüssel des Profils (Header `X-1radioe-Token`), weil die Liste die direkten Adressen der MP3-Dateien nennt: ohne `profile` Ollis Playlists mit Ollis Schlüssel (derselbe wie für `/api/listen`), mit `?profile=cathy` Cathys mit Cathys Schlüssel. Der Server prüft, dass beide zusammenpassen.
+
+| Fall | Antwort |
+|---|---|
+| passender Schlüssel | `200` |
+| kein, unbekannter oder widerrufener Schlüssel | `401` `{"error": "key required"}` |
+| Schlüssel des anderen Profils | `403` `{"error": "key of another profile"}` |
+| unbekanntes Profil | `400` `{"error": "unknown profile", "profiles": ["olli", "cathy"]}` |
 
 ```json
 {
