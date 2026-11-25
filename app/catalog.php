@@ -2,8 +2,8 @@
 /**
  * The public station list for the web app, the playlist files and stations.json.
  *
- * Only streams: MP3 playlists and tracks stay in Sonos, publishing bought music is not
- * an option. Everything active appears, in the order of the admin and of Sonos: the
+ * Only streams: MP3 playlists and tracks are for Sonos and, with a key, the app
+ * (/api/playlists); publishing bought music is not an option. Everything active appears, in the order of the admin and of Sonos: the
  * top level as it is, a category's streams where the category stands. An inactive
  * category hides its streams, like in Sonos. The web app also asks for SoundCloud
  * tracks, Deezer links and YouTube playlists ($webapp), the playlist file and
@@ -69,7 +69,8 @@ function public_catalog(bool $webapp = false, string $profile = PROFILE_DEFAULT,
             }
         }
     }
-    return ['stations' => $stations, 'categories' => $categories, 'playlists' => $lists];
+    // 'playable': the tracks of the playlists, so /api/playlists need not look again
+    return ['stations' => $stations, 'categories' => $categories, 'playlists' => $lists, 'playable' => $playable];
 }
 
 /** True if the address can be played from an HTTPS page. */

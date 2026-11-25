@@ -24,7 +24,9 @@ const LISTEN_HEARD_MIN = 300;   // a session counts as "heard" from five minutes
  */
 function listen_report(array $station, bool $playing): bool
 {
-    if (($station['kind'] ?? '') !== 'stream' || empty($station['active'])) {
+    // the status says "Olli hört": a station of Cathy's alone never counts, however it was
+    // reported (Sonos by id, Home Assistant by stream address or title)
+    if (($station['kind'] ?? '') !== 'stream' || empty($station['active']) || !profile_visible($station, 'olli')) {
         return false;
     }
     $id = (int) $station['id'];
@@ -48,7 +50,7 @@ function listen_report(array $station, bool $playing): bool
 function listen_active(): array
 {
     return q("SELECT s.smapi_id FROM r1_listen_status l JOIN r1_stations s ON s.id = l.station_id
-              WHERE l.stopped = 0 AND l.last_seen > ? AND s.active = 1 AND s.kind = 'stream'
+              WHERE l.stopped = 0 AND l.last_seen > ? AND s.active = 1 AND s.kind = 'stream' AND s.show_olli = 1
               ORDER BY s.sort, s.id", [time() - LISTEN_TTL])->fetchAll(PDO::FETCH_COLUMN);
 }
 
@@ -61,7 +63,7 @@ function listen_active(): array
 function listen_last(): ?string
 {
     $id = q("SELECT s.smapi_id FROM r1_listen_status l JOIN r1_stations s ON s.id = l.station_id
-             WHERE s.active = 1 AND s.kind = 'stream' AND l.since > 0 AND l.last_seen >= l.since + ?
+             WHERE s.active = 1 AND s.kind = 'stream' AND s.show_olli = 1 AND l.since > 0 AND l.last_seen >= l.since + ?
                AND (l.stopped = 1 OR l.last_seen <= ?)
              ORDER BY l.last_seen DESC LIMIT 1", [LISTEN_HEARD_MIN, time() - LISTEN_TTL])->fetchColumn();
     return is_string($id) && $id !== '' ? $id : null;

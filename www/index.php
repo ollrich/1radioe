@@ -18,7 +18,11 @@ $sid = isset($_GET['s']) && is_string($_GET['s']) && preg_match('~^[A-Za-z0-9._-
 if ($sid !== null && isset($_GET['go'])) {
     // back to the page the station page belongs to: /s/<id> to /, /de/s/<id> to /de/
     $page = (string) preg_replace('~s/[^/]*$~', '', (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH));
-    header('Location: ' . ($page !== '' ? $page : '/') . '?s=' . rawurlencode($sid), true, 302);
+    // only a plain path of this site: never "//host" or "/\host", which browsers read as another site
+    if (!preg_match('#^/(?!/)[A-Za-z0-9._/-]*$#', $page)) {
+        $page = '/';
+    }
+    header('Location: ' . $page . '?s=' . rawurlencode($sid), true, 302);
     exit;
 }
 

@@ -29,12 +29,19 @@ function net_resolve(string $host): string
         foreach ($ips as $ip) {
             // an IPv4 address inside IPv6 (::ffff:10.0.0.1) is checked as IPv4
             $plain = preg_match('~^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$~i', $ip, $m) ? $m[1] : $ip;
-            if (!filter_var($plain, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            if (!filter_var($plain, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) || net_shared_range($plain)) {
                 return '!Interne Adressen sind nicht erlaubt.';
             }
         }
     }
     return $ips[0];
+}
+
+/** True for 100.64.0.0/10, the shared address space of carrier-grade NAT, internal like the private ranges. */
+function net_shared_range(string $ip): bool
+{
+    $long = ip2long($ip);
+    return $long !== false && ($long & 0xFFC00000) === (ip2long('100.64.0.0') & 0xFFC00000);
 }
 
 /**

@@ -196,7 +196,7 @@ function social_run(int $stationId, string $kind = 'auto'): array
     }
     $nets = array_values(array_filter(['bsky', 'masto'], static fn($n) => social_ready($s, $n)));
     if ($kind === 'auto') {
-        if (!$s['enabled'] || !$nets || (int) $station['social'] !== 1 || (int) $station['active'] !== 1) {
+        if (!$s['enabled'] || !$nets || (int) $station['social'] !== 1 || (int) $station['active'] !== 1 || !profile_visible($station, 'olli')) {
             return [];
         }
         $now  = time();

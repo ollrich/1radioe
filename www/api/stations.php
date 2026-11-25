@@ -18,12 +18,6 @@ if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
     json_out(['error' => 'GET only'], 405);
 }
 
-/** Logo block for the JSON, or null. The file name changes with every new logo. */
-function json_logo(?string $file): ?array
-{
-    return json_picture($file);
-}
-
 $profile = profile_from_query($_GET['profile'] ?? null);
 if ($profile === null) {
     json_out(['error' => 'unknown profile', 'profiles' => array_keys(PROFILES)], 400);
@@ -62,7 +56,7 @@ try {
             'name'        => $c['row']['title'],
             'description' => (string) ($c['row']['description'] ?? ''),
             'sort'        => $c['sort'],
-            'logo'        => json_logo(category_cover($c['row'], $rows)),
+            'logo'        => json_picture(category_cover($c['row'], $rows)),
         ], $catalog['categories']),
         'stations'   => array_map(static fn($e) => [
             'id'          => $e['row']['smapi_id'],
@@ -78,7 +72,7 @@ try {
                 'format' => $e['row']['mime'],
                 'https'  => is_https_url($streams[$e['row']['smapi_id']]),
             ]],
-            'logo'        => json_logo($e['row']['logo']),
+            'logo'        => json_picture($e['row']['logo']),
         ], $catalog['stations']),
     ], 200, false);
 } catch (Throwable $e) {

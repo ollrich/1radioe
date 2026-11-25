@@ -1,5 +1,5 @@
 # 1radiœ: the web app may be found, in English (/) and German (/de/).
-# Not pages: the admin, the interfaces for Sonos and apps, the playlist file
+# Not pages: the admin, the interfaces for Sonos and apps, the playlist files
 # and the MP3 tracks. /de/ reaches every address as well, so both forms.
 User-agent: *
 Allow: /
@@ -10,7 +10,9 @@ Disallow: /report/
 Disallow: /report.php
 Disallow: /deploy.php
 Disallow: /streams.m3u
+Disallow: /streams.xspf
 Disallow: /playlist.php
+Disallow: /xspf.php
 Disallow: /media/tracks/
 Disallow: /de/admin/
 Disallow: /de/api/
@@ -19,7 +21,9 @@ Disallow: /de/report/
 Disallow: /de/report.php
 Disallow: /de/deploy.php
 Disallow: /de/streams.m3u
+Disallow: /de/streams.xspf
 Disallow: /de/playlist.php
+Disallow: /de/xspf.php
 Disallow: /de/media/tracks/
 
 # Blocked bots, as on eichhof.me
