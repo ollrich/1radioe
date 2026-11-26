@@ -1,75 +1,65 @@
-# Einrichtung auf All-Inkl mit automatischem Deploy
+# Einrichtung mit automatischem Ausrollen
 
-Diese Anleitung bringt 1radiœ auf `https://1radioe.net` und richtet das automatische Ausrollen ein: Ein Push auf `main` aktualisiert den Server von selbst. Sie geht davon aus, dass die bisherige Installation unter `eichhof.co/1radioe` im selben All-Inkl-Account läuft. Ab Schritt 8 führt ihre Sonos-Adresse auf den neuen Code, ab Schritt 9 bleibt von ihr nur diese eine Datei.
+Diese Anleitung bringt 1radiœ auf einen Webserver und richtet das automatische Ausrollen ein: Ein Push auf `main` aktualisiert den Server von selbst. Gebraucht werden PHP-Hosting mit SSH, Git und MySQL oder MariaDB, eine eigene Domain mit HTTPS und ein eigenes Repository auf GitHub (Fork oder Kopie von 1radiœ).
 
-`w0123456` steht überall für deine Account-Kennung. Im Webspace sieht das am Ende so aus:
+Platzhalter in dieser Anleitung:
+
+* `<domain>`: die Domain der Installation, etwa `radio.example.org`
+* `<ordner>`: der Domain-Ordner auf dem Server, zugleich der Git-Checkout
+* `<konto>/<repo>`: das eigene Repository auf GitHub
+
+Auf dem Server sieht das am Ende so aus:
 
 ```
-/www/htdocs/w0123456/
-  1radioe.net/            Domain-Ordner und Git-Checkout, alles für 1radiœ liegt hier
-    1radioe-private/      Config, Webhook-Secret, Deploy-Log, FTP-Eingang. Nie in Git.
-    app/                  Programmcode, nicht per Web erreichbar
-    www/                  Web-Verzeichnis der Domain
-      media/              Logos, Cover, Tracks. Nicht in Git.
-  eichhof.co/1radioe/     alte Installation, nach Schritt 9 nur noch smapi.php, die hierher führt
+<ordner>/                 Git-Checkout, alles für 1radiœ liegt hier
+  1radioe-private/        Config, Webhook-Secret, Deploy-Log, FTP-Eingang. Nie in Git.
+  app/                    Programmcode, nicht per Web erreichbar
+  www/                    Web-Verzeichnis (Document Root) der Domain
+    media/                Logos, Cover, Tracks. Nicht in Git.
 ```
 
 `1radioe-private/` liegt neben `www/` und damit außerhalb des Web-Verzeichnisses. Git schließt den Ordner aus (`.gitignore`), deshalb landet er nie im Repository und das Ausrollen lässt ihn unberührt.
 
 ## Wie das Ausrollen funktioniert
 
-1. Ein Push auf `main` schickt einen Webhook von GitHub an `https://1radioe.net/deploy.php`.
+1. Ein Push auf `main` schickt einen Webhook von GitHub an `https://<domain>/deploy.php`.
 2. `deploy.php` prüft die Signatur mit dem gemeinsamen Secret. Ohne Secret wird nichts ausgerollt.
 3. Nur Pushes auf `main` zählen. Dann laufen `git fetch` und `git reset --hard origin/main`.
 4. Jeder Lauf steht in `1radioe-private/deploy.log`, die letzten 100 Einträge.
 
-Das Repository ist öffentlich. Der Server holt den Code deshalb über HTTPS, ohne Schlüssel.
+`www/media/` und `1radioe-private/` sind nicht in Git. `git reset --hard` lässt solche Dateien in Ruhe, deshalb überleben Uploads, Config und Secrets jeden Deploy. Auf dem Server also nie Dateien aus dem Repository von Hand ändern: Der nächste Deploy überschreibt sie. Von Hand bearbeitet wird nur, was in `1radioe-private/` liegt. Inhalte kommen über die Verwaltung, MP3s auch per FTP in `1radioe-private/inbox/`.
 
-`www/media/` und `1radioe-private/` sind nicht in Git. `git reset --hard` lässt solche Dateien in Ruhe, deshalb überleben Uploads, Config und Secrets jeden Deploy. Auf dem Server also nie Dateien aus dem Repository von Hand ändern: Der nächste Deploy überschreibt sie. Von Hand bearbeitet wird nur, was in `1radioe-private/` liegt. Inhalte kommen nur über den Admin, MP3s per FTP in `1radioe-private/inbox/`.
+Datenbank-Änderungen brauchen keinen eigenen Schritt. Die App legt Tabellen und Spalten beim nächsten Aufruf selbst an.
 
-Datenbank-Änderungen brauchen keinen eigenen Schritt. Die App erweitert die Datenbank beim nächsten Aufruf von Admin oder Sonos selbst.
+## 1. Domain und Datenbank
 
-## 1. Domain im KAS
+* Domain anlegen, das Zielverzeichnis (Document Root) auf `<ordner>/www/` setzen. Es muss auf `www` enden, sonst wäre der Programmcode übers Web erreichbar.
+* HTTPS aktivieren (etwa mit Let's Encrypt) und HTTP auf HTTPS umleiten.
+* PHP 8.1 oder neuer, besser die neueste angebotene Version, mit `pdo_mysql`, `curl`, `gd`, `dom`, `mbstring` und `sodium`.
+* Eine leere Datenbank mit eigenem Benutzer anlegen.
 
-Zuerst die Domain anlegen. Der KAS legt dabei den Domain-Ordner an, den es für Domain und SSH ohnehin braucht.
+## 2. Code holen
 
-* Domain `1radioe.net` hinzufügen, Ordner `/1radioe.net/` anlegen, Zielverzeichnis `/1radioe.net/www/`
-* SSL mit Let's Encrypt aktivieren und **SSL erzwingen** einschalten
-* PHP 8.1 oder neuer, besser die neueste angebotene Version
-
-Das Zielverzeichnis muss auf `www` enden. Sonst wäre der Programmcode übers Web erreichbar.
-
-## 2. Per SSH anmelden
-
-SSH im KAS aktivieren, falls noch nicht geschehen, und mit den Zugangsdaten aus dem KAS anmelden. Dann in den Domain-Ordner wechseln, alle folgenden Befehle laufen dort:
+Per SSH anmelden und in den Domain-Ordner wechseln, alle folgenden Befehle laufen dort:
 
 ```bash
-cd /www/htdocs/w0123456/1radioe.net
+cd <ordner>
 ```
 
-In der SSH-Sitzung bei All-Inkl ist `$HOME` gleich `/`. Die Anleitung verwendet deshalb kein `~`, sondern Pfade relativ zum Domain-Ordner. `../` ist der Account-Root.
-
-## 3. Code holen
-
-Der Domain-Ordner existiert schon und ist vielleicht nicht leer. Deshalb wird Git direkt darin eingerichtet, statt zu klonen. Erst nachsehen, was der KAS angelegt hat:
+Legt der Hoster den Ordner selbst an, ist er vielleicht nicht leer. Deshalb wird Git direkt darin eingerichtet, statt zu klonen. Erst nachsehen, was dort liegt; eine `index.html` des Hosters in `www/` löschen, sie würde statt der Web-App ausgeliefert.
 
 ```bash
 ls -A . www
-```
-
-Liegt in `www/` eine `index.html` vom KAS, löschen. Sie würde statt der Web-App ausgeliefert.
-
-```bash
 git init
-git remote add origin https://github.com/ollrich/1radioe.git
+git remote add origin https://github.com/<konto>/<repo>.git
 git fetch origin
 git checkout -f -B main origin/main
 git status
 ```
 
-`git init` gibt einen Hinweis zum Branch-Namen `master` aus, der ist egal. Am Ende muss `Your branch is up to date with 'origin/main'` stehen.
+Am Ende muss `Your branch is up to date with 'origin/main'` stehen. Für ein privates Repository siehe unten.
 
-Dann den privaten Ordner anlegen. Die `.htaccess` darin ist nur ein Sicherheitsnetz, falls die Domain einmal versehentlich auf `1radioe.net/` statt auf `1radioe.net/www/` zeigt.
+Dann den privaten Ordner anlegen. Die `.htaccess` darin ist nur ein Sicherheitsnetz, falls die Domain einmal versehentlich auf `<ordner>/` statt auf `<ordner>/www/` zeigt.
 
 ```bash
 mkdir -p 1radioe-private/inbox 1radioe-private/tmp
@@ -79,48 +69,28 @@ git status --short
 
 `git status --short` gibt nichts aus: Der Ordner ist von Git ausgeschlossen.
 
-## 4. Config
-
-Die neue Installation bekommt eine Kopie der `config.php` der alten. Die alte liegt in einem Ordner `1radioe-private` oberhalb von `eichhof.co/1radioe`, so findet man ihn:
+## 3. Config
 
 ```bash
-ls -d ../1radioe-private ../eichhof.co/1radioe-private 2>/dev/null
-```
-
-Den gefundenen Pfad im ersten Befehl einsetzen:
-
-```bash
-cp -p ../1radioe-private/config.php 1radioe-private/config.php
+cp config.sample.php 1radioe-private/config.php
 chmod 600 1radioe-private/config.php
-```
-
-Die alte Installation behält ihre eigene `config.php` und läuft unverändert weiter. Beide nutzen dieselbe Datenbank. Die App sucht `1radioe-private/config.php` zuerst im Checkout, die neue Installation nimmt also immer ihre eigene Kopie. Passwort-Hash und TOTP-Secret stehen danach in beiden Dateien. Ändert sich eins davon, gilt das nur für die Installation, deren Datei geändert wurde.
-
-Für das Posting zu Bluesky und Mastodon braucht die neue Config einen Schlüssel. Erzeugen:
-
-```bash
 php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
 ```
 
-Dann die Kopie öffnen:
+In `1radioe-private/config.php` eintragen:
 
-```bash
-nano 1radioe-private/config.php
-```
+* `db`: Host, Datenbank, Benutzer und Passwort aus Schritt 1
+* `base_url`: `'https://<domain>'`
+* `secret_key`: der eben ausgegebene Wert. Damit werden die Zugänge fürs Posting und der YouTube-Schlüssel verschlüsselt; wird er später geändert, müssen sie in der Verwaltung neu eingegeben werden.
+* `timezone`, und `integration_id`, sobald die Integration im Sonos-Portal angelegt ist (Schritt 7)
 
-* `base_url` auf `'https://1radioe.net'` setzen. Fehlt die Zeile, direkt unter `return [` einfügen.
-* Darunter `'secret_key' => '<der Wert>',` mit dem eben erzeugten Wert einfügen. Wird der Schlüssel später geändert, müssen App-Passwort und Token im Admin neu eingegeben werden.
-* `media_dir` und `media_url` dürfen nicht gesetzt sein, sonst würde die neue Installation den alten Medienordner verwenden.
-
-Speichern mit `Ctrl+O` und Enter, beenden mit `Ctrl+X`. Dann prüfen, erwartet wird `No syntax errors detected`:
+`password_hash` und `totp_secret` bleiben leer, die liefert der Assistent in Schritt 5. Danach prüfen, erwartet wird `No syntax errors detected`:
 
 ```bash
 php -l 1radioe-private/config.php
 ```
 
-Liegt die Domain in einem anderen All-Inkl-Account, braucht es dort eine neue Datenbank: In phpMyAdmin der alten Datenbank alle Tabellen mit `r1_` exportieren, in die neue importieren und die Zugangsdaten in `1radioe-private/config.php` eintragen. Die `config.php` kommt dann per SFTP aus dem alten Account. Den Export danach löschen, er enthält Passwort-Hash und TOTP-Secret.
-
-## 5. Webhook
+## 4. Webhook
 
 ```bash
 openssl rand -hex 32 > 1radioe-private/webhook-secret
@@ -130,7 +100,7 @@ cat 1radioe-private/webhook-secret
 
 Auf GitHub: Repository → Settings → Webhooks → Add webhook
 
-* Payload URL: `https://1radioe.net/deploy.php`
+* Payload URL: `https://<domain>/deploy.php`
 * Content type: `application/json`
 * Secret: die ausgegebene Zeile
 * SSL verification: eingeschaltet lassen
@@ -143,147 +113,67 @@ GitHub schickt sofort einen Ping. Unter Recent Deliveries sollte er einen grüne
 tail 1radioe-private/deploy.log
 ```
 
-## 6. Medien kopieren
+## 5. Verwaltung einrichten
 
-Logos, Cover und Tracks liegen bisher in `eichhof.co/1radioe-media`. Kopieren, nicht verschieben, die alte Installation braucht sie noch:
+`https://<domain>/admin/` öffnen. Der Assistent fragt ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block mit `password_hash` und `totp_secret` für die `config.php`. Eintragen, speichern, mit Benutzer, Passwort und Code anmelden.
 
-```bash
-cp -an ../eichhof.co/1radioe-media/. www/media/
-```
+## 6. Prüfen
 
-`-n` überschreibt nichts, der Befehl lässt sich gefahrlos wiederholen.
-
-## 7. Prüfen
-
-* `https://1radioe.net/smapi.php` zeigt `SMAPI ok` mit Version und Zahl der Einträge
-* `https://1radioe.net/admin/` meldet dich mit Benutzer, Passwort und Code an
-* System im Admin: aktuelle Version, Konfiguration unter `…/1radioe.net/1radioe-private/config.php`, Medien unter `…/1radioe.net/www/media ✓`, FTP-Eingang unter `…/1radioe.net/1radioe-private/inbox ✓`, Fehlende Dateien `keine ✓`
-* `https://1radioe.net/` zeigt die Web-App und spielt
-* `https://1radioe.net/1radioe-private/config.php` gibt es nicht (404), weil der Ordner außerhalb des Web-Verzeichnisses liegt
-* `https://1radioe.net/robots.txt` erlaubt die Web-App und sperrt Admin, Schnittstellen, Playlist-Datei und Tracks
+* `https://<domain>/smapi.php` zeigt `SMAPI ok` mit Version und Zahl der Einträge
+* System in der Verwaltung: aktuelle Version, Konfiguration unter `…/1radioe-private/config.php`, Medien unter `…/www/media ✓`, FTP-Eingang unter `…/1radioe-private/inbox ✓`, alle Voraussetzungen grün
+* `https://<domain>/` zeigt die Web-App
+* `https://<domain>/1radioe-private/config.php` gibt es nicht (404), weil der Ordner außerhalb des Web-Verzeichnisses liegt
+* `https://<domain>/robots.txt` erlaubt die Web-App und sperrt Verwaltung, Schnittstellen, Playlist-Dateien und Tracks
 
 Ausrollen testen: einen Commit auf `main` pushen. Im Log steht dann `SUCCESS` mit Commit.
 
-Damit die Web-App deinen Hörstatus meldet: im Admin unter System → Hörgeräte in jedem Browser, der melden soll, „Dieses Gerät merken“.
+Soll ein Browser den Hörstatus melden: in der Verwaltung unter System → Hörgeräte in diesem Browser „Dieses Gerät merken“.
 
-## 8. Sonos umstellen
+## 7. Sonos
 
-Erst wenn Schritt 7 klappt.
+Im Sonos-Entwicklerportal eine Integration anlegen und ihre ID als `integration_id` in die Config eintragen. Die Systemseite der Verwaltung zeigt alle Werte mit Kopier-Knopf.
 
-### Alte Adressen auf den neuen Code führen
+* Sonos Music API, Endpoints: SMAPI Endpoint `https://<domain>/smapi.php`
+* Sonos Music API, Endpoints: Reporting Endpoint `https://<domain>/report/v2.3`, Reporting Endpoint Version `2.3`. Darüber melden die Lautsprecher Start und Ende der Wiedergabe für den Hörstatus.
+* Service Configuration: nach jeder Änderung Refresh, dann Send
 
-Lautsprecher, die noch eine alte Adresse aufrufen, sollen sofort den neuen Stand bekommen. Dafür wird die alte `smapi.php` durch eine Datei ersetzt, die nur den neuen Code einbindet. Das ist keine Weiterleitung, Sonos merkt davon nichts. Eine echte Weiterleitung ginge nicht, Sonos folgt ihr bei SOAP-Anfragen nicht.
-
-Im Ordner `1radioe.net` den Pfad zum neuen Code merken und die alte Datei sichern:
-
-```bash
-NEU="$(pwd)/www/smapi.php"; echo "$NEU"
-```
-
-```bash
-cp -p ../eichhof.co/1radioe/smapi.php 1radioe-private/smapi-alt.php
-```
-
-Die Ausgabe muss `/www/htdocs/w0123456/1radioe.net/www/smapi.php` sein. Dann die alte Datei ersetzen:
-
-```bash
-printf "<?php\n// Old address: runs the 1radioe code in 1radioe.net, speakers that still use it get the same.\nrequire '%s';\n" "$NEU" > ../eichhof.co/1radioe/smapi.php
-```
-
-Prüfen:
-
-```bash
-curl -s https://eichhof.co/1radioe/smapi.php
-```
-
-Die Antwort beginnt mit `SMAPI ok` und nennt die Version der neuen Installation. Bei einem Fehler 500 erlaubt der Server die Einbindung nicht, dann die Sicherung zurückholen:
-
-```bash
-cp -p 1radioe-private/smapi-alt.php ../eichhof.co/1radioe/smapi.php
-```
-
-Die ältere RADIOE-Lite-Adresse bindet bisher `../1radioe/smapi.php` ein und bricht, sobald dort aufgeräumt wird. So findet man sie:
-
-```bash
-grep -rl --include=smapi.php '\.\./1radioe/smapi\.php' ../eichhof.co
-```
-
-Für jede gefundene Datei denselben `printf`-Befehl wie oben ausführen, mit ihrem Pfad statt `../eichhof.co/1radioe/smapi.php`.
-
-Jetzt einen Sender auf Sonos starten. Im Admin unter System erscheinen der Sender im Hörstatus und unter „Sonos-Adressen“ die alte Adresse. Beides kann nur der neue Code.
-
-### Endpunkt im Sonos-Portal
-
-Im Sonos-Entwicklerportal in der Integration `co.eichhof.radioe`:
-
-* Sonos Music API, Endpoints: SMAPI Endpoint `https://1radioe.net/smapi.php`
-* Sonos Music API, Endpoints: Reporting Endpoint `https://1radioe.net/report/v2.3`, Reporting Endpoint Version `2.3`. Darüber melden die Lautsprecher, dass ein Sender noch läuft. Ohne diesen Eintrag erlischt der Hörstatus nach zweieinhalb Minuten
-* Service Configuration: Refresh, dann Send
-
-Integration ID, Favoriten und Wecker bleiben, die Kennungen der Sender ändern sich nicht. Logo- und Track-Adressen holt Sonos bei der nächsten Abfrage neu. Unter „Sonos-Adressen“ taucht danach `1radioe.net/smapi.php` als aktuelle Adresse auf. Läuft ein Sender ein paar Minuten, stehen im Diagnose-Log etwa jede Minute Einträge `timePlayed update` mit der Adresse `1radioe.net/report/v2.3/…`. Eilig ist das nicht mehr, beide Adressen liefern denselben Stand.
-
-## 9. Aufräumen, später
-
-Wenn Schritt 8 läuft, braucht von der alten Installation nur noch `smapi.php` zu bleiben. Erst ansehen, was dort liegt und was gelöscht würde:
-
-```bash
-cd ../eichhof.co/1radioe && ls -A && find . -mindepth 1 -maxdepth 1 ! -name smapi.php
-```
-
-Passt die Liste, löschen und Browser, die noch alte Adressen wie `admin/` aufrufen, zu `1radioe.net` schicken:
-
-```bash
-find . -mindepth 1 -maxdepth 1 ! -name smapi.php -exec rm -rf {} +
-```
-
-```bash
-printf 'RewriteEngine On\nRewriteRule ^smapi\\.php$ - [L]\nRewriteRule ^(.*)$ https://1radioe.net/$1 [R=301,L]\n' > .htaccess
-```
-
-```bash
-cd /www/htdocs/w0123456/1radioe.net
-```
-
-Danach:
-
-* `eichhof.co/1radioe-media` zuerst umbenennen, nach einer Weile löschen. Die neue Installation nutzt `www/media/`.
-* Den alten Ordner `1radioe-private` im Account-Root löschen, und mit ihm `1radioe-private/smapi-alt.php`. Er enthält Passwort-Hash und TOTP-Secret, die neue Installation braucht ihn nicht.
-
-Die Dateien, die nur noch einbinden, dürfen bleiben, solange sie gebraucht werden. Unter System, „Sonos-Adressen“, steht für jede Adresse, wann Sonos sie zuletzt aufgerufen hat. Wurde eine alte Adresse einige Wochen nicht mehr aufgerufen, kann ihre Datei weg. Danach liegt außer `1radioe.net/` nichts mehr von 1radiœ im Account.
+Sonos folgt bei SOAP-Anfragen keiner Weiterleitung. Zieht eine Installation auf eine andere Adresse um, bleibt an der alten Adresse eine `smapi.php`, die den neuen Code nur einbindet (`<?php require '<neuer-ordner>/www/smapi.php';`), bis keine Lautsprecher sie mehr aufrufen. Wann Sonos welche Adresse zuletzt aufgerufen hat, zeigt die Systemseite unter „Sonos-Adressen“.
 
 ## Wenn etwas hakt
 
 | Meldung im Deploy-Log | Ursache und Lösung |
 |---|---|
-| `webhook-secret missing or empty` | Datei fehlt oder ist leer, Schritt 5 |
-| `invalid or missing signature` | Secret auf GitHub und im Server unterschiedlich, oder Content type nicht `application/json` |
+| `webhook-secret missing or empty` | Datei fehlt oder ist leer, Schritt 4 |
+| `invalid or missing signature` | Secret auf GitHub und auf dem Server unterschiedlich, oder Content type nicht `application/json` |
 | `payload is not JSON` | Content type im Webhook auf `application/json` stellen |
-| `exec() is disabled` | PHP darf keine Befehle ausführen. Im KAS oder beim All-Inkl-Support klären |
-| `dubious ownership` | Checkout und PHP gehören verschiedenen Nutzern. Beim All-Inkl-Support klären |
+| `exec() is disabled` | PHP darf keine Befehle ausführen, beim Hoster freischalten lassen |
+| `dubious ownership` | Checkout und PHP gehören verschiedenen Nutzern, beim Hoster klären |
 
 Von Hand ausrollen geht jederzeit:
 
 ```bash
-cd /www/htdocs/w0123456/1radioe.net && git fetch origin && git reset --hard origin/main
+cd <ordner> && git fetch origin && git reset --hard origin/main
 ```
 
 Niemals `git clean` verwenden, das kann `www/media/` und `1radioe-private/` samt Config und Secrets löschen.
 
-## Falls das Repository wieder privat wird
+**Hinweis für Shared Hosting:** Bei manchen Hostern ist `$HOME` in der SSH-Sitzung nicht das eigene Verzeichnis (bei All-Inkl etwa `/`). Die Befehle hier verwenden deshalb kein `~`, sondern Pfade relativ zum Domain-Ordner.
 
-Dann braucht der Server einen eigenen Schlüssel, der nur lesen darf. Er liegt mit im privaten Ordner, damit nichts lose im Account-Root liegt. Im Domain-Ordner:
+## Privates Repository
+
+Dann braucht der Server einen eigenen Schlüssel, der nur lesen darf. Er liegt im privaten Ordner, damit nichts lose im Account liegt. Im Domain-Ordner:
 
 ```bash
-ssh-keygen -t ed25519 -N "" -C "1radioe.net deploy" -f 1radioe-private/deploy_key
+ssh-keygen -t ed25519 -N "" -C "<domain> deploy" -f 1radioe-private/deploy_key
 cat 1radioe-private/deploy_key.pub
 ```
 
-Die ausgegebene Zeile auf GitHub eintragen: Repository → Settings → Deploy keys → Add deploy key. Titel `1radioe.net`, **Allow write access nicht anhaken**. Dann Git auf SSH umstellen, mit vollen Pfaden, weil `$HOME` nicht stimmt:
+Die ausgegebene Zeile auf GitHub eintragen: Repository → Settings → Deploy keys → Add deploy key, **Allow write access nicht anhaken**. Dann Git auf SSH umstellen, mit vollen Pfaden:
 
 ```bash
-P=/www/htdocs/w0123456/1radioe.net/1radioe-private
+P=<ordner>/1radioe-private
 git config core.sshCommand "ssh -i $P/deploy_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$P/known_hosts"
-git remote set-url origin git@github.com:ollrich/1radioe.git
+git remote set-url origin git@github.com:<konto>/<repo>.git
 GIT_SSH_COMMAND="ssh -i $P/deploy_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$P/known_hosts -o StrictHostKeyChecking=accept-new" git fetch origin
 ```
 

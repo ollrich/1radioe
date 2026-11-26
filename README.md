@@ -1,50 +1,58 @@
 # 1radiœ
 
-Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, dazu eine Web-App mit Player unter 1radioe.net, gepflegt über eine kleine Verwaltung.
+Eigene Radiosender und MP3-Playlists als Dienst in der Sonos-App, dazu eine Web-App mit Player, gepflegt über eine kleine Verwaltung. Läuft auf einfachem PHP-Hosting, ohne Framework und ohne Build-Schritt.
 
-* **Web-App** (`/`): alle Sender mit Player im Browser, Medientasten, Hörstatus
-* **SMAPI-Dienst** (`smapi.php`): liefert Sonos die Liste aus Sendern, Playlists und Kategorien, Logos, Beschreibungen, Tracks und Abspieladressen
-* **Admin** (`admin/`): Sender anlegen, Stream testen mit automatischer Formaterkennung, Logo hochladen und zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Diagnose-Log
-* **Playlists aus eigenen MP3s:** Upload per Drag & Drop oder FTP, Titel, Interpret, Album und Cover aus den MP3-Tags, alles bearbeitbar, Reihenfolge per Drag & Drop
-* PHP 8.1+ und MySQL/MariaDB, kein Framework, kein Build-Schritt
-* Automatisches Ausrollen: ein Push auf `main` aktualisiert den Server per GitHub-Webhook
-* **Hörstatus:** zeigt, welchen Sender Olli gerade hört, ohne Gerät, Ort oder Quelle (`/api/status`)
-* **Playlist und JSON:** alle Sender als `/streams.m3u` für VLC und andere Player, als `/streams.xspf` zum Import in Eter und als `/api/stations.json` für eine eigene App
+1radiœ ist aus [sns-smapi](https://github.com/ollrich/sns-smapi) entstanden, einem schlanken SMAPI-Dienst in einer PHP-Datei, der eigene Streams auf Sonos bringt. Hier ist daraus eine vollständige Anwendung mit Verwaltung, Web-App, Playlists und Schnittstellen geworden.
 
 Unabhängiges Projekt, nicht mit Sonos, Inc. verbunden.
+
+## Funktionen
+
+* **Sonos-Dienst** (`smapi.php`): liefert Sonos Sender, MP3-Playlists und Kategorien mit Logos, Beschreibungen, Tracks und Abspieladressen
+* **Web-App** (`/`): alle Sender mit Player im Browser, Medientasten, Sperrbildschirm, Songtitel aus dem Stream, Deutsch und Englisch, live unter [1radioe.net](https://1radioe.net)
+* **Verwaltung** (`admin/`): Sender anlegen und testen (automatische Formaterkennung), Logos zuschneiden, Reihenfolge per Drag & Drop, Vorschau wie in Sonos, Texte, Diagnose-Log
+* **MP3-Playlists:** Upload per Drag & Drop oder FTP, Angaben und Cover aus den MP3-Tags
+* **Weitere Medien in der Web-App:** SoundCloud-Tracks, Deezer-Playlists (als Link) und YouTube-Playlists
+* **Profile:** zwei Listen, Profil 1 öffentlich, Profil 2 nur für eine eigene App
+* **Hörstatus:** zeigt in der Web-App, welcher Sender gerade gehört wird, ohne Gerät, Ort oder Quelle
+* **Posting** zu Bluesky und Mastodon, wenn ein Sender eine Weile läuft
+* **Schnittstellen:** `/streams.m3u` für VLC, `/streams.xspf` für Eter, `/api/stations.json` und `/api/playlists` für eine eigene App
+* **Automatisches Ausrollen:** ein Push auf `main` aktualisiert den Server per GitHub-Webhook
 
 ## Aufbau
 
 ```
-1radioe-private/      Config, Secrets, Deploy-Log, FTP-Eingang (nur auf dem Server und lokal, nicht in Git)
-app/                  Programmcode, liegt außerhalb des Web-Verzeichnisses
-www/                  Web-Verzeichnis der Domain https://1radioe.net
+1radioe-private/      Config, Secrets, Deploy-Log, FTP-Eingang (nicht in Git)
+app/                  Programmcode, außerhalb des Web-Verzeichnisses
+www/                  Web-Verzeichnis (Document Root)
   index.php           Web-App mit Player
-  assets/             CSS, Schrift (R1 Sans aus Mona Sans), Favicon und App-Icons der Web-App
-    app.js            Einstieg des Skripts der Web-App, die Teile als ES-Module in app/
+  assets/             CSS, Schrift, Icons; app.js ist der Einstieg, die ES-Module liegen in app/
   smapi.php           SMAPI-Endpoint für Sonos
   report.php          Wiedergabe-Meldungen von Sonos (Reporting Endpoint)
-  admin/              Verwaltung (Login mit Passwort und TOTP), Skript wie oben: assets/app.js und assets/app/
+  api/                Schnittstellen (stations.json, playlists, status, nowplaying, listen)
+  admin/              Verwaltung (Login mit Passwort und TOTP), Skript wie oben
   deploy.php          Ziel des GitHub-Webhooks
-  robots.txt          Web-App für Suchmaschinen offen, Admin, Schnittstellen und Tracks gesperrt
   media/              Logos, Cover, tracks/ (legt die App an, nicht in Git)
+tests/                Tests in einfachem PHP
 config.sample.php     Vorlage für 1radioe-private/config.php
-DEPLOY-SETUP.md       Einrichtung auf All-Inkl Schritt für Schritt
+API.md                Schnittstellen für eine eigene App
+DEPLOY-SETUP.md       Einrichtung mit Webhook Schritt für Schritt
+CHANGELOG.md          Änderungen je Version
 ```
 
-Im Checkout neben `www/` liegt der Ordner `1radioe-private` mit `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Er liegt außerhalb des Web-Verzeichnisses und ist von Git ausgeschlossen, das Ausrollen lässt ihn unberührt. So bleibt alles für 1radiœ in einem Ordner. Die App sucht ihn zuerst im Checkout, dann in den Ordnern darüber.
+Der Ordner `1radioe-private` liegt neben `www/`, außerhalb des Web-Verzeichnisses, und ist von Git ausgeschlossen. Darin stehen `config.php`, Webhook-Secret, Deploy-Log, FTP-Eingang `inbox/` und Upload-Puffer `tmp/`. Das Ausrollen lässt ihn unberührt. Die App sucht ihn zuerst im Checkout, dann in den Ordnern darüber.
 
-**Skripte:** Web-App und Admin sind ES-Module ohne Build. `app.js` ist jeweils der Einstieg, die Teile liegen in `app/` daneben (Web-App: `core`, `scale`, `list`, `view`, `audio`, `soundcloud`, `youtube`, `media`, `status`, `dialogs`, `keys`, `song`, `tip`; Admin: `core`, `image`, `stations`, `editor`, `tracks`, `system`, `texts`, `social`). `core.js` hält, was alle brauchen, und importiert nichts. Jeder Teil deklariert beim Laden nur und hängt seine Listener in `init()` an, der Einstieg ruft die `init()` in fester Reihenfolge auf. Geladen wird der Einstieg als `assets/v<Version>/app.js`, `www/.htaccess` bildet `assets/v…/` auf `assets/` ab. So tragen die Module, die der Einstieg relativ nachlädt, die Version im Pfad, Browser dürfen alles ein Jahr behalten und mischen nach einem Deploy nie alte und neue Teile. `index.php` und `render_page()` (`app/admin.php`) setzen `modulepreload` für alle Teile, damit die Imports keine Wartezeit kosten. Ein neuer Teil in `app/` ist damit ohne weitere Änderung dabei.
+`www/media/` liegt bewusst im Web-Verzeichnis, weil Sonos-Lautsprecher Bilder und MP3s direkt abrufen. Die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
 
-`www/media/` liegt bewusst im Web-Verzeichnis, weil die Sonos-Lautsprecher Bilder und MP3s direkt abrufen. Die App legt dort eine `.htaccess` an, die Verzeichnislisten und Skripte sperrt. Der Ordner ist nicht in Git, deshalb lässt ihn das Ausrollen unberührt. Andere Orte lassen sich in der Config mit `media_dir` und `media_url` festlegen.
+**Skripte:** Web-App und Verwaltung sind ES-Module ohne Build. `app.js` ist jeweils der Einstieg, die Teile liegen in `app/` daneben. `core.js` hält, was alle brauchen, und importiert nichts. Jeder Teil deklariert beim Laden nur und hängt seine Listener in `init()` an, der Einstieg ruft die `init()` in fester Reihenfolge auf. Geladen wird der Einstieg als `assets/v<Version>/app.js`, `www/.htaccess` bildet `assets/v…/` auf `assets/` ab. So tragen alle Module die Version im Pfad und Browser dürfen sie ein Jahr behalten. Der Server hält nur die aktuellen Dateien: Eine Seite, die genau während eines Deploys lädt, könnte alte und neue Teile mischen; die Seite selbst wird nie zwischengespeichert, das Risiko ist bewusst in Kauf genommen. `modulepreload` deckt alle Teile ab, ein neuer Teil in `app/` ist ohne weitere Änderung dabei.
 
 ## Installation und Update
 
-Die Einrichtung auf All-Inkl mit Webhook und Umzug von `eichhof.co/1radioe` beschreibt [DEPLOY-SETUP.md](DEPLOY-SETUP.md).
+Die Einrichtung auf einem Server mit SSH und Git, mit Webhook für das automatische Ausrollen, beschreibt [DEPLOY-SETUP.md](DEPLOY-SETUP.md).
 
-Danach ist jedes Update ein Push auf `main`. Gearbeitet wird auf Branches, ein Merge nach `main` ist sofort live. Neue Spalten und Tabellen legt die App beim nächsten Aufruf von Admin oder Sonos selbst an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
+Danach ist jedes Update ein Push auf `main`. Gearbeitet wird auf Branches, ein Merge nach `main` ist sofort live. Neue Spalten und Tabellen legt die App beim nächsten Aufruf selbst an. Was sich geändert hat, steht in [CHANGELOG.md](CHANGELOG.md).
 
-Beim ersten Öffnen von `/admin/` fragt ein Assistent ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block für die `config.php`. Der QR-Code wird im Browser erzeugt, das Geheimnis verlässt den Server nicht.
+Beim ersten Öffnen von `/admin/` fragt ein Assistent ein Passwort ab (mindestens 12 Zeichen), zeigt einen QR-Code für die Authenticator-App und danach einen Block für die `config.php`. Der QR-Code entsteht im Browser, das Geheimnis verlässt den Server nicht.
 
 ## Lokal entwickeln
 
@@ -53,178 +61,133 @@ cp config.sample.php 1radioe-private/config.php   # Ordner vorher anlegen, Daten
 php -S 127.0.0.1:8080 -t www app/dev-router.php
 ```
 
-`app/dev-router.php` bildet die Adressen ohne Dateiendung aus `www/.htaccess` nach. `1radioe-private/` im Checkout ist von Git ausgeschlossen. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen. Vor jedem Merge nach `main` prüft GitHub Actions die Syntax aller PHP- und JavaScript-Dateien und lässt die Tests laufen (`.github/workflows/lint.yml`), lokal geht das mit `php -l`, `node --check` und `php tests/run.php`. Module (Dateien mit `import`/`export`) prüft `node --check` nur als `.mjs`, die CI kopiert sie dafür.
+`app/dev-router.php` bildet die Adressen aus `www/.htaccess` nach. Mit `'allow_private_urls' => true` testet der Stream-Test auch lokale Adressen.
 
-**Tests** (`tests/`): einfaches PHP ohne Framework, je Datei `*.test.php` eine Gruppe. Geprüft werden Abgleich und Bilder der YouTube-Playlists mit nachgebauter API (Reihenfolge, Filter, Seiten, neues Bild desselben Videos, geteilte Videos, nicht in Sonos und `stations.json`), welcher Sender läuft (Stream-Adresse, aufgelöste Playlist, Titel), Uploads in Teilen, auch derselbe Teil zweimal gleichzeitig aus zwei Prozessen, und Adressen in Playlists. Die Tests brauchen eine eigene MariaDB-Datenbank, deren Name `test` enthält, denn sie leeren sie zuerst. Zugang über `R1_TEST_DB_HOST`, `R1_TEST_DB_PORT`, `R1_TEST_DB_NAME`, `R1_TEST_DB_USER` und `R1_TEST_DB_PASS` (ohne Angabe `127.0.0.1`, `r1_test`, Benutzer und Passwort `r1`, wie in der CI). Konfiguration und Medienordner legen sie in einem temporären Ordner an, `config.php` und `www/media/` bleiben unberührt. Kein Netz, keine Schlüssel. Der Player im Browser (`app.js`) hat keine automatischen Tests, er wird von Hand geprüft.
+**Prüfungen:** Vor jedem Merge nach `main` prüft GitHub Actions die Syntax aller PHP- und JavaScript-Dateien und lässt die Tests laufen (`.github/workflows/lint.yml`). Lokal geht das mit `php -l`, `node --check` und `php tests/run.php`. Module (Dateien mit `import`/`export`) prüft `node --check` nur als `.mjs`, die CI kopiert sie dafür.
 
-## Sonos-Entwicklerportal
+**Tests** (`tests/`): einfaches PHP ohne Framework, je Datei `*.test.php` eine Gruppe: Kategorie-Bilder je Liste, Adressfilter, Profile und Schlüssel, Senderzuordnung und täglicher Stream-Test, Uploads in Teilen, XSPF, YouTube-Abgleich mit nachgebauter API. Die Tests brauchen eine eigene MariaDB-Datenbank, deren Name `test` enthält, denn sie leeren sie zuerst. Zugang über `R1_TEST_DB_HOST`, `R1_TEST_DB_PORT`, `R1_TEST_DB_NAME`, `R1_TEST_DB_USER` und `R1_TEST_DB_PASS` (ohne Angabe `127.0.0.1`, `r1_test`, Benutzer und Passwort `r1`, wie in der CI). Konfiguration und Medienordner liegen in einem temporären Ordner, kein Netz, keine Schlüssel. Der Player im Browser hat keine automatischen Tests und wird von Hand geprüft.
 
-Die Systemseite im Admin zeigt alle Werte mit Kopier-Knopf. In der Integration `co.eichhof.radioe`:
+## Sonos einrichten
 
-* **Sonos Music API:** SMAPI Endpoint `https://1radioe.net/smapi.php`, Reporting Endpoint `https://1radioe.net/report/v2.3` mit Reporting Endpoint Version 2.3
+Im Sonos-Entwicklerportal eine Integration anlegen. Die Systemseite der Verwaltung zeigt alle Werte mit Kopier-Knopf:
+
+* **Sonos Music API:** SMAPI Endpoint `https://<domain>/smapi.php`, Reporting Endpoint `https://<domain>/report/v2.3` mit Reporting Endpoint Version 2.3
 * **Service Configuration:** nach jeder Änderung Refresh, dann Send
 
-## Bedienung
+Änderungen in der Verwaltung erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
 
-* **Sender hinzufügen:** Stream-URL eintragen und „Stream testen“. Der Test erkennt MP3, AAC, Ogg Vorbis, FLAC und HLS, folgt Weiterleitungen und löst `.pls`- und `.m3u`-Playlists auf. Format, Name und Beschreibung werden aus dem Stream übernommen, wenn die Felder leer sind. Ogg Opus lehnt der Test ab, weil Sonos es nicht abspielt.
-* **Logo:** hochladen oder per URL laden, im Editor zuschneiden, zoomen, drehen, einpassen oder füllen, Hintergrund für transparente Bereiche wählen. Gespeichert wird immer 600 × 600 px. Für die kleinen Kacheln der Web-App legt der Server beim ersten Aufruf daneben ein Bild mit 192 px an (`…-s.jpg`), das große bekommen Player, Sperrbildschirm, Sonos und Link-Karten.
-* **Reihenfolge:** Kacheln per Drag & Drop verschieben. Die Vorschau entspricht der Liste in Sonos.
-* **Inaktiv:** blendet einen Sender in Sonos aus, ohne ihn zu löschen.
-* **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen. Der Tooltip am Punkt nennt Ergebnis und Zeitpunkt, die Zeile unter „Sender“ die Zahl der Streams mit Problem.
-* **Täglicher Test:** Der Server prüft jeden aktiven Stream einmal am Tag von selbst, mit demselben Test (`stations_check_due()` in `app/stations.php`). Ohne Cron beim Hoster: Jeder Aufruf der Web-App und von `/api/status` nimmt sich bis zu drei fällige Streams und testet sie nach der Antwort, nie getestete zuerst, dann die ältesten. Schlägt ein Test fehl, folgt sofort ein zweiter, erst der zählt; ein roter Punkt wird nach zwei Stunden erneut geprüft und wird grün, sobald der Stream wieder läuft. Hat jemand die Adresse inzwischen geändert, wird nichts gespeichert. Inaktive Sender, Playlists, SoundCloud, Deezer und YouTube prüft er nicht.
-* **Website:** Link zur Seite des Senders, erscheint in der Web-App unter „Über den Sender“.
-* **Land und Ort:** Herkunft des Senders, das Land aus einer Liste (gespeichert als ISO-Code wie `FR`), der Ort frei und optional. Erscheint unter „Über den Sender“ mit einer Ortsmarke über der Website, etwa „Paris, Frankreich“. Den Ländernamen setzt der Browser in der Sprache der Seite ein („France“ auf Englisch). Auch für SoundCloud-Einträge.
-* **Texte:** Über 1radiœ, Impressum und Datenverarbeitung im Reiter „Texte“ bearbeiten, je auf Deutsch und Englisch. Ein schlichter Editor ohne Bibliothek: Absätze, Zwischenüberschriften, fett, kursiv, Listen, Links. Der Server lässt nur diese Auszeichnungen durch (`app/texts.php`), Links nur zu `http`, `https`, `mailto` oder relativ auf dieser Seite, externe öffnen in einem neuen Tab. Gespeichert wird in `r1_settings` (`text.<name>.<sprache>`). Ohne eigenen Text gilt der Standardtext, „Auf Standard zurücksetzen“ löscht den eigenen. Englisch steht auf `1radioe.net`, Deutsch auf `1radioe.net/de/`. Ohne eigenen englischen Text zeigt die englische Seite den eigenen deutschen (echte Angaben im Impressum gehen vor Platzhaltern), erst ohne beide den englischen Standardtext. Der Hinweis zu den Balken unter „Über“ bleibt fest im Code, weil er das Symbol selbst zeigt.
-* Änderungen erreichen Sonos automatisch, spätestens beim nächsten Öffnen des Dienstes.
+## Verwaltung
+
+### Sender
+
+* **Hinzufügen:** Stream-URL eintragen und „Stream testen“. Der Test erkennt MP3, AAC, Ogg Vorbis, FLAC und HLS, folgt Weiterleitungen und löst `.pls`- und `.m3u`-Playlists auf. Format, Name und Beschreibung kommen aus dem Stream, wenn die Felder leer sind. Ogg Opus wird abgelehnt, weil Sonos es nicht abspielt.
+* **Logo:** hochladen oder per URL laden, zuschneiden, zoomen, drehen, Hintergrund für transparente Bereiche wählen. Gespeichert wird 600 × 600 px, für die kleinen Kacheln der Web-App entsteht beim ersten Aufruf daneben ein Bild mit 192 px (`…-s.jpg`).
+* **Reihenfolge:** Kacheln per Drag & Drop verschieben, die Vorschau entspricht der Liste in Sonos.
+* **Inaktiv:** blendet einen Eintrag überall aus, ohne ihn zu löschen.
+* **Website, Land und Ort:** erscheinen in der Web-App unter „Über den Sender“. Das Land wird als ISO-Code gespeichert (`FR`), den Namen setzt der Browser in der Sprache der Seite ein.
+* **Alle Streams prüfen:** testet alle Sender. Ein roter Punkt markiert Probleme, die Marke „HTTP“ Sender, die nur per HTTP erreichbar sind und deshalb nicht in der Web-App spielen.
+* **Täglicher Test:** Der Server prüft jeden aktiven Stream einmal am Tag, ohne Cron: Jeder Aufruf der Web-App und von `/api/status` nimmt sich bis zu drei fällige Streams und testet sie nach der Antwort. Erst ein zweiter Fehlschlag zählt, ein roter Punkt wird nach zwei Stunden erneut geprüft.
 
 ### Kategorien
 
-* **Anlegen:** „Kategorie hinzufügen“ mit Name, Beschreibung und Bild. Ohne eigenes Bild zeigt die Kategorie ein Raster aus den ersten vier Logos ihrer Sender.
-* **Füllen:** In der Kategorie „Vorhandene zuordnen“ oder „Sender hinzufügen“. Jeder Sender und jede Playlist steckt in höchstens einer Kategorie, alles andere steht direkt in der Liste. Im Editor wählst du die Kategorie im Feld „Kategorie“, dort nimmst du einen Eintrag auch wieder heraus.
-* **In Sonos:** Die Kategorie ist ein Ordner, darin die Sender und Playlists in deiner Reihenfolge. Leere Kategorien zeigt Sonos nicht an. Favoriten und Wecker bleiben beim Einsortieren erhalten.
-* **Löschen:** Die Einträge einer gelöschten Kategorie stehen danach wieder direkt in der Liste.
+* **Anlegen:** mit Name, Beschreibung und Bild. Ohne eigenes Bild zeigt eine Kategorie ein Raster aus den ersten vier Logos, und zwar aus dem, was die jeweilige Liste darin zeigt (Web-App, Sonos, App je Profil).
+* **Füllen:** „Vorhandene zuordnen“ oder direkt in der Kategorie anlegen. Jeder Eintrag steckt in höchstens einer Kategorie.
+* **In Sonos** ist die Kategorie ein Ordner. Leere Kategorien zeigt Sonos nicht, Favoriten und Wecker bleiben beim Einsortieren erhalten.
+* **Löschen:** Die Einträge stehen danach wieder direkt in der Liste.
 
-### Playlists
+### MP3-Playlists
 
-* **Anlegen:** „Playlist hinzufügen“ mit Name, Beschreibung und Cover. Die Playlist erscheint als Kachel zwischen den Sendern und lässt sich wie diese sortieren und deaktivieren.
-* **MP3s hinzufügen:** in der Playlist hochladen oder per Drag & Drop ablegen. Uploads laufen in 2-MB-Teilen, die Upload-Grenze des Hosters spielt also keine Rolle (höchstens 300 MB je Datei). Importiert wird erst, wenn alle Teile da sind. Titel, Interpret, Album, Cover und Dauer kommen aus den MP3-Tags (ID3v1 und v2), fehlt der Titel, wird der Dateiname genommen.
-* **Per FTP:** Dateien in `1radioe-private/inbox/` legen und unter „Tracks“ auf „FTP-Eingang importieren“ klicken.
-* **Per FTP:** Dateien, die gerade noch hochgeladen werden (in den letzten 15 Sekunden geändert), überspringt der Import. Einfach kurz danach noch einmal klicken.
-* **Bibliothek:** Jeder Track liegt nur einmal auf dem Server und kann in mehreren Playlists stehen. „Aus Bibliothek hinzufügen“ ordnet vorhandene Tracks zu, das ✕ entfernt einen Track nur aus der Playlist, gelöscht wird er unter „Tracks“.
-* **Doppelte Dateien:** Eine MP3, die schon in der Bibliothek liegt, erkennt die App am Inhalt (nicht am Namen) und speichert sie nicht noch einmal. Beim Upload in eine Playlist kommt der vorhandene Track dorthin. Fehlt die Datei eines Tracks auf dem Server, stellt ein erneuter Upload derselben MP3 sie wieder her.
-* **Bearbeiten:** Titel, Interpret, Album und Cover je Track. Ohne eigenes Cover zeigt Sonos das Bild der Playlist.
-* **In Sonos:** Die Playlist öffnet die Trackliste, „Abspielen“ legt alle Tracks in der festgelegten Reihenfolge in die Warteschlange. Zufallswiedergabe und Wiederholen schaltest du in der Sonos-App. Leere Playlists und Tracks, deren Datei fehlt, zeigt Sonos nicht an.
-* Die MP3-Dateien laden die Lautsprecher direkt von deinem Server. Sie liegen unter zufälligen, nicht erratbaren Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
+* **Anlegen:** mit Name, Beschreibung und Cover, sortieren und deaktivieren wie Sender.
+* **MP3s hinzufügen:** hochladen oder per Drag & Drop ablegen. Uploads laufen in 2-MB-Teilen, die Upload-Grenze des Hosters spielt keine Rolle (höchstens 300 MB je Datei). Titel, Interpret, Album, Cover und Dauer kommen aus den MP3-Tags (ID3v1 und v2).
+* **Per FTP:** Dateien in `1radioe-private/inbox/` legen und unter „Tracks“ importieren. Dateien, die in den letzten 15 Sekunden geändert wurden, überspringt der Import.
+* **Bibliothek:** Jeder Track liegt einmal auf dem Server und kann in mehreren Playlists stehen. Doppelte Dateien erkennt die App am Inhalt.
+* **In Sonos** öffnet eine Playlist die Trackliste, „Abspielen“ legt alle Tracks in die Warteschlange. Leere Playlists und Tracks ohne Datei zeigt Sonos nicht.
+* Die MP3s laden die Lautsprecher direkt vom Server. Sie liegen unter zufälligen Namen ohne Verzeichnisliste, sind aber für jeden abrufbar, der einen Link kennt.
 
-### SoundCloud
+### SoundCloud, Deezer und YouTube
 
-* **Anlegen:** „SoundCloud hinzufügen“ (oben oder in einer Kategorie) mit dem Link zum Track auf soundcloud.com. Kurzlinks aus der App (`on.soundcloud.com`) löst der Server beim Speichern auf, Tracking-Parameter wie `?si=` fallen weg. Name, Cover und Beschreibung legst du selbst fest, sie kommen nicht von SoundCloud. Sortieren, deaktivieren und Kategorien wie bei Sendern.
-* **Nur in der Web-App:** Sonos, `streams.m3u` und `stations.json` lassen SoundCloud-Tracks aus. Eine Kategorie nur mit SoundCloud gibt es deshalb nur in der Web-App. Grund sind die API-Bedingungen von SoundCloud: Sie verbieten Radio-Apps und eigene Angebote, die Inhalte vieler Nutzer bündeln. Erlaubt ist das Einbetten des offiziellen Players.
-* **Kein Hörstatus und kein Posting** für SoundCloud.
+Diese Einträge gibt es nur in der Web-App. Sonos, `streams.m3u`, `streams.xspf` und `stations.json` lassen sie aus, es gibt für sie keinen Hörstatus und kein Posting.
 
-### Deezer
+* **SoundCloud:** Link zu einem Track, Kurzlinks werden aufgelöst, Tracking-Parameter entfernt. Gespielt wird im offiziellen Player von SoundCloud. Die API-Bedingungen von SoundCloud verbieten Radio-Apps, die Inhalte vieler Nutzer bündeln, erlaubt ist das Einbetten des Players.
+* **Deezer:** Link zu einer Playlist, auch Teilen-Links. Gespeichert wird die reine Adresse. In der Web-App öffnet die Kachel einen Hinweis mit dem Weg zu Deezer und dem Tipp zum Export in andere Musik-Apps; das Radio läuft dabei weiter.
+* **YouTube:** Adresse einer öffentlichen oder nicht gelisteten Playlist (nur auf der obersten Ebene). Abgleich einmal am Tag über die YouTube Data API v3, „Jetzt abgleichen“ sofort; je Playlist läuft höchstens ein Abgleich gleichzeitig. Gespeichert werden je Video ID, Titel, Kanal, Länge und ein Bild (`yt-<id>-<hash>.jpg`), so fragt die Seite vor dem Klick nichts bei Google an. YouTube erlaubt solche Daten höchstens 30 Tage, der Abgleich frischt sie auf. Höchstens 500 Videos.
+* **YouTube-API-Schlüssel:** In der Google Cloud Console die YouTube Data API v3 aktivieren, einen API-Schlüssel erstellen, auf diese API und möglichst auf die IP-Adresse des Servers beschränken und im Editor einer YouTube-Playlist eintragen. Er wird verschlüsselt gespeichert. Ein Abgleich kostet je 50 Videos zwei Einheiten des Tageskontingents von 10.000.
 
-* **Anlegen:** „Deezer hinzufügen“ (oben oder in einer Kategorie) mit dem Link zu einer Playlist, auch dem Teilen-Link aus der App (`link.deezer.com`). Der Server folgt ihm und speichert die reine Adresse `https://www.deezer.com/playlist/<id>`, ohne Tracking-Parameter und ohne die Nummer dessen, der geteilt hat. Name, Cover und Beschreibung legst du selbst fest.
-* **In der Web-App** spielt die Playlist nicht. Die Kachel trägt einen Pfeil nach außen, ein Klick öffnet einen Hinweis mit „Zu Deezer“ (neuer Tab oder Deezer-App) und dem Tipp, dass man sie bei Deezer in andere Musik-Apps exportieren kann. Dafür hängt die Web-App an den Link `universal_link=1`, sonst zeigt Deezer sein Angebot „Playlist exportieren“ (Spotify, YouTube Music, Apple Music) nicht. Gespeichert bleibt die reine Adresse. Das Radio läuft dabei weiter, Vor und Zurück überspringen Deezer-Einträge.
-* **Nur in der Web-App:** Sonos, `streams.m3u` und `stations.json` lassen Deezer aus. Kein Hörstatus, kein Posting.
+### Profile
 
-### YouTube
+Zwei Listen aus demselben Bestand. Jeder Sender und jede MP3-Playlist hat in der Verwaltung zwei Häkchen, „Sichtbar für Profil 1 / Profil 2“, beide sind möglich.
 
-* **Anlegen:** „YouTube hinzufügen“ (nur oben, nicht in einer Kategorie) mit der Adresse einer öffentlichen oder nicht gelisteten Playlist, auch ein Video daraus (`watch?v=…&list=…`) oder YouTube Music. Gespeichert wird `https://www.youtube.com/playlist?list=<id>`. Name, Beschreibung und Cover legst du selbst fest, ohne Cover zeigt der Stapel ein Raster aus den ersten vier Videos. Dazu einmal der API-Schlüssel (siehe unten).
-* **In der Web-App** ein Stapel wie eine Kategorie, das zuletzt hinzugefügte Video zuerst, mit Kanal und Länge unter dem Titel. Beim Video im Player läuft die Zeit mit („12:34 / 1:02:03“, wie YouTube es meldet, auch nach einem Sprung und pausiert). Ein Video spielt sichtbar an der Stelle des Logos (siehe Web-App).
-* **Abgleich:** einmal am Tag, angestoßen vom ersten Aufruf der Web-App danach und erledigt nach der Antwort (`youtube_refresh_due()` in `app/youtube.php`), nach einem Fehler wieder nach einer Stunde. „Jetzt abgleichen“ im Editor macht es sofort, eine neue Playlist gleicht beim Speichern ab. Neue Videos kommen dazu, private, gelöschte, nicht einbettbare und angekündigte Premieren fallen weg, ebenso was aus der Playlist entfernt wurde. Geht ein Abgleich schief (Schlüssel, Kontingent, Playlist privat), bleibt die letzte Liste und der Editor zeigt den Grund, die Kachel einen roten Punkt. Höchstens 500 Videos.
-* **Gespeichert** je Video: ID, Titel, Kanal, wann es in die Playlist kam, Länge und ein Bild (16:9, 640 × 360 px und 256 × 144 px als `yt-<id>-<hash>.jpg` und `yt-<id>-<hash>-s.jpg` in `media/`). So fragt die Seite vor dem Klick nichts bei Google an. YouTube erlaubt solche Daten höchstens 30 Tage: Der tägliche Abgleich frischt die Angaben auf, die Bilder holt er nach 25 Tagen neu. Der Hash im Namen kommt vom Bild selbst: Ändert sich das Bild eines Videos, bekommt es einen neuen Namen, Browser laden es neu (Dateien in `media/` dürfen sie ein Jahr behalten) und das Raster der Playlist entsteht neu. Das alte Bild wird gelöscht, sobald keine Playlist es mehr zeigt. Tabelle `r1_youtube_videos`.
-* **API-Schlüssel:** In der Google Cloud Console ein Projekt anlegen, unter „APIs und Dienste“ die YouTube Data API v3 aktivieren, unter „Anmeldedaten“ einen API-Schlüssel erstellen und ihn auf diese API beschränken, wenn möglich auch auf die IP-Adresse des Servers. Im Editor einer YouTube-Playlist eintragen, er gilt für alle. Der Server prüft ihn mit einem Aufruf und speichert ihn verschlüsselt wie die Zugänge fürs Posting (`secret_key` in `config.php`). Ein Abgleich kostet je 50 Videos zwei Einheiten des Tageskontingents von 10.000.
-* **Nur in der Web-App:** Sonos, `streams.m3u` und `stations.json` lassen YouTube aus. YouTube erlaubt keinen Ton ohne Bild und kein Herauslösen des Tons. Kein Hörstatus, kein Posting.
+* **Profil 1** ist die öffentliche Liste: Web-App, Sonos, `streams.m3u`, `streams.xspf` und `stations.json` ohne Profil.
+* **Profil 2** gibt es nur für eine eigene App: `stations.json` und `/api/playlists` mit `?profile=<name>`.
+* Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus und Posting gehören zu Profil 1.
+* **Schlüssel** werden in der Verwaltung je Profil erzeugt. Der von Profil 2 liest nur dessen Playlists und meldet nie einen Hörstatus.
+* Namen und Anzeige der Profile stehen in `PROFILES` in `app/profiles.php`, Details in [API.md](API.md).
+
+### Texte
+
+„Über“, Impressum und Datenverarbeitung im Reiter „Texte“, je auf Deutsch und Englisch, mit einem schlichten Editor (Absätze, Zwischenüberschriften, fett, kursiv, Listen, Links). Der Server lässt nur diese Auszeichnungen durch (`app/texts.php`). Ohne eigenen Text gilt ein Standardtext mit Platzhaltern in eckigen Klammern.
+
+**E-Mail-Adressen** stehen nicht im HTML: Der Server ersetzt sie durch einen Platzhalter mit verschlüsselter Adresse, das Skript macht daraus beim Laden einen `mailto:`-Link. Adress-Sammler lesen Seiten meist ohne Skript und finden nichts.
 
 ## Web-App
 
-`https://1radioe.net/` zeigt alle aktiven Sender, keine MP3-Playlists.
+[1radioe.net](https://1radioe.net) zeigt alle aktiven Sender von Profil 1, dazu SoundCloud, Deezer und YouTube, keine MP3-Playlists.
 
-* **Sprachen:** `1radioe.net` ist Englisch, `1radioe.net/de/` Deutsch. Unter `/de/` gilt jede Adresse genauso (`.htaccess` reicht sie ohne `/de` weiter, die Seite liest die Sprache aus der Adresse), also auch `/de/s/<smapi_id>`. Ist Deutsch die erste Sprache des Browsers, leitet `1radioe.net` auf `/de/` um (`Accept-Language`). Wer im Menü Englisch wählt, landet auf `/?lang=en` und wird nicht umgeleitet, ganz ohne Cookie. Übersetzt ist die ganze Oberfläche (`webapp_strings()` und `webapp_script_strings()` in `app/webapp.php`), die Texte aus dem Admin je Sprache. Nur die Senderbeschreibungen gibt es einmal.
+* **Sprachen:** Englisch unter `/`, Deutsch unter `/de/`. Ist Deutsch die erste Sprache des Browsers, leitet `/` auf `/de/` um; wer im Menü Englisch wählt, bleibt dort, ohne Cookie.
+* **Desktop:** Player in der Mitte, darunter die Sender als Skala mit Nadel. Kategorien öffnen eine eigene Skala.
+* **Handy:** Liste mit aufklappbaren Kategorien und ein angedockter Player, der sich zur Vollansicht aufziehen lässt.
+* **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde. Medientasten und Sperrbildschirm folgen derselben Regel.
+* **Tastatur:** Leertaste, Pfeiltasten und Esc wirken überall, 1 bis 0 nur mit dem Fokus im Player oder in der Senderauswahl (WCAG 2.1.4). Erklärt im (?) unten rechts.
+* **Screenreader:** Eine Statusmeldung sagt Sender und Zustand an, der Lautstärkeregler nennt seinen Wert.
+* **Wiedergabe:** direkt vom Stream des Senders, nie über den Server. Pausieren legt auf, Abspielen verbindet neu. Bei einem Abbruch verbindet der Player selbst neu.
+* **HLS:** Safari, Chrome und Handy-Browser spielen es selbst. Firefox bekommt [hls.js](https://github.com/video-dev/hls.js) vom eigenen Server, nur für HLS-Sender.
+* **Song:** Schickt der Stream Titel mit (ICY-Metadaten), zeigt der Player Titel und Interpret. Der Server liest sie (`/api/nowplaying`), solange der Player spielt.
+* **Hörstatus:** Mint-Balken an einem Sender zeigen „Olli hört gerade …“. Läuft nichts, steht dort „Zuletzt von Olli gehört: …“.
+* **SoundCloud und YouTube** laden erst nach einem Klick („SoundCloud laden“, „YouTube laden“), die Zustimmung gilt für den Besuch. Gesteuert werden beide Player über `postMessage`, ohne die Skripte der Anbieter zu laden. Ein YouTube-Video spielt sichtbar an der Stelle des Logos, wie YouTube es verlangt.
+* **Menü:** Über, Impressum, Datenverarbeitung und Sprache. Ohne Senderliste (Datenbank nicht erreichbar oder kein Sender aktiv) bleibt es nutzbar, die Links stehen dann zusätzlich unten.
+* **Ohne JavaScript** eine Liste mit Links zu den Streams, die Texte als Abschnitte.
+* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen außer SoundCloud und YouTube nach dem Klick.
+* **Senderseiten:** `/s/<id>` leitet auf die Web-App mit dem Sender im Player und hat eine eigene Link-Karte (Name, Beschreibung, Logo).
 
-* **Desktop:** Player in der Mitte, darunter die Sender als Skala mit Nadel. Ein Klick spielt, ein zweiter pausiert. Kategorien öffnen eine eigene Skala. Sind es zu viele für die Breite, blättern Pfeile die Skala.
-* **Handy:** Liste mit aufklappbaren Kategorien, nach dem ersten Start ein angedockter Player, der sich zur Vollansicht aufziehen lässt.
-* **Vor/Zurück** bleibt in der Ebene, auf der der Sender gestartet wurde, mit Umlauf, und überspringt Ordner. Medientasten und Sperrbildschirm folgen derselben Regel.
-* **Tastatur:** Leertaste, Pfeiltasten und Esc wirken überall, 1 bis 0 nur, wenn der Fokus im Player oder in der Senderauswahl steht. Einzelne Zeichen als Kürzel würden sonst bei Spracheingabe Sender starten (WCAG 2.1.4). Hat der Lautstärkeregler den Fokus, gehören ihm die Pfeiltasten. Erklärt im (?) über der Skala.
-* **Screenreader:** Eine Statusmeldung sagt Sender und Zustand an, etwa „FIP, Verbindet“ und dann „Live“. Bleibt der Sender gleich, nur den Zustand. Beim Laden der Seite bleibt sie still. Der Lautstärkeregler nennt seinen Wert in Prozent.
-* **Wiedergabe:** direkt vom Stream des Senders, nie über diesen Server. Pausieren legt auf, Abspielen verbindet neu. Bei Abbruch verbindet der Player selbst neu und zeigt „Verbindet“.
-* **HLS** (`.m3u8`, etwa die BBC): Safari, Chrome und die Browser auf dem Handy spielen das selbst. Firefox kann es nicht, dort lädt die Web-App [hls.js](https://github.com/video-dev/hls.js) von diesem Server nach, nur für HLS-Sender und nur in Browsern ohne eigene HLS-Wiedergabe. hls.js holt Playlist und Stücke direkt beim Sender. Dafür erlaubt die Sicherheitsrichtlinie der Seite (CSP) Abrufe an `https:`-Adressen und `blob:` als Quelle für Ton. Ohne Worker, weil der `blob:`-Skripte bräuchte.
-* **Song:** Schickt der Stream Titel mit (ICY-Metadaten bei Shoutcast und Icecast), zeigt der Player Titel und Interpret, im angedockten Player und in der Liste statt „Live“, auf dem Sperrbildschirm und in den Mediensteuerungen. Der Browser kann die Daten aus dem Stream nicht selbst lesen, deshalb liest sie der Server (`/api/nowplaying`, höchstens alle 20 Sekunden je Sender). Abgefragt wird nur, solange der Player spielt. Unter dem Namen steht immer die Beschreibung des Senders aus dem Admin, auch vor dem Abspielen. Sobald ein Song bekannt ist, ersetzen ihn Titel und Interpret, beim Pausieren kommt die Beschreibung zurück. Im angedockten Player und in der Liste steht beim Spielen der Song oder die Beschreibung statt „Live“, ohne Beschreibung „Live“. HLS-Streams schicken keine Titel. Wiederholt ein Stream nur den Sendernamen, wird nichts angezeigt, „ByteFM - Nachrichten“ wird zu „Nachrichten“.
-* **Hörstatus:** Die Mint-Balken zeigen beim Darüberfahren mit der Maus, wer was hört, etwa „Olli hört gerade TSF Jazz“ an einer Kategorie. Auf dem Handy zeigt ein Tipp auf die Balken diese Info, ohne den Sender zu starten.
-* **YouTube:** Ein Video spielt im Player von YouTube (iframe von `www.youtube-nocookie.com`), sichtbar an der Stelle des Logos, in 16:9 und nie unter 200 px hoch, wie YouTube es verlangt. Nichts liegt darüber, auch nicht die Nummer. Vorher zeigt die Stelle das Bild des Videos und darunter ein Hinweis mit Link zu den Nutzungsbedingungen von YouTube und „YouTube laden“; die Zustimmung gilt für den Besuch. Unsere Knöpfe bleiben und steuern den Player über `postMessage` (Protokoll der IFrame-API, ohne YouTubes Skript zu laden), der Player hat zusätzlich seine eigenen, etwa zum Spulen. Das nächste Video lädt im selben Player. Ist ein Video zu Ende, folgt das nächste der Playlist. Kann der Player ein Video nicht abspielen, steht „Video nicht verfügbar“ da und nach drei Sekunden folgt das nächste. Auf dem Handy spielt das Video im großen Player; wer ihn schließt, pausiert es, denn ein verdeckter Player darf nicht weiterspielen. Die Seite schickt sonst keinen Referrer, YouTubes Player braucht aber einen: Das iframe bekommt `strict-origin-when-cross-origin`, YouTube erfährt also nur `https://1radioe.net`. Die Sicherheitsrichtlinie erlaubt `frame-src https://www.youtube-nocookie.com`. Werbung in Videos kommt von YouTube und bleibt.
-* **SoundCloud:** Ein SoundCloud-Eintrag spielt im offiziellen Player von SoundCloud (Widget, iframe von `w.soundcloud.com`). Erst steht dort ein Hinweis mit „SoundCloud laden“, der Player lädt erst nach diesem Klick, denn ab dann setzt SoundCloud Cookies. Die Zustimmung gilt nur für den Besuch und wird nicht gespeichert. Am Desktop steht der Player auf der Bühne, auf dem Handy im großen Player, beide blenden dann ihre eigenen Knöpfe aus. Leertaste, Pfeiltasten, die Knöpfe im angedockten Player und die Lautstärke steuern ihn über `postMessage` (Protokoll der Widget-API, ohne SoundClouds Skript zu laden). Ist ein Track zu Ende, folgt der nächste Eintrag der Liste, wenn er auch von SoundCloud ist. Status „Spielt“ statt „Live“. Die Sicherheitsrichtlinie erlaubt dafür `frame-src https://w.soundcloud.com`. Auf dem Handy kann der Browser den Start von außen verweigern, dann öffnet sich der große Player und ein Tipp auf Play im Player von SoundCloud startet ihn.
-* **Lauftext:** Eine abgeschnittene Zeile (Beschreibung oder Song in der Liste, im angedockten Player, Songzeilen im Player) endet mit „…“ und läuft auf Abruf bis zum Ende und zurück: am Desktop beim Darüberfahren oder bei Tastaturfokus, solange er dauert; auf dem Handy einmal, wenn ein gewählter Sender spielt, und die Songzeilen einmal beim Öffnen des großen Players. Von selbst und dauerhaft bewegt sich nichts (WCAG 2.2.2), bei „Bewegung reduzieren“ gar nichts.
-* **Wortmarke und Icons:** Oben links steht die Wortmarke als eingebettetes SVG (`app/brand.php`), „1radi“ in Textfarbe, das œ in Logo-Blau, im hellen und dunklen Modus. Dieselbe Wortmarke steht im Admin. Favicon als SVG und PNG (128 und 192 px, Google will Vielfache von 48), `apple-touch-icon.png` (180 px) für den Home-Bildschirm. Für Link-Karten der Startseite `og-image.png` (1200 × 630 px).
-* **Suchmaschinen und Link-Karten:** Titel „1radiœ · Ollis Lieblingsmusik“ bzw. „1radiœ · Ollie's favorite music“, Beschreibung und Vorschaubild je Sprache, `canonical` auf die Startseite der Sprache. Eine Senderseite (`/s/<id>` bzw. `?s=<id>`) hat Name, Beschreibung und Logo des Senders als eigene Karte, `canonical` zeigt aber auf die Startseite.
-* **Über den Sender:** Beschreibung und Website. Vor der Adresse steht ein Globus mit Europa und Afrika statt des Worts „Website“, Screenreader hören „Website: …“.
-* **Gespeichert** wird im Browser nur die Lautstärke. Keine Cookies für Besucher, kein Tracking, keine externen Ressourcen, außer SoundCloud und YouTube nach dem Klick. Nur Ollis gemerkter Browser hat das Hör-Cookie.
-* **Menü:** Der Burger oben rechts öffnet auf dem Handy und am Desktop ein Menü mit Über, Impressum, Datenverarbeitung und dem Sprachumschalter. Die Texte erscheinen im Menü selbst, der Pfeil führt zurück. Am Desktop ist es breiter (520 px). Links unten gibt es nur ohne JavaScript. Der Sprachumschalter nimmt den Sender im Player mit. Die Texte kommen aus dem Admin (Reiter „Texte“).
-* **Ohne JavaScript** eine Liste mit Links zu den Streams, Impressum und Datenverarbeitung als Abschnitte.
+## Schnittstellen
 
-Impressum und Datenverarbeitung haben als Standard Platzhalter in eckigen Klammern. Die echten Angaben gehören in den Admin, Reiter „Texte“.
-
-**E-Mail-Adressen** schreibst du im Admin ganz normal, als Text oder als Link. Auf der Seite stehen sie nicht im HTML: Der Server ersetzt jede Adresse in Über, Impressum und Datenverarbeitung durch einen Platzhalter mit verschlüsselter Adresse (`text_protect_mail()` in `app/texts.php`), das Skript der Seite macht daraus beim Laden einen normalen `mailto:`-Link, auch im Menü. Adress-Sammler lesen Seiten meist ohne Skript und finden nichts. Ohne JavaScript steht an der Stelle „E-Mail-Adresse, sichtbar mit JavaScript“. Ein Link mit eigenem Text („Schreib mir“) behält ihn. Wie auf eichhof.me. Am besten mit einer eigenen Weiterleitungsadresse fürs Impressum, die sich bei Spam austauschen lässt.
-
-## Playlist-Dateien und App-Schnittstelle
-
-Alle aktiven Sender, nie MP3-Playlists, Tracks, SoundCloud, Deezer oder YouTube. Die Reihenfolge ist die des Admins: die oberste Ebene wie in Sonos, die Sender einer Kategorie an der Stelle der Kategorie. Eine inaktive Kategorie blendet ihre Sender aus.
+Alle aktiven Sender von Profil 1 in der Reihenfolge der Verwaltung, nie MP3-Playlists, Tracks, SoundCloud, Deezer oder YouTube.
 
 | Adresse | Inhalt |
 |---|---|
-| `/streams.m3u` | M3U mit Namen, für VLC: „Medien, Netzwerkstream öffnen“. Bei jedem Abruf neu aus der Datenbank, Player dürfen sie 5 Minuten zwischenspeichern |
-| `/streams.xspf` | XSPF 1.0 in der Form, die Eter selbst exportiert: je Sender Name, Stream-Adresse und Logo (absolute Adresse). Für Eter auf Mac und iPad: Datei laden und in Eter importieren (Favoriten, Import aus XSPF, braucht dort den einmaligen Kauf). Ein Import ist eine Momentaufnahme, ändert sich die Liste, wird neu importiert; ob Eter dabei Doppelte erkennt, liegt an Eter. Dieselben Sender und Reihenfolge wie die M3U, ebenfalls 5 Minuten Cache und ETag |
-| `/api/stations.json` | alles für eine eigene App, `?profile=cathy` für Cathys Liste |
-| `/api/playlists` | MP3-Playlists mit Tracks für die App, mit dem Schlüssel des Profils (Olli ohne, Cathy mit `?profile=cathy`) |
-| `/api/status` | laufende Sender |
-| `/api/nowplaying?id=<id>` | aktueller Song eines Senders, `{"id": …, "track": {"artist": …, "title": …}}` oder `"track": null` |
-| `/api/listen` | Meldungen des eigenen Browsers (Hör-Cookie), von Home Assistant oder einer App (Schlüssel) |
+| `/streams.m3u` | M3U für VLC und andere Player |
+| `/streams.xspf` | XSPF 1.0 mit Name, Stream-Adresse und Logo, zum Import in Eter (Mac, iPad) |
+| `/api/stations.json` | Sender und Kategorien für eine eigene App, `?profile=` für Profil 2 |
+| `/api/playlists` | MP3-Playlists mit Tracks, nur mit dem Schlüssel des Profils |
+| `/api/status` | laufende Sender und der zuletzt gehörte |
+| `/api/nowplaying?id=<id>` | aktueller Song eines Senders |
+| `/api/listen` | Meldungen für den Hörstatus (Browser mit Hör-Cookie, Home Assistant, App mit Schlüssel) |
 
-Alles, was eine eigene App braucht, mit Beispielen und Antwortcodes, steht in [API.md](API.md).
-
-**Profile (seit 1.32.0):** Olli und Cathy. Im Admin hat jeder Sender und jede MP3-Playlist zwei Häkchen „Sichtbar für Olli / Cathy“, beide möglich (Kacheln zeigen „+ Cathy“ bzw. „nur Cathy“). Ollis Liste ist die öffentliche: Web-App, Sonos, `streams.m3u`, `streams.xspf` und `stations.json` ohne Profil. Cathys Liste gibt es nur für die Android-App: `/api/stations.json?profile=cathy` ohne Schlüssel, `/api/playlists?profile=cathy` mit Cathys Schlüssel. Schlüssel werden im Admin unter Hörgeräte für Olli oder Cathy erzeugt; Cathys liest nur Playlists und meldet nie einen Hörstatus (`/api/listen` antwortet ihr mit 403). Kategorien folgen ihrem Inhalt, die Track-Bibliothek ist gemeinsam. Hörstatus, Posting und Datenverarbeitung bleiben Ollis. Code: `app/profiles.php`, Spalten `show_olli` und `show_cathy` in `r1_stations` (Schema 11).
-
-**MP3-Playlists für die App (seit 1.32.0):** `/api/playlists` mit Playlists und Tracks, immer mit dem Schlüssel des Profils (`X-1radioe-Token`), weil die Liste die direkten MP3-Adressen nennt; ein Schlüssel des anderen Profils gibt 403. Positionen in derselben Zählung wie die Sender.
-
-Die Adressen in den Playlists zeigen direkt auf die Streams der Sender. Hören über VLC fließt bewusst nicht in den Hörstatus ein.
-
-**`stations.json`**
-
-```json
-{
-  "version": "<Katalog-Stand>",
-  "generated": "2026-11-12T16:00:00+01:00",
-  "status_url": "https://1radioe.net/api/status",
-  "listen_url": "https://1radioe.net/api/listen",
-  "nowplaying_url": "https://1radioe.net/api/nowplaying?id={id}",
-  "categories": [ { "id": "jazz", "name": "Jazz", "sort": 3, "logo": null } ],
-  "stations": [
-    {
-      "id": "radio-swiss-jazz",
-      "name": "Radio Swiss Jazz",
-      "description": "…",
-      "website": "https://www.radioswissjazz.ch",
-      "country": "CH",
-      "city": "Basel",
-      "category": "jazz",
-      "sort": 1,
-      "streams": [ { "url": "https://…", "format": "audio/mpeg", "https": true } ],
-      "logo": { "url": "https://1radioe.net/media/….jpg", "sha256": "…", "size": 600 }
-    }
-  ]
-}
-```
-
-* `id` ist die SMAPI-ID und ändert sich nie.
-* `sort` zählt innerhalb der Ebene: Sender ohne Kategorie und Kategorien teilen sich die Positionen der obersten Ebene, Sender einer Kategorie zählen darin ab 1.
-* `version` ändert sich mit jeder Änderung im Admin. Die Antwort trägt einen `ETag`. Wer ihn mit `If-None-Match` mitschickt, bekommt `304`, solange sich nichts geändert hat.
-* `country` ist der ISO-Code des Landes (`CH`, `FR`, `GB` …), `city` der Ort. Beide sind `null`, wenn nichts eingetragen ist.
-* `logo` ist `null`, wenn es kein Bild gibt. Bei Kategorien ohne eigenes Bild ist es das Raster aus vier Logos.
+Felder, Beispiele, ETag und Antwortcodes stehen in [API.md](API.md). Die Adressen in den Playlist-Dateien zeigen direkt auf die Streams; Hören über VLC fließt nicht in den Hörstatus ein.
 
 ## Hörstatus
 
-Läuft bei Olli ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
+Die Web-App zeigt, welcher Sender gerade gehört wird. Mehr nicht: nie welches Gerät, nie ob Sonos oder Browser, nie wo.
 
 * **Modell:** wie „Now Playing“ bei Last.fm. Jede Quelle meldet beim Start und danach jede Minute „läuft“, beim Stoppen „aus“. Ein Sender gilt als laufend, solange die letzte Meldung jünger als 150 Sekunden ist und kein „aus“ folgte. Fällt eine Quelle still aus, erlischt der Status von selbst.
-* **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft, für das Posting (`r1_listen_status`).
-* **Zuletzt gehört:** Hört Olli gerade nichts, zeigt die Web-App „Zuletzt von Olli gehört: <Sender>“, auf breiten Bildschirmen rechts über der Senderskala, auf dem Handy über der Liste. Der Name startet den Sender. Es zählt die neueste beendete Sitzung von mindestens fünf Minuten (`listen_last()`), kurzes Reinhören nicht. Läuft gerade etwas, verschwindet die Zeile, dann zeigen es die Balken. Dafür reicht, was ohnehin gespeichert ist, ein Verlauf entsteht nicht. Ohne Uhrzeit, nur der Sender.
-* **Sonos:** `getMediaURI` für einen Sender startet. Über den Reporting Endpoint (`report.php`, Sonos schickt `POST …/timePlayed`) kommt kurz nach dem Start ein `update` und bei Pause oder Wechsel auf einen anderen Sender ein `final`. Was bei Live-Streams fehlt, ist die Meldung jede Minute dazwischen (getestet im November 2026, einstellen lässt sich das nicht). Den laufenden Zustand meldet deshalb Home Assistant. Die alten SMAPI-Meldungen `reportPlaySeconds` und `reportPlayStatus` werden weiter verstanden, Sonos schickt sie neuen Integrationen aber nicht mehr. Tracks und Playlists zählen nicht.
-* **Home Assistant:** kennt den Zustand jedes Sonos-Lautsprechers. Eine Automation meldet jede Minute „läuft“ für jeden Stream, den ein Lautsprecher spielt, und bei Pause, Stopp oder Senderwechsel sofort „aus“. Gemeldet werden die Adresse, die der Lautsprecher spielt (`media_content_id`), und sein Titel (`media_channel`, bei 1radiœ „<Titel> • <Beschreibung>“). Der Server sucht den Sender zuerst über die Adresse, dann über den Titel, denn viele Streams leiten um (FluxFM etwa auf wechselnde Server) und der Lautsprecher meldet dann die neue Adresse. So zählt ein Sender auch, wenn er nicht über 1radiœ gestartet wurde, etwa als Sonos-Favorit. Einrichtung siehe unten.
-* **Nur mit Schlüssel:** Im Admin unter Hörgeräte lässt sich „Nur Meldungen mit Schlüssel annehmen“ einschalten. Dann zählen nur Home Assistant, gemerkte Browser und Apps mit Schlüssel, die anonymen Sonos-Meldungen (`smapi.php`, `report.php`) werden ignoriert. Die Wiedergabe in Sonos bleibt davon unberührt. Ohne Home Assistant erscheint Sonos dann nicht mehr im Hörstatus.
-* **Abfrage:** `GET /api/status` liefert `{"active": ["<smapi_id>", …], "ttl": 150}`.
-* **Browser:** Nach dem Login im Admin lässt sich ein Browser zum Hören merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `POST /api/listen` erlaubt und nie den Admin öffnet. Der Player in der Web-App meldet dann „läuft“ beim Start und jede Minute, „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. In diesem Browser zeigt die Web-App oben „Hören wird erfasst“, ein Klick pausiert das für die Sitzung. Geräte verwalten und widerrufen: System → Hörgeräte.
-* **`POST /api/listen`:** Body `{"station": "<smapi_id>", "state": "on" | "off"}` oder `{"url": "<Adresse>", "title": "<Titel>", "state": …}`. Ein Browser braucht das Cookie und eine `Origin` dieser Seite, „on“ zusätzlich den Header `X-1radioe: 1`. Home Assistant oder eine App schickt stattdessen den Header `X-1radioe-Token: <Schlüssel>`. Eine `url` darf eine Sonos-Adresse sein (`x-sonosapi-stream:<smapi_id>?sid=…`) oder die Stream-Adresse, auch mit Sonos-Vorsatz wie `aac://` oder `x-rincon-mp3radio://`. Bei `http` und `https` und bei einer anderen Abfrage hinter dem `?` passt sie trotzdem, eine Playlist-Station auch über ihren aufgelösten Stream. Passt die Adresse nicht, zählt der `title`: ein Sender mit genau diesem Titel oder mit dem Teil vor „ • “, Groß- und Kleinschreibung egal. Die Antwort ist `{"station": "<smapi_id>"}` oder `{"station": null}`, wenn es kein Sender von 1radiœ ist.
-* **Testen:** Admin → System → Hörstatus, dazu das Diagnose-Log, das bei jeder Meldung die übergebenen Werte zeigt, auch jede Meldung von Home Assistant (`listen on`, `listen off`).
+* **Gespeichert** wird je Sender nur der Zeitpunkt der letzten Meldung, ob „aus“ kam und seit wann er läuft (`r1_listen_status`). Ein Verlauf entsteht nicht.
+* **Zuletzt gehört:** die neueste beendete Sitzung von mindestens fünf Minuten (`listen_last()`), kurzes Reinhören zählt nicht.
+* **Browser:** Nach dem Login in der Verwaltung lässt sich ein Browser merken. Er bekommt das Cookie `r1listen`, das nur Meldungen an `/api/listen` erlaubt. Der Player meldet dann „läuft“, solange er wirklich spielt, und „aus“ bei Pause, Fehler, Senderwechsel und beim Schließen. Die Web-App zeigt dort „Hören wird erfasst“, ein Klick pausiert das für die Sitzung.
+* **Sonos:** `getMediaURI` und der Reporting Endpoint melden Start und Ende. Die Meldung jede Minute dazwischen schickt Sonos bei Live-Streams nicht, den laufenden Zustand meldet deshalb Home Assistant.
+* **Nur mit Schlüssel:** In der Verwaltung unter Hörgeräte lässt sich einstellen, dass nur Home Assistant, gemerkte Browser und Apps mit Schlüssel zählen.
+* **Testen:** Verwaltung → System → Hörstatus, dazu das Diagnose-Log.
 
 ### Home Assistant einrichten
 
-1. **Schlüssel:** Admin → System → Hörgeräte → „Schlüssel erzeugen“. Die angezeigte Zeile `radioe_listen_token: …` gehört in `secrets.yaml` von Home Assistant. Sie ist nur einmal sichtbar, bei Verlust einfach widerrufen und neu erzeugen.
-2. **Befehl:** in `configuration.yaml` unter `rest_command:` (bei einem vorhandenen Block nur den Eintrag darunter), danach unter Tools → YAML die REST-Befehle neu laden (vor Home Assistant 2026.8 hieß Tools noch Entwicklerwerkzeuge):
+Home Assistant kennt den Zustand jedes Sonos-Lautsprechers und meldet, welchen Stream er spielt. Der Server sucht den Sender über die Adresse, dann über den Titel, so zählt ein Sender auch als Sonos-Favorit.
+
+1. **Schlüssel:** Verwaltung → System → Hörgeräte → „Schlüssel erzeugen“. Die angezeigte Zeile `radioe_listen_token: …` gehört in `secrets.yaml`. Sie ist nur einmal sichtbar.
+2. **Befehl** in `configuration.yaml`, danach die REST-Befehle neu laden:
 
    ```yaml
    rest_command:
      radioe_listen:
-       url: https://1radioe.net/api/listen
+       url: https://<domain>/api/listen
        method: post
        headers:
          X-1radioe-Token: !secret radioe_listen_token
@@ -233,30 +196,21 @@ Läuft bei Olli ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr n
        timeout: 10
    ```
 
-3. **Automation:** Sie meldet, was die Lautsprecher spielen. Spotify-Titel und Ähnliches schickt sie gar nicht erst, andere Streams beantwortet der Server mit `{"station": null}`. Puffern zählt nicht als Pause, und spielt ein zweiter Lautsprecher denselben Sender weiter, geht er nicht auf „aus“. Die Liste der Lautsprecher in den Auslösern sind Ollis Sonos-Geräte.
+3. **Automation:** meldet jede Minute „läuft“ für jeden Stream, den ein Lautsprecher spielt, und bei Pause, Stopp oder Senderwechsel sofort „aus“. In den Auslösern stehen die eigenen Sonos-Lautsprecher.
 
    ```yaml
    alias: 1radiœ Hörstatus
-   description: >-
-     Meldet 1radioe.net, welchen Sender ein Sonos-Lautsprecher spielt: jede Minute „läuft“,
-     bei Pause, Stopp oder Senderwechsel sofort „aus“. Der Server erkennt den Sender an der
-     Adresse oder am Titel und ignoriert alles andere. Beschrieben im README von 1radiœ unter Hörstatus.
    mode: queued
    max: 10
    triggers:
      - trigger: state
-       entity_id: [media_player.buro, media_player.kuche, media_player.wohnzimmer,
-                   media_player.schrankzimmer, media_player.era_on_the_shelf, media_player.roamy]
+       entity_id: [media_player.wohnzimmer, media_player.kueche]   # eigene Lautsprecher
        to: null
-       note: Start, Pause, Stopp. Nur der Zustand, nicht jeder neue Songtitel.
      - trigger: state
-       entity_id: [media_player.buro, media_player.kuche, media_player.wohnzimmer,
-                   media_player.schrankzimmer, media_player.era_on_the_shelf, media_player.roamy]
+       entity_id: [media_player.wohnzimmer, media_player.kueche]
        attribute: media_content_id
-       note: Senderwechsel während der Wiedergabe.
      - trigger: time_pattern
        minutes: /1
-       note: Heartbeat, der Server hält „läuft“ 150 Sekunden.
    variables:
      re: '(x-sonosapi-|[a-z0-9.+-]+://)'
      playing: >-
@@ -306,18 +260,15 @@ Läuft bei Olli ein Sender, soll das die Web-App an diesem Sender zeigen. Mehr n
 
 ## Posting zu Bluesky und Mastodon
 
-Startet Olli einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Eingerichtet im Admin unter „Posting“.
+Läuft laut Hörstatus ein Sender nach einer Wartezeit noch, geht ein Beitrag an Bluesky und Mastodon. Eingerichtet in der Verwaltung unter „Posting“.
 
-* **Auslöser:** der Hörstatus. Eine Hörsitzung beginnt, wenn ein Sender von „läuft nicht“ auf „läuft“ wechselt. Die erste Meldung nach Ablauf der Wartezeit (Standard 3 Minuten) übernimmt die Sitzung, auch bei mehreren gleichzeitigen Meldungen genau einmal. Durchzappen und Fehlstarts lösen so nichts aus. Kein Cron nötig.
-* **Bremsen:** Schalter „Automatisch posten“, pro Sender ein Schalter „Posten“ im Editor, Sperrfrist je Sender (Standard 6 Stunden), Höchstzahl pro Tag (Standard 4). Wer in der Web-App das Erfassen aussetzt, postet auch nicht.
-* **Text:** Vorlage mit `{sender}`, `{link}`, `{website}` und `{hashtags}`. Hashtags gibt es für alle Sender und zusätzlich pro Sender. Ist ein Beitrag zu lang (Bluesky 300 Grapheme, Mastodon laut Instanz, Links zählen dort 23 Zeichen), fallen Hashtags von hinten weg. Die Vorschau im Admin zeigt beide Fassungen mit Länge.
-* **Link:** `{link}` zeigt auf `1radioe.net/s/<smapi_id>`, bei einem Netz mit Sprache `de` auf `1radioe.net/de/s/<smapi_id>`. Die Adresse leitet auf `/?s=<smapi_id>` (oder `/de/?s=…`) weiter, die Web-App mit dem Sender im Player und Open-Graph-Tags für die Link-Karte.
-* **Bluesky:** Handle, App-Passwort und PDS (Standard `https://bsky.social`). Links und Hashtags als Facets, Links gekürzt angezeigt, dazu eine Link-Karte mit Senderlogo.
-* **Mastodon:** Instanz und Access-Token mit der Berechtigung `write:statuses`, Sichtbarkeit wählbar. Die Link-Karte baut Mastodon aus der Senderseite. Ein `Idempotency-Key` verhindert doppelte Beiträge.
-* **Ohne Wartezeit für Sonos:** Der Beitrag geht raus, nachdem die Antwort gesendet ist (`fastcgi_finish_request`). Fehlt das auf dem Server, sagt es der Admin.
-* **Geheimnisse:** App-Passwort und Token liegen verschlüsselt in der Datenbank (libsodium). Der Schlüssel steht als `secret_key` in `config.php`, der Admin zeigt einen frisch erzeugten, solange keiner gesetzt ist. Im Admin steht nur „gespeichert“.
-* **Protokoll:** Admin → Posting zeigt die letzten Beiträge mit Ergebnis, Links und Fehlern, auch übersprungene. Die letzten 500 bleiben erhalten.
-* **Testen:** „Verbindung prüfen“ meldet sich an, ohne zu posten. „Testbeitrag senden“ postet wirklich, ohne Wartezeit und Bremsen.
+* **Auslöser:** Eine Hörsitzung beginnt, wenn ein Sender auf „läuft“ wechselt. Die erste Meldung nach der Wartezeit (Standard 3 Minuten) übernimmt die Sitzung genau einmal, Durchzappen löst nichts aus. Kein Cron nötig, der Beitrag geht nach der Antwort raus.
+* **Bremsen:** Schalter „Automatisch posten“, je Sender ein Schalter „Posten“, Sperrfrist je Sender (Standard 6 Stunden), Höchstzahl pro Tag (Standard 4).
+* **Text:** Vorlage mit `{sender}`, `{link}`, `{website}` und `{hashtags}`. Ist ein Beitrag zu lang, fallen Hashtags von hinten weg. Die Vorschau zeigt beide Fassungen mit Länge.
+* **Link:** `{link}` zeigt auf die Senderseite `/s/<id>` (bzw. `/de/s/<id>`) mit eigener Link-Karte.
+* **Bluesky:** Handle, App-Passwort und PDS, Links und Hashtags als Facets, Link-Karte mit Senderlogo. **Mastodon:** Instanz und Access-Token mit `write:statuses`, ein `Idempotency-Key` verhindert doppelte Beiträge.
+* **Geheimnisse** liegen verschlüsselt in der Datenbank (libsodium), der Schlüssel als `secret_key` in `config.php`.
+* **Testen:** „Verbindung prüfen“ meldet sich an, ohne zu posten. „Testbeitrag senden“ postet wirklich.
 
 ## Sicherheit
 
@@ -325,23 +276,27 @@ Startet Olli einen Sender, egal wo, und läuft er nach einer Wartezeit noch, geh
 * Sperre nach 5 Fehlversuchen pro IP für 15 Minuten, zusätzlich eine globale Bremse
 * Sitzungen nur über HTTPS, `SameSite=Strict`, Ablauf nach 2 Stunden Inaktivität
 * CSRF-Schutz für alle Änderungen, strenge Content Security Policy ohne Inline-Skripte
-* Texte aus dem Admin gehen durch eine Positivliste weniger Tags, ohne Attribute außer geprüften Link-Zielen
+* Texte aus der Verwaltung gehen durch eine Positivliste weniger Tags
 * Logos und Cover werden mit GD neu kodiert, `www/media/` führt keine Skripte aus und zeigt keine Verzeichnisliste
 * Programmcode, Git-Verzeichnis und Config liegen außerhalb des Web-Verzeichnisses
-* Deploy nur mit gültiger Webhook-Signatur (HMAC-SHA256), ohne Secret wird nichts ausgerollt
-* MP3s werden vor dem Import geprüft (echte MPEG-Frames), getarnte Dateien abgelehnt, Texte aus Tags und Dateinamen von ungültigen Zeichen befreit
+* Deploy nur mit gültiger Webhook-Signatur (HMAC-SHA256)
+* MP3s werden vor dem Import geprüft, getarnte Dateien abgelehnt
 * Stream-Test, Logo-Download und Posting erreichen keine internen Netze
-* Bluesky-App-Passwort und Mastodon-Token verschlüsselt in der Datenbank, der Schlüssel liegt in der Config
+* Schlüssel für Hörstatus und App nur als SHA-256 gespeichert
 * SMAPI-Antworten gegen das offizielle Sonos-Schema geprüft, XML mit DTD wird abgelehnt
 
 ## Voraussetzungen
 
-PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom` und `mbstring`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. PHP muss in `www/media/` und `1radioe-private/` schreiben dürfen. Für das automatische Ausrollen braucht der Server SSH, Git und die PHP-Funktion `exec()` (bei All-Inkl gegeben). Die Systemseite zeigt, ob alles vorhanden ist.
+PHP 8.1 oder neuer mit `pdo_mysql`, `curl`, `gd`, `dom`, `mbstring` und `sodium`, MySQL 5.7+ oder MariaDB 10.3+, HTTPS. PHP muss in `www/media/` und `1radioe-private/` schreiben dürfen. Für das automatische Ausrollen braucht der Server SSH, Git und die PHP-Funktion `exec()`. Die Systemseite der Verwaltung zeigt, ob alles vorhanden ist.
 
 ## Mitgelieferte Bibliotheken
 
-[SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, alle MIT-Lizenz, lokal eingebunden. [hls.js](https://github.com/video-dev/hls.js) 1.7.4 (`hls.light.min.js` aus dem npm-Paket, Prüfsumme in `www/assets/vendor/hls.js-LICENSE.txt`), Apache-2.0-Lizenz, nur für HLS in Firefox. Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27 von GitHub, SIL Open Font License 1.1 (`www/assets/fonts/MonaSans-OFL.txt`). Die Web-App lädt sie zugeschnitten als `R1Sans.woff2`: lateinische Schrift, Breite 100 bis 112 %, Gewicht 400 bis 900, ohne Stilsets, 141 statt 301 KB. Weil „Mona Sans“ ein reservierter Name der OFL ist, heißt die veränderte Datei „R1 Sans“. Aus ihr sind auch die Wortmarke (`app/brand.php`, Gewicht 900, Breite 100, Laufweite −0,035 em, das œ in `#1a80b6`) und die „1“ der Icons gebaut, als Vektorpfade mit fontTools und HarfBuzz. Die OFL erlaubt das, die Pfade sind kein Font.
+* [SortableJS](https://github.com/SortableJS/Sortable) 1.15.6, [Cropper.js](https://github.com/fengyuanchen/cropperjs) 1.6.2 und [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4, MIT-Lizenz
+* [hls.js](https://github.com/video-dev/hls.js) 1.7.4 (`hls.light.min.js`), Apache-2.0-Lizenz, nur für HLS in Firefox
+* Schrift [Mona Sans](https://github.com/github/mona-sans) 2.0.27, SIL Open Font License 1.1. Die Web-App lädt sie zugeschnitten als „R1 Sans“ (lateinisch, 141 statt 301 KB), weil „Mona Sans“ ein reservierter Name der OFL ist. Wortmarke und Icons sind daraus als Vektorpfade gebaut.
+
+Alle Bibliotheken liegen lokal, nichts wird von fremden Servern geladen.
 
 ## Lizenz
 
-[Apache License 2.0](LICENSE), seit 1.30.1 (bis 1.30.0 MIT). Wer 1radiœ weitergibt oder darauf aufbaut, muss die Datei [NOTICE](NOTICE) mitliefern und damit 1radiœ von Oliver Eichhof als Ursprung nennen, geänderte Dateien kennzeichnen und die Lizenz beilegen.
+[Apache License 2.0](LICENSE) (bis 1.30.0 MIT). Wer 1radiœ weitergibt oder darauf aufbaut, liefert die Datei [NOTICE](NOTICE) mit und nennt damit den Ursprung, kennzeichnet geänderte Dateien und legt die Lizenz bei.
